@@ -1,3 +1,4 @@
+import { warmup } from "./warmup";
 import { ask, type Reply } from "./api";
 import { loadState, saveState } from "./session";
 import { renderWhatsappForm } from "./whatsapp";
@@ -54,3 +55,6 @@ $("mic").addEventListener("click", (e) => {
   status.textContent = on ? "Escuchando…" : "";
   document.dispatchEvent(new CustomEvent("mic-toggle", { detail: on }));
 });
+
+warmup();
+document.addEventListener("mic-toggle", () => warmup());
