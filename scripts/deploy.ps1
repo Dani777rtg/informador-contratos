@@ -2,7 +2,9 @@
 #   pwsh scripts/deploy.ps1 -Staging     servicio informador-staging + sin aprobación; público (sin auth) como producción, es un prototipo
 #   pwsh scripts/deploy.ps1              producción: revisión sin tráfico -> aprobación del dueño -> tráfico
 # No modifica el proyecto activo global de gcloud: cada comando fija --project.
-#   pwsh scripts/deploy.ps1 -MinInstances 1   demo: una instancia siempre encendida (sin arranque en frío, con costo diario: docs/COSTOS.md); luego volver a 0 con -MinInstances 0\n#   (staging siempre usa 0)\nparam([switch]$Approve, [switch]$Staging, [ValidateSet(0, 1)][int]$MinInstances = 0)
+#   pwsh scripts/deploy.ps1 -MinInstances 1   demo: una instancia siempre encendida (sin arranque en frío, con costo diario: docs/COSTOS.md); luego volver a 0 con -MinInstances 0
+#   (staging siempre usa 0)
+param([switch]$Approve, [switch]$Staging, [ValidateSet(0, 1)][int]$MinInstances = 0)
 $ErrorActionPreference = 'Continue' # el progreso va por stderr; los fallos se detectan con $LASTEXITCODE
 $Project = 'informador-contratos-1016'
 $Region = 'us-east1'
