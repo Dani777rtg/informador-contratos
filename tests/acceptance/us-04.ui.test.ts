@@ -17,7 +17,9 @@ const name = (el: Element) =>
 const buttons = () => [...document.querySelectorAll("button, [role=button]")];
 
 beforeAll(() => {
-  document.documentElement.innerHTML = read("web/index.html");
+  const parsed = new DOMParser().parseFromString(read("web/index.html"), "text/html");
+  for (const a of [...parsed.documentElement.attributes]) document.documentElement.setAttribute(a.name, a.value);
+  document.documentElement.innerHTML = parsed.documentElement.innerHTML;
 });
 
 describe("US-04", () => {
