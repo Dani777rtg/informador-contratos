@@ -35,3 +35,29 @@ describe("índice de entidades y desambiguación", () => {
     expect(resolveEntity("hola", idx).kind).toBe("none");
   });
 });
+
+describe("nombres reales del índice (con basura y alias)", () => {
+  const idx = [
+    toEntity("890900286", "DEPARTAMENTO DE ANTIOQUIA//"), toEntity("891800498", "GOBERNACIÓN DE BOYACÁ"),
+    toEntity("890480059", "GOBERNACIÓN DE BOLÍVAR//"), toEntity("891480085", "GOBERNACIÓN DE RISARALDA**"),
+    toEntity("890399011", "ALCALDIA DE CALI"), toEntity("890905211", "ALCALDÍA DE MEDELLÍN"), toEntity("899999061", "ALCALDÍA MAYOR DE BOGOTÁ (D.C.)"),
+  ];
+  it("gobernación de X equivale a departamento de X", () => {
+    expect(resolveEntity("¿Cuánto ha contratado la Gobernación de Antioquia en 2025?", idx)).toMatchObject({ kind: "entity", entity: { nit: "890900286" } });
+  });
+  it("alcaldías", () => {
+    expect(resolveEntity("Alcaldía de Medellín", idx)).toMatchObject({ kind: "entity", entity: { nit: "890905211" } });
+    expect(resolveEntity("contratos del municipio de Cali", idx)).toMatchObject({ kind: "entity", entity: { nit: "890399011" } });
+  });
+  it("Bogotá con lugar gana a la genérica", () => {
+    expect(resolveEntity("alcaldia de bogota", idx)).toMatchObject({ kind: "entity", entity: { nit: "899999061" } });
+  });
+  it("genérica sola da opciones", () => {
+    expect(resolveEntity("gobernación", idx).kind).toBe("ambiguous");
+  });
+  it("buildParams usa $q sin meterlo en $where", () => {
+    const p = buildParams({ where: [{ col: "objeto_del_contrato", op: "q", value: "alimentación' escolar" }, { col: "departamento", op: "=", value: "Boyacá" }] });
+    expect(p.get("$q")).toBe("alimentación escolar");
+    expect(p.get("$where")).toBe("departamento = 'Boyacá'");
+  });
+});

@@ -11,7 +11,7 @@ export const COLUMNS = [
 export type Column = (typeof COLUMNS)[number];
 export type Row = Partial<Record<Column, string>>;
 
-export interface Cond { col: Column; op: "=" | ">=" | "<=" | "like"; value: string | number }
+export interface Cond { col: Column; op: "=" | ">=" | "<=" | "like" | "q"; value: string | number }
 export interface Query {
   select?: Column[]; where?: Cond[]; order?: { col: Column; desc?: boolean }; limit?: number; offset?: number;
 }
@@ -29,8 +29,12 @@ export const lit = (v: string | number): string =>
 export function buildParams(q: Query): URLSearchParams {
   const p = new URLSearchParams();
   if (q.select?.length) p.set("$select", q.select.map(col).join(","));
-  if (q.where?.length) {
-    p.set("$where", q.where.map((c) => {
+  // op "q": búsqueda de texto completo ($q, rápida); solo letras, dígitos y espacios.
+  const text = q.where?.find((c) => c.op === "q");
+  if (text) p.set("$q", String(text.value).replace(/[^\p{L}\p{N}]+/gu, " ").trim());
+  const conds = q.where?.filter((c) => c.op !== "q");
+  if (conds?.length) {
+    p.set("$where", conds.map((c) => {
       const v = c.op === "like" ? `%${String(c.value).replace(/[%_]/g, "")}%` : c.value;
       return `${col(c.col)} ${c.op} ${lit(v)}`;
     }).join(" AND "));
@@ -67,14 +71,25 @@ export type Resolution =
   | { kind: "ambiguous"; options: Entity[] }
   | { kind: "none" };
 
-const GENERIC = ["alcaldia", "gobernacion", "hospital", "universidad", "secretaria", "ministerio"];
+// Alias: gobernación = departamento; alcaldía/municipio/distrito equivalentes. Se ignoran artículos y preposiciones.
+const ALIAS: Record<string, string> = { gobernacion: "departamento", alcaldia: "municipio", distrito: "municipio", distrital: "municipio", municipal: "municipio" };
+const STOP = new Set(["de", "del", "la", "el", "los", "las", "y", "en", "e", "a", "al", "para", "por", "con", "que", "cuanto", "ha", "han", "contratos", "contrato", "contratado", "especial"]);
+const GENERIC = new Set(["departamento", "municipio", "hospital", "universidad", "secretaria", "ministerio"]);
+const tokens = (s: string): string[] => normalize(s).split(" ").filter((t) => t && !STOP.has(t)).map((t) => ALIAS[t] ?? t);
+
 export function resolveEntity(message: string, index: Entity[]): Resolution {
-  const m = ` ${normalize(message)} `;
-  const hits = index.filter((e) => m.includes(` ${e.norm} `)).sort((a, b) => b.norm.length - a.norm.length);
-  if (hits.length) return { kind: "entity", entity: hits[0] };
-  const g = GENERIC.find((w) => m.includes(` ${w} `));
+  const mt = tokens(message);
+  const m = ` ${mt.join(" ")} `;
+  const withTokens = index.map((e) => ({ e, t: tokens(e.name) }));
+  const hits = withTokens.filter(({ t }) => t.length && m.includes(` ${t.join(" ")} `)).sort((a, b) => b.t.length - a.t.length);
+  if (hits.length) return { kind: "entity", entity: hits[0].e };
+  const g = mt.find((w) => GENERIC.has(w));
   if (!g) return { kind: "none" };
-  const options = index.filter((e) => e.norm.split(" ").includes(g));
+  const cands = withTokens.filter(({ t }) => t.includes(g));
+  // El lugar pesa más que la palabra genérica: gana el que más tokens no genéricos comparte con la pregunta.
+  const score = (t: string[]) => new Set(t.filter((w) => w.length > 2 && !GENERIC.has(w) && mt.includes(w))).size;
+  const best = Math.max(0, ...cands.map(({ t }) => score(t)));
+  const options = cands.filter(({ t }) => score(t) === best).map(({ e }) => e);
   if (options.length === 1) return { kind: "entity", entity: options[0] };
   return options.length ? { kind: "ambiguous", options: options.slice(0, 8) } : { kind: "none" };
 }

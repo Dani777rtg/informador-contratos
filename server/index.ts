@@ -36,8 +36,16 @@ import { createNonce, securityHeaders } from "./headers.js";
 
 type Env = Record<string, string | undefined>;
 const DEMO = demoAnswers as Record<string, { updatedAt: string; cards: Record<string, unknown>[] }>;
-// ponytail: temas fijos; la búsqueda libre por texto llega con T002 (herramientas SoQL).
-const TOPICS: Record<string, string> = { "alumbrado publico": "ALUMBRADO PUBLICO" };
+// Temas comunes -> términos para $q (texto completo de Socrata; nunca like '%x%' sobre contratos).
+const TOPICS: [RegExp, string][] = [
+  [/alimentacion escolar|\bpae\b/, "alimentacion escolar"], [/alumbrado publico/, "alumbrado publico"],
+  [/\b(vias?|carreteras?|pavimentacion)\b/, "vias"], [/\bsalud\b/, "salud"], [/\beducacion\b/, "educacion"],
+  [/\bagua\b|acueducto/, "agua"], [/\bseguridad\b/, "seguridad"],
+];
+// Nombres como aparecen en el campo departamento del dataset.
+const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "San Andrés, Providencia y Santa Catalina", "Santander", "Sucre", "Tolima", "Valle del Cauca", "Vaupés", "Vichada"]
+  .map((d): [string, string] => [normalize(d), d]).concat([["bogota", "Distrito Capital de Bogotá"]]);
+
 
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -199,9 +207,11 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     if (res.kind === "ambiguous") {
       return reply({ text: "Hay varias entidades con ese nombre. ¿Cuál te interesa?", options: res.options.map((e) => e.name) });
     }
-    const topic = Object.keys(TOPICS).find((t) => norm.includes(t));
+    const topicHit = TOPICS.find(([re]) => re.test(norm));
+    const topic = topicHit?.[1];
+    const place = DEPARTAMENTOS.filter(([k]) => ` ${norm} `.includes(` ${k} `)).sort((a, b) => b[0].length - a[0].length)[0]?.[1];
     // Atajo de reglas: entidad/NIT/tema explícitos o seguimiento claro; lo demás lo resuelve el agente.
-    const followUp = prev.entity && (year || /mas grandes|mayores|top|de donde|fuente|origen|recursos|gasta|gasto|en que|contratos|lista/.test(norm) || /^\s*y/.test(norm));
+    const followUp = prev.entity && (year || /mas grandes|mayores|btopb|de donde|fuente|origen|recursos|gasta|gasto|en que|contratos|lista/.test(norm) || /^\s*yb/.test(norm));
     if (res.kind !== "entity" && !nit && !topic && !followUp) {
       agentUsed = true;
       try {
@@ -214,7 +224,11 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     const explicit = res.kind === "entity" || nit || topic;
     if (res.kind === "entity") { where.push({ col: "nit_entidad", op: "=", value: res.entity.nit }); label = res.entity.name; }
     else if (nit) { where.push({ col: "nit_entidad", op: "=", value: nit }); label = `NIT ${nit}`; }
-    else if (topic) { where.push({ col: "objeto_del_contrato", op: "like", value: TOPICS[topic] }); label = topic; }
+    else if (topic) {
+      where.push({ col: "objeto_del_contrato", op: "q", value: topic });
+      if (place) where.push({ col: "departamento", op: "=", value: place });
+      label = place ? `${topic} en ${place}` : topic;
+    }
     else if (prev.entity) { where.push({ col: "nit_entidad", op: "=", value: prev.entity.nit }); label = prev.entity.name; }
     else return reply({ text: "No encontré una entidad, NIT o tema en tu pregunta. Prueba con el nombre de la entidad." });
     const turnEntity = res.kind === "entity" ? res.entity : nit ? { nit, name: `NIT ${nit}` } : undefined;

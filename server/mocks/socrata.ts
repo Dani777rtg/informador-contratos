@@ -62,7 +62,7 @@ export function createSocrataMock() {
     if (!c.req.param("id").startsWith("jbjy-vk9h")) return c.json([]);
     const agg = (rs: Row[]) => (c.req.query("$select") ?? "").includes("sum(") ? aggregate(rs, c.req.query("$select")!, c.req.query("$group") ?? null) : rs;
     if (hit) return c.json(agg(rows(hit.name, hit.nit, 8)));
-    if (/ALUMBRADO/i.test(where)) return c.json(rows("Alcaldía de Cali", "890399011", 3, "Mantenimiento de alumbrado público"));
+    if (/ALUMBRADO/i.test(where + (c.req.query("$q") ?? ""))) return c.json(rows("Alcaldía de Cali", "890399011", 3, "Mantenimiento de alumbrado público"));
     return c.json([]);
   });
   return app;
