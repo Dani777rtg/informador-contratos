@@ -52,7 +52,7 @@ const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolíva
 
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
-function loadEntities(env: Env, mock: boolean): Entity[] {
+function loadEntities(mock: boolean): Entity[] {
   if (mock) return MOCK_ENTITIES;
   const f = resolve("data/entities.json");
   if (!existsSync(f)) return [];
@@ -68,7 +68,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
   const mock = env.MOCK_EXTERNALS === "1";
   if (mock && env.NODE_ENV === "production") throw new Error("MOCK_EXTERNALS=1 no se permite con NODE_ENV=production.");
   const app = new Hono();
-  const entities = loadEntities(env, mock);
+  const entities = loadEntities(mock);
   let attach: ((s: Server) => void) | undefined;
   let mockAttach: ((s: Server) => void) | undefined;
   let client: Client = { base: env.SOCRATA_BASE ?? "https://www.datos.gov.co", token: env.DATOSGOV_APP_TOKEN };
