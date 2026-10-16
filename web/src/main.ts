@@ -67,6 +67,8 @@ const voice = initVoice({
   },
   onLevel: (l) => { level.value = Math.min(1, l * 4); },
   onNotice: (t) => { status.className = "status error"; status.textContent = t; },
+  getSession: () => state,
+  setSession: (s) => { state = s; saveState(s); },
 });
 mic.addEventListener("click", () => {
   const on = mic.getAttribute("aria-pressed") !== "true";

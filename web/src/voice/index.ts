@@ -11,6 +11,9 @@ export interface VoiceUi {
   onState(s: VoiceState): void;
   onLevel(l: number): void;
   onNotice(text: string): void;
+  /** Estado firmado de la conversación compartido con el chat de texto (RF-19f). */
+  getSession(): string | undefined;
+  setSession(s: string): void;
 }
 
 const API = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
@@ -35,8 +38,9 @@ export function initVoice(ui: VoiceUi) {
   }
 
   function onJson(raw: string) {
-    let m: { type?: string; text?: string; cards?: Card[] };
+    let m: { type?: string; text?: string; cards?: Card[]; state?: unknown };
     try { m = JSON.parse(raw) as typeof m; } catch { return; }
+    if (typeof m.state === "string") ui.setSession(m.state);
     if (m.type === "transcript" && m.text) { eotAt = performance.now(); ui.onUser(m.text); set("processing"); }
     else if (m.type === "message" && m.text) ui.onAgent(m.text, m.cards ?? []);
     else if (m.type === "interrupt") { player.flush(); idle(); }
@@ -62,6 +66,8 @@ export function initVoice(ui: VoiceUi) {
       };
       sock.onclose = () => { if (ws === sock) stopAll(FAIL); };
       await new Promise<void>((ok, fail) => { sock.onopen = () => ok(); sock.onerror = () => fail(new Error()); });
+      const session = ui.getSession();
+      if (session) sock.send(JSON.stringify({ type: "state", state: session }));
       cap = await startCapture((pcm) => { if (sock.readyState === WebSocket.OPEN) sock.send(pcm); }, ui.onLevel);
       paused = false; set("listening");
     } catch {
