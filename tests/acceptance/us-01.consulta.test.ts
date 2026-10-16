@@ -1,0 +1,212 @@
+/**
+ * US-01 Consultar contratos, gasto y avance. Acceptance tests (locked).
+ *
+ * CONTRACT these tests assume (builders must provide it; nothing external is called):
+ *  - `npx tsx server/index.ts` started with MOCK_EXTERNALS=1 serves the app with the
+ *    stand-ins in server/mocks/ for DeepSeek, Deepgram, datos.gov.co and WhatsApp.
+ *  - POST /api/chat  {message: string, state?: string}  ->  JSON
+ *      { text: string,
+ *        cards: Array<{ kind: string, ...fields }>,   // built from structured query data
+ *        options?: string[],                          // tappable entity choices (ambiguous)
+ *        hasMore?: boolean,                           // "ver más"
+ *        period?: { from: string, to: string, defaulted: boolean },
+ *        source: { dataset: string, queriedAt: string, dataUpdatedAt: string, url: string },
+ *        cached?: boolean, state: string }
+ *    Contract cards: kind "contract" {entity, contractor, object, value, signedAt, status, url};
+ *      "spend" {category, total, count}; "funding" {source, total}; "top" {rank, name, value};
+ *      "detail" {url, value, invoiced, paid, pending, addedDays, modifications[]}.
+ *  - Mock controls (only in mock mode): POST /__mock/socrata {mode:"ok"|"slow"|"fail"|"empty"};
+ *    GET /__mock/socrata/requests -> [{ url: string }] (every SoQL request the server made);
+ *    DELETE /__mock/socrata/requests clears it.
+ * Questions use the mock data set; assertions are structural (no pinned mock values).
+ */
+import { spawn, type ChildProcess } from "node:child_process";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+
+const PORT = 3991;
+const BASE = `http://127.0.0.1:${PORT}`;
+let proc: ChildProcess;
+
+async function waitUp() {
+  for (let i = 0; i < 100; i++) {
+    try { if ((await fetch(`${BASE}/health`)).ok) return; } catch { /* retry */ }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  throw new Error("server did not start");
+}
+beforeAll(async () => {
+  proc = spawn("npx", ["tsx", "server/index.ts"], {
+    shell: true, stdio: "ignore",
+    env: { ...process.env, PORT: String(PORT), MOCK_EXTERNALS: "1" },
+  });
+  await waitUp();
+}, 30000);
+afterAll(() => { proc?.kill(); });
+
+type Card = Record<string, any>;
+async function ask(message: string, state?: string) {
+  const res = await fetch(`${BASE}/api/chat`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ message, state }),
+  });
+  expect(res.status).toBe(200);
+  return (await res.json()) as {
+    text: string; cards: Card[]; options?: string[]; hasMore?: boolean;
+    period?: { from: string; to: string; defaulted: boolean };
+    source: { dataset: string; queriedAt: string; dataUpdatedAt: string; url: string };
+    cached?: boolean; state: string;
+  };
+}
+const mock = (mode: string) =>
+  fetch(`${BASE}/__mock/socrata`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode }) });
+const soqlRequests = async (): Promise<string[]> =>
+  ((await (await fetch(`${BASE}/__mock/socrata/requests`)).json()) as { url: string }[]).map((r) => r.url);
+
+beforeEach(async () => {
+  await mock("ok");
+  await fetch(`${BASE}/__mock/socrata/requests`, { method: "DELETE" });
+});
+
+const digits = (s: string) => (s.match(/\d[\d.,]*/g) ?? []).map((n) => n.replace(/\D/g, "")).filter((n) => n.length >= 4);
+const flat = (o: unknown): string => JSON.stringify(o);
+
+describe("US-01", () => {
+  it("AC-01.1 contratos de una entidad: campos requeridos, máximo 5 visibles y ver más", async () => {
+    const r = await ask("¿Qué contratos tiene la Alcaldía de Cali?");
+    const cs = r.cards.filter((c) => c.kind === "contract");
+    expect(cs.length).toBeGreaterThan(0);
+    expect(cs.length).toBeLessThanOrEqual(5);
+    for (const c of cs) {
+      for (const k of ["entity", "contractor", "object", "value", "signedAt", "status", "url"]) expect(c[k], k).toBeTruthy();
+    }
+    expect(r.hasMore).toBe(true);
+  });
+
+  it("AC-01.1 también por contratista (NIT) y por tema", async () => {
+    for (const q of ["¿Qué contratos tiene el NIT 890399011?", "contratos de alumbrado público"]) {
+      const r = await ask(q);
+      expect(r.cards.some((c) => c.kind === "contract"), q).toBe(true);
+    }
+  });
+
+  it("AC-01.2 gasto por categoría con número de contratos", async () => {
+    const r = await ask("¿En qué gasta la Gobernación de Antioquia?");
+    const cs = r.cards.filter((c) => c.kind === "spend");
+    expect(cs.length).toBeGreaterThan(0);
+    for (const c of cs) { expect(c.category).toBeTruthy(); expect(c.total).toBeTruthy(); expect(Number(c.count)).toBeGreaterThan(0); }
+  });
+
+  it("AC-01.3 desglose por fuente de recursos", async () => {
+    const r = await ask("¿De dónde sale el dinero de la Alcaldía de Cali?");
+    const cs = r.cards.filter((c) => c.kind === "funding");
+    expect(cs.length).toBeGreaterThan(0);
+    for (const c of cs) { expect(c.source).toBeTruthy(); expect(c.total).toBeTruthy(); }
+  });
+
+  it("AC-01.4 top 10 ordenado por valor descendente", async () => {
+    const r = await ask("¿Cuáles son los contratos más grandes de la Alcaldía de Cali?");
+    const cs = r.cards.filter((c) => c.kind === "top");
+    expect(cs.length).toBeLessThanOrEqual(10);
+    expect(cs.length).toBeGreaterThan(1);
+    const vals = cs.map((c) => Number(String(c.value).replace(/\D/g, "")));
+    expect(vals).toEqual([...vals].sort((a, b) => b - a));
+  });
+
+  it("AC-01.5 detalle de un contrato: valor, facturado, pagado, pendiente, días y modificaciones", async () => {
+    const first = await ask("contratos de la Alcaldía de Cali");
+    const r = await ask("dame el detalle y los pagos del primero", first.state);
+    const d = r.cards.find((c) => c.kind === "detail");
+    expect(d).toBeTruthy();
+    for (const k of ["url", "value", "invoiced", "paid", "pending", "addedDays"]) expect(d![k], k).toBeDefined();
+    expect(Array.isArray(d!.modifications)).toBe(true);
+  });
+
+  it("AC-01.6 entidad ambigua devuelve opciones tocables", async () => {
+    const r = await ask("contratos de la Alcaldía");
+    expect(r.options?.length ?? 0).toBeGreaterThan(1);
+  });
+
+  it("AC-01.6 sin resultados: lo dice, sugiere y no inventa datos", async () => {
+    await mock("empty");
+    const r = await ask("contratos de la Alcaldía de Cali");
+    expect(r.cards.filter((c) => c.kind === "contract")).toHaveLength(0);
+    expect(r.text).toMatch(/no (encontr|hay|hall)/i);
+    expect(r.text).toMatch(/period|rango|nombre|amplia/i);
+  });
+
+  it("AC-01.7 sin periodo usa los últimos 12 meses y lo dice", async () => {
+    const r = await ask("contratos de la Alcaldía de Cali");
+    expect(r.period?.defaulted).toBe(true);
+    const days = (Date.parse(r.period!.to) - Date.parse(r.period!.from)) / 86400000;
+    expect(days).toBeGreaterThanOrEqual(364);
+    expect(days).toBeLessThanOrEqual(366);
+    expect(r.text).toMatch(/12 meses/);
+  });
+
+  it("AC-01.8 ninguna cifra del texto del LLM fuera de los resultados", async () => {
+    const r = await ask("¿En qué gasta la Gobernación de Antioquia?");
+    const allowed = new Set(digits(flat(r.cards)));
+    for (const n of digits(r.text)) {
+      // dates/period figures are allowed when they come from the declared period or source
+      if (!allowed.has(n) && !flat(r.period).includes(n) && !flat(r.source).includes(n)) throw new Error(`cifra no respaldada: ${n}`);
+    }
+  });
+
+  it("AC-01.9 datos.gov.co caído: sirve caché/precalculado con fecha o explica en una frase", async () => {
+    await ask("contratos de la Alcaldía de Cali"); // calienta caché
+    await mock("fail");
+    const r = await ask("contratos de la Alcaldía de Cali");
+    expect(r.cards.length).toBeGreaterThan(0);
+    expect(r.source.dataUpdatedAt).toBeTruthy();
+    const none = await ask("contratos de un municipio sin precalculo xyz");
+    expect(none.cards.filter((c) => c.kind === "contract")).toHaveLength(0);
+    expect(none.text.length).toBeGreaterThan(10);
+    expect(none.text.split(/[.!?]\s/).length).toBeLessThanOrEqual(3);
+  });
+
+  it("AC-01.9 datos.gov.co lento (>3 s): responde sin esperar indefinidamente", async () => {
+    await mock("slow");
+    const t0 = Date.now();
+    const r = await ask("contratos de la Alcaldía de Cali");
+    expect(Date.now() - t0).toBeLessThan(6000);
+    expect(r.text.length).toBeGreaterThan(0);
+  }, 15000);
+
+  it("AC-01.10 fuente, fechas, enlace oficial y formato de moneda $1.234.567.890", async () => {
+    const r = await ask("contratos de la Alcaldía de Cali");
+    expect(r.source.dataset).toBeTruthy();
+    expect(r.source.queriedAt).toBeTruthy();
+    expect(r.source.dataUpdatedAt).toBeTruthy();
+    expect(r.source.url).toMatch(/^https:\/\//);
+    const money = [...flat(r).matchAll(/\$[\d.]+/g)].map((m) => m[0]);
+    expect(money.length).toBeGreaterThan(0);
+    for (const m of money) expect(m).toMatch(/^\$\d{1,3}(\.\d{3})*$/);
+  });
+
+  it("AC-01.11 / TM-11 inyección SoQL: ninguna entrada llega cruda y $limit <= 100", async () => {
+    const payload = "x' OR 1=1; DROP --' UNION SELECT cuenta_bancaria";
+    await ask(`contratos del contratista ${payload}`);
+    await ask("contratos de la Alcaldía de Cali");
+    const reqs = await soqlRequests();
+    expect(reqs.length).toBeGreaterThan(0);
+    for (const u of reqs) {
+      const q = new URL(u, "http://x").searchParams;
+      const limit = q.get("$limit");
+      if (limit !== null) expect(Number(limit)).toBeLessThanOrEqual(100);
+      const where = q.get("$where") ?? "";
+      expect(where).not.toMatch(/union|drop|1=1/i);
+      // an apostrophe from the user must be doubled (escaped) inside string literals
+      expect(where.replace(/'(?:[^']|'')*'/g, "")).not.toMatch(/['"]/);
+      for (const key of q.keys()) expect(["$select", "$where", "$group", "$order", "$limit", "$offset", "$$app_token"]).toContain(key);
+    }
+  });
+
+  it("AC-01.11 / TM-11 el usuario no puede pasar SoQL crudo", async () => {
+    await ask("$where=1=1&$limit=100000 contratos");
+    for (const u of await soqlRequests()) {
+      const q = new URL(u, "http://x").searchParams;
+      expect(Number(q.get("$limit") ?? 0)).toBeLessThanOrEqual(100);
+      expect(q.get("$where") ?? "").not.toBe("1=1");
+    }
+  });
+});
