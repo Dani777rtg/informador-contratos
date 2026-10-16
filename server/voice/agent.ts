@@ -1,7 +1,8 @@
 import { WebSocket, type RawData } from "ws";
 import { MISSION_PROMPT } from "../agent/mission.js";
 import { TOOL_DEFS, runTool } from "../agent/tools.js";
-import { decline } from "../agent/decline.js";
+import { decline, DECLINE_TOOL } from "../agent/decline.js";
+import { PLACE_KEYTERMS } from "../data/places.js";
 import { emptyContext, type Ctx } from "../session.js";
 import { MAX_TOOLS_PER_TURN, posNum } from "../guards/validate.js";
 import { normalNames, spokenAmount, toSpoken } from "../speech/spoken.js";
@@ -11,7 +12,7 @@ type Json = Record<string, unknown>;
 type Turn = { type: "History"; role: "user" | "assistant"; content: string };
 
 export const AGENT_URL = "wss://agent.deepgram.com/v1/agent/converse";
-export const KEYTERMS = ["SECOP", "NIT", "CDP", "contrato", "alcaldía", "gobernación"];
+export const KEYTERMS = ["SECOP", "NIT", "CDP", "contrato", "alcaldía", "gobernación", ...PLACE_KEYTERMS].slice(0, 100); // Deepgram rechaza más de 100 keyterms (FAILED_TO_START_LISTENING, verificado): departamentos primero y municipios por importancia
 export const MAX_ASK_CHARS = 500;
 const MAX_FRAME_BYTES = 64 * 1024;
 const TOOL_NAMES = new Set(TOOL_DEFS.map((t) => t.name));
@@ -31,7 +32,7 @@ export function buildSettings(env: Env, history: Turn[] = []): Json {
         provider: { type: "open_ai", model: env.DEEPSEEK_MODEL ?? "deepseek-flash", temperature: 0.2 },
         endpoint: { url: `${base}/chat/completions`, headers: { authorization: `Bearer ${key}` } },
         prompt: MISSION_PROMPT,
-        functions: TOOL_DEFS,
+        functions: [...TOOL_DEFS, DECLINE_TOOL.function], // decline debe existir: si no, el modelo la llama y el agente queda mudo (NON_EXISTENT_FUNCTION_CALLED)
       },
       speak: { provider: { type: "deepgram", model: env.TTS_VOICE ?? "aura-2-celeste-es" } },
       ...(history.length ? { context: { messages: history } } : {}),
@@ -68,7 +69,7 @@ const withDeadline = <T>(p: Promise<T>, ms: number) =>
 export interface AgentHooks {
   run?: typeof runTool;
   /** Un turno hablado: ms de fin de turno a primer audio, herramientas y código de declinación. Sin contenido. */
-  turn?(t: { latencyMs: number; tools: string[]; declineCode?: string }): void;
+  turn?(t: { latencyMs: number; tools: string[]; declineCode?: string; intent: string; placeMatched?: "si" | "no" | "confirmar"; resultCode: string }): void;
   /** Fin de sesión: motivo de cierre y duración. Sin contenido. */
   close?(c: { closeReason: string; ms: number; tools: string[]; errorType?: string }): void;
 }
@@ -77,7 +78,7 @@ export interface AgentHooks {
 export function runAgentSession(client: WebSocket, url: string, env: Env, hooks: AgentHooks = {}): void {
   const run = hooks.run ?? runTool;
   const started = Date.now();
-  const sessionMs = posNum(env.VOICE_SESSION_MAX_SECONDS, 600) * 1000;
+  const sessionMs = posNum(env.VOICE_SESSION_MAX_SECONDS, 1800) * 1000;
   const idleMs = posNum(env.VOICE_IDLE_MS, 60_000);
   const keepAliveMs = posNum(env.VOICE_KEEPALIVE_MS, 5000);
   const backoffMs = posNum(env.VOICE_RECONNECT_MS, 300);
@@ -92,12 +93,12 @@ export function runAgentSession(client: WebSocket, url: string, env: Env, hooks:
   const early: Buffer[] = []; // hasta 4 s de voz dicha mientras conecta (frames de 40 ms)
   const queued: string[] = [];
   const all: string[] = [];
-  let turnTools: string[] = [], turnT0 = 0, declineCode: string | undefined;
+  let turnTools: string[] = [], turnT0 = 0, declineCode: string | undefined, placeMatched: "si" | "no" | "confirmar" | undefined, resultCode = "ok";
   let lastFrame = Date.now(), winStart = Date.now(), frames = 0, asks = 0;
 
   const send = (o: Json) => { if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify(o)); };
   const toUp = (o: Json) => { if (up?.readyState === WebSocket.OPEN) up.send(JSON.stringify(o)); };
-  const inject = (content: string) => { turnT0 = Date.now(); turnTools = []; declineCode = undefined; toUp({ type: "InjectUserMessage", content }); };
+  const inject = (content: string) => { turnT0 = Date.now(); turnTools = []; declineCode = undefined; placeMatched = undefined; resultCode = "ok"; toUp({ type: "InjectUserMessage", content }); };
 
   const end = (code: number, reason: string) => {
     if (ended) return;
@@ -131,6 +132,9 @@ export function runAgentSession(client: WebSocket, url: string, env: Env, hooks:
         turnTools.push(f.name); all.push(f.name);
         const r = await withDeadline(run(f.name, args, undefined, ctx), 12_000).catch(() => ({ data: { error: "servicio_no_disponible" }, cards: [], context: undefined, note: undefined }));
         ctx = { ...ctx, ...r.context };
+        const err = (r.data as { error?: unknown } | undefined)?.error;
+        if (typeof err === "string") resultCode = err.slice(0, 40);
+        if (args.municipio || args.departamento || args.ciudad) placeMatched = err === "lugar_desconocido" ? ((r.data as { confirmar?: unknown }).confirmar ? "confirmar" : "no") : "si";
         if (r.cards?.length) send({ type: "ToolResult", cards: r.cards });
         content = fence(forAgent(r.data)) + (r.note ? `\n${r.note}` : "");
       }
@@ -149,10 +153,10 @@ export function runAgentSession(client: WebSocket, url: string, env: Env, hooks:
       if (secrets.some((s) => (m.content as string).includes(s))) return;
       history.push({ type: "History", role: m.role, content: m.content.slice(0, 2000) });
       if (history.length > 40) history.shift();
-      if (m.role === "user" && !turnT0) { turnT0 = Date.now(); turnTools = []; declineCode = undefined; }
+      if (m.role === "user" && !turnT0) { turnT0 = Date.now(); turnTools = []; declineCode = undefined; placeMatched = undefined; resultCode = "ok"; }
       send({ type, role: m.role, content: m.content });
     } else if (typeof type === "string" && FORWARD.has(type)) {
-      if (type === "AgentStartedSpeaking" && turnT0) { hooks.turn?.({ latencyMs: Date.now() - turnT0, tools: turnTools, declineCode }); turnT0 = 0; }
+      if (type === "AgentStartedSpeaking" && turnT0) { hooks.turn?.({ latencyMs: Date.now() - turnT0, tools: turnTools, declineCode, intent: declineCode ? "declinar" : turnTools.length ? "consulta" : "conversacion", placeMatched, resultCode }); turnT0 = 0; }
       send({ type });
     } else if (type === "FunctionCallRequest") void functions(m as never);
     else if (type === "Error") { errorType = String(m.code ?? "error").slice(0, 60); console.warn(JSON.stringify({ evt: "agent_error", code: errorType })); }

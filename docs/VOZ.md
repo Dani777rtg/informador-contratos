@@ -53,7 +53,12 @@ Latencia percibida = suma hasta el **primer audio**.
 3. Audio linear16 16 kHz en bloques de 80 ms; el AudioWorklet remuestrea; reproducción a 24 kHz en cola con `flush()` en `UserStartedSpeaking`. El cliente guarda hasta 4 s de voz mientras conecta.
 4. Reconexión silenciosa (3 intentos con backoff) y aviso solo si no se recupera; el chat de texto sigue.
 5. Lista blanca: del cliente solo audio (<= 64 KB), `KeepAlive` y `AskText`; al cliente solo audio, `ConversationText`, `UserStartedSpeaking`, `AgentThinking`, `AgentStartedSpeaking`, `AgentAudioDone`, `ToolResult` y `Notice`. Cualquier otro JSON del cliente cierra la conexión (1008).
-6. Límites: tasa por IP (`createRateLimiter`), `VOICE_MAX_PER_IP` (3), `VOICE_MAX_SESSIONS` (30), `VOICE_SESSION_MAX_SECONDS` (600), `VOICE_DAILY_MAX_MINUTES` (120), inactividad 60 s, 100 tramas/s.
+6. Límites: tasa por IP (`createRateLimiter`), `VOICE_MAX_PER_IP` (3), `VOICE_MAX_SESSIONS` (30), `VOICE_SESSION_MAX_SECONDS` (1800), `VOICE_DAILY_MAX_MINUTES` (120), inactividad 60 s, 100 tramas/s.
 7. Cloud Run con `--session-affinity` para que las reconexiones lleguen a la misma instancia.
 8. Privacidad: ni audio ni transcripciones se guardan en disco ni en logs.
 9. Costo: el Voice Agent se factura por minuto; verificar la tarifa vigente en la consola de Deepgram.
+
+
+## Lugares y keyterms (cambio 007)
+
+La transcripción recibe como `keyterms` SECOP, NIT, CDP, contrato, alcaldía, gobernación, los 32 departamentos y los municipios principales (`PLACE_KEYTERMS`, `server/data/places.ts`). **Deepgram rechaza más de 100 keyterms** (`FAILED_TO_START_LISTENING`, verificado), por eso se recortan a 100 por prioridad. Un lugar dudoso devuelve `confirmar` ("¿Dijiste Tunja, en Boyacá?") y el agente pregunta en vez de decir que no hay datos. `decline` se declara como función del agente. Registro por turno: `channel`, `intent`, `route`, `tools`, `placeMatched`, `resultCode`, `latencyMs`, sin texto.

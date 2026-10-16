@@ -96,7 +96,7 @@ async function resolveFilters(args: Record<string, unknown>, ctx: Ctx, d: Deps, 
     const known = await Promise.race([(d.places ?? placesFor(client))(), new Promise<Place[]>((ok) => setTimeout(() => ok([]), PLACES_WAIT_MS).unref())]);
     const places = known.length ? known : snapshotPlaces();
     const m = matchPlace(municipio || dep, places, municipio ? dep : undefined, !municipio);
-    if ("sugerencias" in m) return fail({ error: "lugar_desconocido", sugerencias: m.sugerencias, nota: "Dilo y ofrece las sugerencias." });
+    if ("sugerencias" in m) return fail({ error: "lugar_desconocido", sugerencias: m.sugerencias, ...(m.confirmar ? { confirmar: m.confirmar } : {}), nota: `Pregunta al usuario${m.confirmar ? ` «${m.confirmar}»` : " por el lugar y ofrece las sugerencias"}; no digas que no hay datos.` });
     f.departamento = m.departamento;
     if (m.alcance === "municipio") { f.ciudad = m.municipio; label.push(`entidades de ${m.municipio}, ${m.departamento}`); } else label.push(`entidades de ${m.departamento}`);
   }

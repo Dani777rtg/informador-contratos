@@ -1,0 +1,220 @@
+{
+  "runAt": "2026-10-16T22:08:30.242Z",
+  "target": "http://localhost:8099",
+  "results": [
+    {
+      "q": "Hola, ¿cómo estás?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 53
+    },
+    {
+      "q": "Hola, ¿cómo estás?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 2421,
+      "heard": "Hola, ¿cómo estás?"
+    },
+    {
+      "q": "¿Cuánto se gastó en Antioquia?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 6426
+    },
+    {
+      "q": "¿Cuánto se gastó en Antioquia?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 5878,
+      "heard": "¿Cuánto se gastó en Antioquia?"
+    },
+    {
+      "q": "¿Qué contratos hay en Tunja?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 3867
+    },
+    {
+      "q": "¿Qué contratos hay en Tunja?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 5033,
+      "heard": "¿Qué contratos hay en Tunja?"
+    },
+    {
+      "q": "Dame la lista de contratos de educación de Yopal",
+      "channel": "texto",
+      "ok": true,
+      "ms": 4141
+    },
+    {
+      "q": "Dame la lista de contratos de educación de Yopal",
+      "channel": "voz",
+      "ok": true,
+      "ms": 3798,
+      "heard": "Dame la lista de contratos de educación de Yopal."
+    },
+    {
+      "q": "¿Cuánto se gastó en Manizales en 2025?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 5020
+    },
+    {
+      "q": "¿Cuánto se gastó en Manizales en 2025?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 2758,
+      "heard": "¿Cuánto se lastó en Manizales en dos mil veinticinco?"
+    },
+    {
+      "q": "¿Qué empresas recibieron más plata en Bogotá?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 5489
+    },
+    {
+      "q": "¿Qué empresas recibieron más plata en Bogotá?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 5134,
+      "heard": "¿Qué empresas recibieron más plata en Bogotá?"
+    },
+    {
+      "q": "¿Cuál fue el contrato más grande de Cali?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 6676
+    },
+    {
+      "q": "Dame el detalle de ese contrato",
+      "channel": "texto",
+      "ok": true,
+      "ms": 1393
+    },
+    {
+      "q": "¿Cuál fue el contrato más grande de Cali?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 5534,
+      "heard": "¿Cuál fue el contrato más grande de Cali?"
+    },
+    {
+      "q": "¿Qué entidades gastaron más en Boyacá?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 5817
+    },
+    {
+      "q": "¿Qué entidades gastaron más en Boyacá?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 3635,
+      "heard": "¿Qué entidades gastaron más en Boyacá?"
+    },
+    {
+      "q": "¿En qué se gastó más en Pasto?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 3465
+    },
+    {
+      "q": "¿En qué se gastó más en Pasto?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 6579,
+      "heard": "¿En qué se gastó más en Pasto?"
+    },
+    {
+      "q": "¿Cuánto se invirtió en salud en Cartagena?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 4621
+    },
+    {
+      "q": "¿Cuánto se invirtió en salud en Cartagena?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 3348,
+      "heard": "¿Cuánto se invirtió en salud en Cartagena?"
+    },
+    {
+      "q": "¿Qué contratos de vías hay en Nariño?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 4547
+    },
+    {
+      "q": "¿Qué contratos de vías hay en Nariño?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 4485,
+      "heard": "¿Qué contratos de vías hay en Nariño?"
+    },
+    {
+      "q": "¿Cuánto se gastó en Caldas?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 3812
+    },
+    {
+      "q": "¿Cuánto se gastó en Caldas?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 6330,
+      "heard": "¿Cuántos cerras están caldas?"
+    },
+    {
+      "q": "¿Qué contratos hay en Medellín?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 6428
+    },
+    {
+      "q": "¿Qué contratos hay en Medellín?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 6165,
+      "heard": "¿Qué contratos hay en Medellín?"
+    },
+    {
+      "q": "¿Cuánto contrató la Gobernación de Santander?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 529
+    },
+    {
+      "q": "¿Cuánto contrató la Gobernación de Santander?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 5336,
+      "heard": "¿Cuánto contrató la gobernación de Santander?"
+    },
+    {
+      "q": "¿Ese contrato es un robo?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "q": "¿Ese contrato es un robo?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 3861,
+      "heard": "¿Ese contrato es un robo?"
+    },
+    {
+      "q": "¿Por quién debo votar?",
+      "channel": "texto",
+      "ok": true,
+      "ms": 5
+    },
+    {
+      "q": "¿Por quién debo votar?",
+      "channel": "voz",
+      "ok": true,
+      "ms": 2927,
+      "heard": "Por quien debo votar."
+    }
+  ]
+}

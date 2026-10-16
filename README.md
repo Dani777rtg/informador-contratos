@@ -23,6 +23,7 @@ En PowerShell: `$env:MOCK_EXTERNALS="1"; npx tsx server/index.ts`.
 - `npm test`: unitarias y de aceptación (vitest).
 - `npm run eval -- --mock`: evaluación del agente con sustitutos.
 - `npm run eval:real -- --env-file=<ruta al .env>`: ~27 preguntas ciudadanas contra datos.gov.co y DeepSeek **reales** (`eval/real-questions.json`); comprueba que las tarjetas correspondan a la entidad, municipio, departamento y tema pedidos, sin marcado DSML y con fuente. Imprime ok/falla, ms y tokens por pregunta, p50/p95, y escribe `eval/real-results.json`. Cuesta centavos; sale con 1 si hay menos de 90 % ok.
+- `npm run probe:prod -- --target <url> [--env-file=<ruta>]`: puerta de producción (AC-13.11): 16 preguntas reales por texto y por voz con audio sintetizado por Deepgram TTS enviado a `/voice`; revisa que responda lo pedido, sin "no hay datos" cuando hay datos, montos en pesos, sin muletilla y detalle de contrato. Escribe `eval/prod-probe-results.json`; sale con 1 si hay menos de 90 % ok. El servidor debe tener `ALLOWED_ORIGINS` = la URL objetivo.
 - `npm run loadtest:local`: carga contra el servidor con sustitutos. **Solo local, nunca contra la nube.**
 - Otros: `npm run lint`, `npm run typecheck`, `npm run test:e2e`, `npm run scan:secrets`.
 
@@ -52,7 +53,7 @@ Copia `.env.example` a `.env`. Con `MOCK_EXTERNALS=1` no se necesita ninguna cla
 | `DEEPGRAM_API_KEY` | - | Clave de voz |
 | `DEEPGRAM_STT_URL`, `DEEPGRAM_TTS_URL` | wss://api.deepgram.com/v2/listen, /v1/speak | Endpoints de voz |
 | `TTS_VOICE` | aura-2-celeste-es | Voz de salida |
-| `VOICE_SESSION_MAX_SECONDS` | 600 | Tope de voz por sesión |
+| `VOICE_SESSION_MAX_SECONDS` | 1800 | Tope de voz por sesión |
 | `VOICE_DAILY_MAX_MINUTES` | 120 | Tope diario de voz (`0` apaga la voz) |
 | `WHATSAPP_ACCESS_TOKEN` (alias `WHATSAPP_TOKEN`) | - | Token de WhatsApp Cloud API |
 | `WHATSAPP_PHONE_NUMBER_ID` | - | Número emisor |

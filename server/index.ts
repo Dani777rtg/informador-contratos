@@ -114,7 +114,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
   const voice = createVoice(env, { limiter, demand }, {
     // Las herramientas de ESTE servidor (cliente, entidades, municipios), no el último configurado en el proceso.
     run: async (name, args, _data, sctx) => (tools[name] ? tools[name].run(args, sctx ?? {}) : { data: { error: "sin_resultados" } }),
-    turn: (t) => { metrics.record({ channel: "voz", tokens: 0, latencyMs: t.latencyMs }); logQuestion({ tokens: 0, latencyMs: t.latencyMs, channel: "voz", route: "voz", tools: t.tools, declineCode: t.declineCode }); },
+    turn: (t) => { metrics.record({ channel: "voz", tokens: 0, latencyMs: t.latencyMs }); logQuestion({ tokens: 0, latencyMs: t.latencyMs, channel: "voz", route: "voz", tools: t.tools, declineCode: t.declineCode, intent: t.intent, placeMatched: t.placeMatched ?? "no", resultCode: t.resultCode }); },
     close: (c) => logQuestion({ tokens: 0, latencyMs: c.ms, channel: "voz", route: "voz", tools: c.tools, closeReason: c.closeReason, errorType: c.errorType }),
   });
   attach = (s) => { voice.attach(s); mockAttach?.(s); };
@@ -179,6 +179,9 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
       return { cards: [], period, source, state: codec.sign(cur), ...r, text, ...(channel === "voz" && typeof text === "string" ? { spoken: toSpoken(text) } : {}) } as Answer;
     };
 
+    // Saludo solo: respuesta cálida sin datos ni LLM (AC-13.1).
+    if (/^((hola|buen[oa]s( (dias|tardes|noches))?|hey|saludos|como estas|que tal|como vas)[\s,.!¡¿?]*)+$/.test(message.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim()))
+      return reply({ text: "¡Hola! Qué gusto saludarte. Te ayudo a entender en qué se gasta el dinero público según el SECOP: por municipio, departamento, entidad o contratista. ¿Qué te gustaría saber?" });
     const where: Cond[] = [];
     let label = "";
     const norm = normalize(message);
