@@ -21,7 +21,7 @@ export function createAsker(d: AskDeps) {
     const k = cacheKey(q, context);
     const r = await jobs.get(k)!();
     full.set(k, r);
-    return { text: r.text, tokens: r.tokens };
+    return { text: r.text, tokens: r.tokens, cache: !r.degraded };
   });
   return async function ask(message: string, context: Ctx, channel: "texto" | "voz", onToken?: (t: string) => void): Promise<Asked> {
     const t0 = Date.now();

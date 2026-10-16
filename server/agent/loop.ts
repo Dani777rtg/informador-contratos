@@ -61,9 +61,23 @@ export interface AgentResult {
   toolCalls: { name: string; args: Record<string, unknown> }[];
   tokens: number;
   context: Ctx;
+  /** Respuesta de respaldo por fallo: no se guarda en caché. */
+  degraded?: boolean;
 }
 
-// ponytail: no se envía parámetro "thinking": no hay confirmación de que deepseek-flash lo acepte (un 400 rompería todo); se usa el modo por defecto del modelo.
+// Modo sin razonamiento explícito (API: thinking.type = "disabled"): más rápido y con tool_calls estructuradas.
+const DSML = /DSML|<｜/;
+/** DeepSeek a veces devuelve la llamada a herramienta como texto con su marcado interno (DSML). Se convierte en tool_calls. */
+export function parseDsml(content: string): LlmToolCall[] {
+  const out: LlmToolCall[] = [];
+  const inv = /invoke\s+name="([\w-]+)"\s*>([\s\S]*?)<\/[^>]*invoke>/g;
+  for (const [, name, body] of content.matchAll(inv)) {
+    const args: Record<string, string> = {};
+    for (const [, k, v] of body.matchAll(/parameter\s+name="([\w-]+)"[^>]*>([\s\S]*?)<\/[^>]*parameter>/g)) args[k] = v.trim();
+    out.push({ id: `dsml_${out.length}`, name, arguments: JSON.stringify(args) });
+  }
+  return out;
+}
 /** Cliente OpenAI-compatible de DeepSeek (stream:true). Modelo solo por DEEPSEEK_MODEL. */
 export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?: string; fetch?: typeof fetch } = {}): Llm {
   const baseUrl = (o.baseUrl ?? process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
@@ -75,7 +89,7 @@ export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?
       const res = await doFetch(`${baseUrl}/chat/completions`, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model, messages, tools: tools.length ? tools : undefined, stream: true, stream_options: { include_usage: true } }),
+        body: JSON.stringify({ model, messages, tools: tools.length ? tools : undefined, thinking: { type: "disabled" }, stream: true, stream_options: { include_usage: true } }),
         signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
       });
       if (!res.ok || !res.body) throw new Error(`LLM HTTP ${res.status}`);
@@ -97,7 +111,7 @@ export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?
         if (!j || typeof j !== "object") return;
         tokens = j.usage?.total_tokens ?? tokens;
         const delta = j.choices?.[0]?.delta;
-        if (delta?.content) { content += delta.content; onToken?.(delta.content); }
+        if (delta?.content) { content += delta.content; if (!DSML.test(content)) onToken?.(delta.content); }
         for (const tc of delta?.tool_calls ?? []) {
           const c = (calls[tc.index ?? 0] ??= { id: "", name: "", arguments: "" });
           if (tc.id) c.id = tc.id;
@@ -112,7 +126,9 @@ export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?
         lines.forEach(handle);
       }
       handle(buf);
-      return { content, toolCalls: calls.filter(Boolean), tokens };
+      const toolCalls = calls.filter(Boolean);
+      if (!toolCalls.length && DSML.test(content)) return { content: "", toolCalls: parseDsml(content), tokens };
+      return { content, toolCalls, tokens };
     },
   };
 }
@@ -172,7 +188,7 @@ export async function runAgent(a: {
     try {
       r = await a.llm.complete({ messages, tools: last || used >= MAX_TOOLS_PER_TURN ? [] : defs, onToken: gate.push });
     } catch {
-      return { text: "No pude consultar el modelo en este momento. Intenta de nuevo en unos minutos.", cards, toolCalls, tokens, context };
+      return { text: "No pude consultar el modelo en este momento. Intenta de nuevo en unos minutos.", cards, toolCalls, tokens, context, degraded: true };
     }
     gate.flush();
     tokens += r.tokens;
@@ -210,5 +226,7 @@ export async function runAgent(a: {
       messages.push({ role: "tool", tool_call_id: c.id, content: out });
     }
   }
+  // Nunca se muestra ni se habla marcado interno del modelo.
+  if (DSML.test(text)) return { text: "No pude completar esa consulta. Intenta preguntarlo de otra forma, por ejemplo con el nombre de la entidad.", cards, toolCalls, tokens, context, degraded: true };
   return { text: dropForbidden(verifyNumbers(text, allowed()).text), cards, toolCalls, tokens, context };
 }

@@ -1,4 +1,4 @@
-﻿export interface Answer { text: string; tokens: number }
+﻿export interface Answer { text: string; tokens: number; cache?: boolean }
 export interface Asked extends Answer { cached: boolean }
 
 /** Same question (case/accents/punctuation-insensitive) in the same context => same key. */
@@ -14,8 +14,8 @@ export function createAnswerCache(llm: (q: string, context?: string) => Promise<
       const hit = store.get(k);
       if (hit) return { text: hit.text, tokens: 0, cached: true };
       const a = await llm(q, context);
-      store.set(k, a);
-      return { ...a, cached: false };
+      if (a.cache !== false) store.set(k, a); // respuestas de respaldo por fallo no se guardan
+      return { text: a.text, tokens: a.tokens, cached: false };
     },
   };
 }
