@@ -9,7 +9,10 @@
 //   applyTurn(ctx, { entity?, period?, contract?, results?, topicChange? }): Ctx   (puro)
 // Ctx = { entity?, period?, contract?, results? }  (entidad, periodo, contrato en foco, resultados)
 import { describe, it, expect } from "vitest";
-import { createSessionCodec, emptyContext, applyTurn } from "../../server/session";
+// AC-06.1 (cambio 005): `resolveFollowUp(message: string, ctx: Ctx): string | null` en server/session.ts,
+//   devuelve el id del contrato referido por el seguimiento sobre ctx.results (en orden de aparición;
+//   "el más grande" = el primero, pues los resultados vienen ordenados por valor), o null.
+import { createSessionCodec, emptyContext, applyTurn, resolveFollowUp } from "../../server/session";
 
 const H = 3600_000;
 const T0 = Date.UTC(2026, 9, 16, 12, 0, 0);
@@ -44,6 +47,19 @@ describe("US-06 contexto compartido entre voz y texto", () => {
   it("AC-06.1: el contrato en foco sobrevive a un seguimiento", () => {
     const next = applyTurn(ctx, { period: { from: "2024-01-01", to: "2024-12-31" } });
     expect(next.contract).toBe("CO1.PCCNTR.1234");
+  });
+
+  it.each(["dame ese contrato", "el más grande", "el primero", "ábrelo"])(
+    "AC-06.1: el seguimiento %j se resuelve sobre ctx.results",
+    (msg) => {
+      expect(["CO1.PCCNTR.1234", "CO1.PCCNTR.5678"]).toContain(resolveFollowUp(msg, ctx));
+      expect(resolveFollowUp("el primero", ctx)).toBe("CO1.PCCNTR.1234");
+    },
+  );
+
+  it("AC-06.1: 'el segundo' elige el segundo y sin resultados devuelve null", () => {
+    expect(resolveFollowUp("el segundo", ctx)).toBe("CO1.PCCNTR.5678");
+    expect(resolveFollowUp("el primero", emptyContext())).toBeNull();
   });
 
   it("AC-06.2: recargar con el estado firmado recupera el contexto", () => {

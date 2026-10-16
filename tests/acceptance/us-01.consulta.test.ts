@@ -183,6 +183,16 @@ describe("US-01", () => {
     for (const m of money) expect(m).toMatch(/^\$\d{1,3}(\.\d{3})*$/);
   });
 
+  it("AC-01.12 el texto usa cifra redondeada y nombres normales; la tarjeta conserva el valor exacto", async () => {
+    const r = await ask("¿Cuáles son los contratos más grandes de la Alcaldía de Cali?");
+    expect(r.text).toMatch(/\$?\d{1,3}(\.\d{3})*\s+millones|\$?\d+\s+mil millones/i);
+    expect(r.text).not.toMatch(/\d{10,}/);
+    expect(r.text).not.toMatch(/\d{1,3}(\.\d{3}){3,}/); // ni $1.234.567.890 completo
+    expect(r.text).not.toMatch(/\b[A-ZÁÉÍÓÚÑ]{3,}(\s+[A-ZÁÉÍÓÚÑ]{2,})+\b/); // nombres en mayúsculas completas
+    const exact = r.cards.map((c) => String(c.value ?? c.total ?? "")).filter((v) => /^\$\d{1,3}(\.\d{3})+$/.test(v));
+    expect(exact.length).toBeGreaterThan(0);
+  });
+
   it("AC-01.11 / TM-11 inyección SoQL: ninguna entrada llega cruda y $limit <= 100", async () => {
     const payload = "x' OR 1=1; DROP --' UNION SELECT cuenta_bancaria";
     await ask(`contratos del contratista ${payload}`);

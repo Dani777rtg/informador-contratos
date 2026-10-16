@@ -6,6 +6,8 @@
  *  eval/real-questions.json: [{ id, question, expect: { ...entidad/territorio/tema } }]
  *    (tambien se acepta { questions: [...] })
  *  eval/real-results.json: { runAt, results: [{ id, ok, text, source, ms, tokens, reason? }] }
+ *  Cambio 005: preguntas habladas llevan `channel:"voz"` y su resultado trae `spoken`;
+ *    un seguimiento de contrato lleva `followUp` (o `previous`/`after`) y la palabra "contrato" en la pregunta.
  *    source: objeto o texto con dataset y fecha (se exige no vacio).
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -55,6 +57,24 @@ describe("AC-11.5 evaluacion con preguntas reales", () => {
       expect(x.source).toBeTruthy();
       expect(JSON.stringify(x.source).length).toBeGreaterThan(2);
     }
+  });
+
+  it("AC-11.5 hay preguntas habladas (channel voz) con spoken limpio y un seguimiento de contrato ok (cambio 005)", () => {
+    const qs = arr(read("eval/real-questions.json"));
+    const voz = qs.filter((q) => q.channel === "voz");
+    expect(voz.length).toBeGreaterThan(0);
+    const res = read("eval/real-results.json").results as any[];
+    const byId = new Map(res.map((x) => [x.id, x]));
+    for (const q of voz) {
+      const s = String(byId.get(q.id)?.spoken ?? "");
+      expect(s.length, q.id).toBeGreaterThan(0);
+      expect(s, q.id).not.toContain("$");
+      expect(s, q.id).not.toMatch(/\d{1,3}([.,]\d{3})+/);
+      expect(s, q.id).not.toMatch(/d[eé]jame buscar|claro,|un momento/i);
+    }
+    const seguimiento = qs.filter((q) => /contrato/i.test(q.question) && (q.followUp || q.followup || q.previous || q.after));
+    expect(seguimiento.length).toBeGreaterThan(0);
+    expect(seguimiento.some((q) => byId.get(q.id)?.ok === true)).toBe(true);
   });
 
   it("AC-11.5 package.json tiene el script eval:real", () => {

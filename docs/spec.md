@@ -35,6 +35,8 @@ status: approved
 
 Budget exceeded: AC — los criterios compuestos del cliente se partieron en criterios de una sola respuesta verificable y se añadieron los P0 que faltaban (US-01, US-02, US-04, US-05, US-08, US-09 pasan de 6 criterios).
 
+Budget exceeded: T — la tarea T022 del cambio 005 (conversación natural) cruza US-01, US-05 y US-06; por eso US-01 cuenta 4 tareas.
+
 Valores por defecto (variables de entorno, ajustables sin cambiar código): 20 peticiones/min por IP, 500 caracteres por mensaje, 30 turnos por conversación, 60 s por enunciado de audio, 10 min por sesión de voz, 3 herramientas por turno, tope diario de 1.000.000 de tokens de LLM y 120 min de voz, caducidad del estado firmado 2 h.
 
 ### US-01 Consultar contratos, gasto y avance (Must)
@@ -63,6 +65,8 @@ risk: high — integración externa con datos.gov.co y datos personales público
 - **AC-01.10** THE SYSTEM SHALL incluir en cada respuesta el dataset fuente, la fecha de consulta, la fecha hasta la que están actualizados los datos y un enlace oficial, con cifras como `$1.234.567.890` (RF-17, RF-23, RNF-06).
   serves: US-01
 - **AC-01.11** THE SYSTEM SHALL construir toda consulta SoQL en el servidor desde parámetros tipados con lista permitida de columnas y operadores, valores escapados, `$limit` ≤ 100 y `$where` acotado, de modo que ninguna entrada del usuario o del modelo llegue como SoQL crudo.
+  serves: US-01
+- **AC-01.12** THE SYSTEM SHALL redactar la respuesta de texto en lenguaje llano con la cifra clave redondeada ("$27.000 millones") y nombres en formato normal (no en mayúsculas crudas); el valor exacto queda en la tarjeta (cambio 005).
   serves: US-01
 
 ### US-02 Ver y abrir documentos del contrato (Must)
@@ -126,15 +130,17 @@ risk: high — integración externa pagada (Deepgram) con audio de ciudadanos
   serves: US-05
 - **AC-05.3** WHEN el usuario habla encima del agente THE SYSTEM SHALL callar el audio en menos de 200 ms y escuchar (RF-19e).
   serves: US-05
-- **AC-05.4** IF la consulta tarda más de 500 ms THEN THE SYSTEM SHALL decir un acuse breve ("Claro, déjame buscar eso") en lugar de silencio (RF-19e).
+- **AC-05.4** THE SYSTEM SHALL no decir frases de relleno ni acuses ("Claro, déjame buscar eso"); mientras busca solo muestra el estado visual "Buscando en SECOP…" (cambio 005; retira el acuse de RF-19e por decisión del dueño).
   serves: US-05
 - **AC-05.5** IF el servicio de voz no responde THEN THE SYSTEM SHALL avisar que la voz no está disponible y mantener el chat por texto funcionando (RF-19b).
   serves: US-05
-- **AC-05.6** THE SYSTEM SHALL medir fin de turno → primera palabra con desglose (fin de turno, STT final, LLM primer token, datos, TTS primer audio), con objetivo p95 < 1 s y meta p50 ≈ 500 ms, y documentar fuentes y decisiones en `docs/VOZ.md` (RNF-02b, RF-19g).
+- **AC-05.6** THE SYSTEM SHALL medir fin de turno → primera palabra con desglose (fin de turno, STT final, LLM primer token, datos, TTS primer audio), con objetivo p95 < 1 s y meta p50 ≈ 500 ms, usando atajos rápidos también en voz y DeepSeek en modo sin razonamiento (cambio 005), y documentar fuentes y decisiones en `docs/VOZ.md` (RNF-02b, RF-19g).
   serves: US-05
 - **AC-05.7** THE SYSTEM SHALL no guardar audio ni transcripciones en disco ni en logs (RNF-16).
   serves: US-05
 - **AC-05.8** IF se supera el tope diario de minutos de voz o los 10 min de una sesión THEN THE SYSTEM SHALL pasar a texto con aviso claro.
+  serves: US-05
+- **AC-05.9** THE SYSTEM SHALL hablar las cifras en español natural de Colombia ("27 mil millones de pesos"), las fechas de forma natural ("15 de marzo de 2026"), sin códigos, identificadores, siglas crudas ni nombres en mayúsculas, en máximo 2 frases (RNF-06; cambio 005).
   serves: US-05
 
 ### US-06 Una sola conversación voz + texto (Must)
@@ -142,7 +148,7 @@ Como ciudadano quiero seguir mi conversación entre voz y texto sin repetir nada
 serves: O-5
 risk: high — el estado de la conversación vive en el navegador, es firmado y contiene preguntas de ciudadanos (datos personales, RNF-16)
 
-- **AC-06.1** WHEN el usuario hace una pregunta de seguimiento ("¿y en 2024?", "el segundo", "¿y ese contrato?") por voz o por texto THE SYSTEM SHALL resolverla con el contexto acumulado (entidad, periodo, contrato en foco, resultados) en ambos canales (RF-10, RF-19f).
+- **AC-06.1** WHEN el usuario hace una pregunta de seguimiento ("¿y en 2024?", "el segundo", "¿y ese contrato?", "dame ese contrato", "el más grande", "el primero", "ábrelo") por voz o por texto THE SYSTEM SHALL resolverla con el contexto acumulado (entidad, periodo, contrato en foco y los resultados mostrados, también los que trajo el agente) en ambos canales (RF-10, RF-19f; cambio 005).
   serves: US-06
 - **AC-06.2** WHEN el usuario recarga la página o reconecta la voz THE SYSTEM SHALL recuperar el contexto desde un estado firmado por el servidor (HMAC, versión de clave, caducidad 2 h).
   serves: US-06
@@ -228,7 +234,7 @@ risk: high — la evaluación real (AC-11.5, cambio 004) llama a servicios exter
   serves: US-11
 - **AC-11.4** THE SYSTEM SHALL generar el reporte de métricas de la misión (tiempos, tokens, pruebas, linter, vulnerabilidades y resultados de límites) de la sección 7b del cliente.
   serves: US-11
-- **AC-11.5** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una evaluación con ≥ 25 preguntas ciudadanas reales (`eval/real-questions.json`, `npm run eval:real`, contra datos.gov.co y DeepSeek reales) con ≥ 90 % de respuestas correctas —datos de la entidad, territorio y tema pedidos, sin marcado interno del modelo y con fuente— y dejar el resultado en `eval/real-results.json` (cambio 004).
+- **AC-11.5** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una evaluación con ≥ 25 preguntas ciudadanas reales (`eval/real-questions.json`, `npm run eval:real`, contra datos.gov.co y DeepSeek reales) con ≥ 90 % de respuestas correctas —datos de la entidad, territorio y tema pedidos, sin marcado interno del modelo y con fuente—, que incluya preguntas habladas y chequee cifras en palabras en el texto hablado, ausencia de muletillas y seguimiento de contrato resuelto (cambio 005), y dejar el resultado en `eval/real-results.json` (cambio 004).
   serves: US-11
 
 ### US-12 Carga local y documentos de entrega (Should)
@@ -438,6 +444,12 @@ serves: AC-11.5
 - Archivos: `eval/real-questions.json`, `eval/real-run.ts`, `eval/real-results.json`, `server/index.ts`, `server/agent/*`, `server/data/socrata.ts`, `server/tools/*`
 - Check: `npm run eval:real` ≥ 90 % y `npx vitest run tests/acceptance/us-11.real-eval.test.ts`
 - depends: T003, T009
+
+### T022 [US-05] Conversación natural en texto y voz (cambio 005)
+serves: AC-05.4, AC-05.9, AC-01.12, AC-06.1
+- Archivos: `server/voice/*`, `server/agent/*`, `server/speech/*`, `server/index.ts`, `web/src/render.ts`
+- Check: `npx vitest run tests/acceptance/us-05.voice.test.ts tests/acceptance/us-06.session.test.ts tests/acceptance/us-01.consulta.test.ts` y `npm run eval:real`
+- depends: T007, T009, T021
 
 **Grupos paralelos:** G0 {T001, T012, T014, T018} → G1 {T002, T003, T006, T010, T011} → G2 {T004, T005, T007, T009, T016, T020} → G3 {T008, T013, T015} → G4 {T017, T019}. Los archivos de las tareas de un mismo grupo no se solapan.
 **Estimado:** ~7,5 h de reloj con 4–5 constructores en paralelo y ~2,5 h de colchón para verificación y despliegue, frente a las 10 h (límite 20:18). La aprobación de la plantilla de Meta (hasta 24 h) corre en paralelo; si no llega, se cumple AC-10.4.

@@ -11,6 +11,8 @@
  *  - Servidor -> cliente: audio como frames binarios; el resto JSON (texto con la respuesta en algún campo).
  *  - URLs de los sustitutos por env: DEEPGRAM_STT_URL, DEEPGRAM_TTS_URL, DEEPSEEK_BASE_URL.
  *  - Topes por env: VOICE_SESSION_MAX_SECONDS, VOICE_DAILY_MAX_MINUTES.
+ *  - AC-05.9 (cambio 005): `server/speech/spoken.ts` exporta `toSpoken(text: string): string` y
+ *    `spokenAmount(n: number): string` (p. ej. 27000000000 -> "27 mil millones de pesos").
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createServer, type Server } from "node:http";
@@ -167,18 +169,18 @@ describe("US-05 voz manos libres", () => {
     expect(audioFrames().length).toBe(n);
   });
 
-  it("AC-05.4 si la consulta tarda más de 500 ms dice un acuse breve en lugar de silencio", async () => {
+  it("AC-05.4 no emite acuse ni frase de relleno (ni texto ni audio) antes de la respuesta real aunque la consulta tarde 1500 ms", async () => {
     await boot({}, { llmDelayMs: 1500 });
     await connect();
     await until(() => fakes.stt !== null);
-    const t0 = Date.now();
     fakes.fireEndOfTurn("¿Qué contratos tiene Medellín?");
-    // antes de que el LLM responda (1500 ms) ya se habló algo
-    await until(() => speakTexts().length > 0, 1400);
-    const firstSpoken = speakTexts()[0];
-    expect(firstSpoken.length).toBeGreaterThan(0);
-    expect(firstSpoken).not.toContain("Encontré tres contratos");
-    expect(Date.now() - t0).toBeLessThan(1400);
+    await new Promise((r) => setTimeout(r, 1200)); // el LLM aún no responde
+    expect(speakTexts()).toHaveLength(0);
+    expect(audioFrames()).toHaveLength(0);
+    expect(textFrames().join("\n")).not.toMatch(/d[eé]jame buscar|un momento|claro,/i);
+    // la primera cosa hablada es la respuesta real
+    await until(() => speakTexts().length > 0, 3000);
+    expect(speakTexts()[0]).toContain("Encontré tres contratos");
   });
 
   it("AC-05.5 si el servicio de voz no responde avisa que la voz no está disponible y el chat por texto sigue funcionando", async () => {
@@ -221,6 +223,34 @@ describe("US-05 voz manos libres", () => {
       const p = join(tmpdir(), name);
       try { if (statSync(p).isFile() && readFileSync(p).includes(MARKER)) throw new Error(`fuga en ${p}`); } catch (e: any) { if (/fuga/.test(e.message)) throw e; }
     }
+  });
+
+  it("AC-05.9 spokenAmount habla las cifras en palabras", async () => {
+    const { spokenAmount } = await import("../../server/speech/spoken");
+    expect(spokenAmount(27_000_000_000)).toBe("27 mil millones de pesos");
+    expect(spokenAmount(1_200_000_000)).toMatch(/^mil doscientos millones de pesos$/);
+    for (const n of [27_000_000_000, 1_200_000_000, 350_000_000]) expect(spokenAmount(n)).not.toMatch(/[$.]|\d{4}/);
+  });
+
+  it("AC-05.9 toSpoken: sin $, puntos de miles, códigos, mayúsculas crudas y máximo 2 frases", async () => {
+    const { toSpoken } = await import("../../server/speech/spoken");
+    const raw = "La ALCALDÍA DE CALI firmó el contrato CO1.PCCNTR.123 por $27.000.000.000 con CONSTRUCTORA ABC SAS. Es el más grande. Hay otros cuatro. Pregunta por cualquiera.";
+    const out = toSpoken(raw);
+    expect(out).not.toContain("$");
+    expect(out).not.toMatch(/\d\.\d{3}/);
+    expect(out).not.toMatch(/CO1|PCCNTR/);
+    expect(out).not.toMatch(/\b[A-ZÁÉÍÓÚÑ]{3,}\b/);
+    expect(out).toMatch(/27 mil millones/);
+    expect((out.match(/[.!?](\s|$)/g) ?? []).length).toBeLessThanOrEqual(2);
+  });
+
+  it("AC-05.9 lo que llega al TTS no trae $, puntos de miles ni códigos", async () => {
+    await boot();
+    await connect();
+    await until(() => fakes.stt !== null);
+    fakes.fireEndOfTurn("hola");
+    await until(() => speakTexts().length > 0);
+    for (const t of speakTexts()) expect(t).not.toMatch(/\$|\d\.\d{3}|PCCNTR/);
   });
 
   it("AC-05.8 al superar los 10 min de sesión (tope ajustable) pasa a texto con aviso claro", async () => {
