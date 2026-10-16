@@ -53,7 +53,8 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     await next();
     for (const [k, v] of Object.entries(securityHeaders(createNonce()))) c.res.headers.set(k, v);
   });
-  const limiter = createRateLimiter({});
+  // Con sustitutos locales (MOCK_EXTERNALS=1, nunca en producción) el límite por defecto sube para no frenar las pruebas.
+  const limiter = createRateLimiter({ limit: Number(env.RATE_LIMIT_PER_MIN ?? (mock ? 10_000 : 20)) });
   const demand = createDemandGuard({});
   app.use("/api/*", async (c, next) => {
     const r = limiter.check(clientIp(c.req.header("x-forwarded-for")));
