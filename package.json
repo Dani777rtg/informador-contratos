@@ -16,6 +16,7 @@
     "scan:secrets": "tsx scripts/scan-secrets.ts",
     "loadtest:local": "tsx loadtest/run.ts",
     "wa:template": "tsx scripts/whatsapp-template.ts",
+    "warm:demo": "tsx scripts/warm-demo.ts",
     "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
     "typecheck": "tsc --noEmit",
     "build:web": "vite build --config web/vite.config.ts",

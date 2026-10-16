@@ -1,4 +1,4 @@
-﻿import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { AddressInfo } from "node:net";
@@ -12,6 +12,7 @@ import { getConnInfo } from "@hono/node-server/conninfo";
 import { bodyLimit } from "hono/body-limit";
 import { DATASET, fetchRows, query as socrataQuery, normalize, resolveEntity, toEntity, type Client, type Cond, type Entity, type Row } from "./data/socrata.js";
 import demoAnswers from "./fallback/demo-answers.json" with { type: "json" };
+import { demoKey, type DemoEntry, type DemoKind } from "./fallback/demo.js";
 import { Lru } from "./cache.js";
 import { contractCard, MAX_VISIBLE, searchContracts, type Ctx } from "./tools/search.js";
 import { fundingBreakdown, spendByCategory, topContracts } from "./tools/spend.js";
@@ -37,7 +38,7 @@ import { firestoreStore, memoryStore, templateStatus } from "./whatsapp/store.js
 import { createNonce, securityHeaders } from "./headers.js";
 
 type Env = Record<string, string | undefined>;
-const DEMO = demoAnswers as Record<string, { updatedAt: string; cards: Record<string, unknown>[] }>;
+const DEMO = demoAnswers as Record<string, DemoEntry>;
 // Temas comunes -> términos para $q (texto completo de Socrata; nunca like '%x%' sobre contratos).
 const TOPICS: [RegExp, string][] = [
   [/alimentacion escolar|\bpae\b/, "alimentacion escolar"], [/alumbrado publico/, "alumbrado publico"],
@@ -248,9 +249,10 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     if (!period.defaulted) where.push({ col: "fecha_de_firma", op: "<=", value: `${period.to}T23:59:59` });
     const periodText = period.defaulted ? "No indicaste periodo, así que usé los últimos 12 meses." : `Periodo: ${period.from} a ${period.to}.`;
 
-    const analytics = /mas grandes|mayores|\btop\b/.test(norm) ? ["Estos son los contratos más grandes de", topContracts]
-      : /de donde|fuente|origen|recursos/.test(norm) ? ["Así se reparte, por fuente de recursos, el dinero de", fundingBreakdown]
-      : /gasta|gasto|en que/.test(norm) ? ["Esto es lo que gasta por categoría", spendByCategory] : undefined;
+    const analytics = /mas grandes|mayores|\btop\b/.test(norm) ? ["Estos son los contratos más grandes de", topContracts, "top"]
+      : /de donde|fuente|origen|recursos/.test(norm) ? ["Así se reparte, por fuente de recursos, el dinero de", fundingBreakdown, "funding"]
+      : /gasta|gasto|en que/.test(norm) ? ["Esto es lo que gasta por categoría", spendByCategory, "spend"] : undefined;
+    const kind: DemoKind = (analytics?.[2] as DemoKind | undefined) ?? "contracts";
     try {
       if (analytics) {
         const [intro, tool] = analytics as [string, typeof topContracts];
@@ -270,10 +272,10 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
         cards: shown.map(contractCard), hasMore: found.length > MAX_VISIBLE, ...withSource(r.at, r.cached),
       });
     } catch {
-      const demo = res.kind === "entity" ? DEMO[res.entity.nit] : undefined;
+      const demo = DEMO[demoKey(where, kind, period)];
       if (!demo) return fail();
       return reply({
-        text: `datos.gov.co no respondió; te muestro una respuesta precalculada del ${demo.updatedAt.slice(0, 10)}.`,
+        text: `datos.gov.co no respondió; te muestro una respuesta precalculada de ${demo.label}, con datos al ${demo.updatedAt.slice(0, 10)}.`,
         cards: demo.cards, cached: true, source: { ...source, dataUpdatedAt: demo.updatedAt },
       });
     }

@@ -1,12 +1,397 @@
 {
-  "890399011": {
-    "updatedAt": "2026-10-01T00:00:00.000Z",
-    "label": "Alcaldía de Cali",
+  "nit:890900286|spend|2025": {
+    "queriedAt": "2026-10-16T16:22:47.245Z",
+    "updatedAt": "2026-10-16T16:22:47.245Z",
+    "label": "Departamento de Antioquia (2025)",
     "cards": [
       {
-        "kind": "contract", "entity": "Alcaldía de Cali", "contractor": "Contratista de ejemplo (respuesta precalculada)",
-        "object": "Prestación de servicios de apoyo a la gestión", "value": "$123.456.789", "signedAt": "2026-09-15",
-        "status": "En ejecución", "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+        "kind": "spend",
+        "category": "Otro",
+        "total": "$2.749.888.027.413",
+        "count": 701
+      },
+      {
+        "kind": "spend",
+        "category": "Obra",
+        "total": "$1.349.620.852.685",
+        "count": 65
+      },
+      {
+        "kind": "spend",
+        "category": "Prestación de servicios",
+        "total": "$501.696.667.319",
+        "count": 554
+      },
+      {
+        "kind": "spend",
+        "category": "Decreto 092 de 2017",
+        "total": "$103.544.127.470",
+        "count": 33
+      },
+      {
+        "kind": "spend",
+        "category": "Suministros",
+        "total": "$73.260.578.443",
+        "count": 68
+      },
+      {
+        "kind": "spend",
+        "category": "Compraventa",
+        "total": "$45.992.691.263",
+        "count": 23
+      },
+      {
+        "kind": "spend",
+        "category": "Arrendamiento de muebles",
+        "total": "$22.329.163.332",
+        "count": 1
+      },
+      {
+        "kind": "spend",
+        "category": "Seguros",
+        "total": "$22.154.469.960",
+        "count": 11
+      },
+      {
+        "kind": "spend",
+        "category": "Servicios financieros",
+        "total": "$9.232.444.630",
+        "count": 1
+      },
+      {
+        "kind": "spend",
+        "category": "Arrendamiento de inmuebles",
+        "total": "$6.616.265.693",
+        "count": 28
+      },
+      {
+        "kind": "spend",
+        "category": "Consultoría",
+        "total": "$1.036.981.589",
+        "count": 3
+      },
+      {
+        "kind": "spend",
+        "category": "Interventoría",
+        "total": "$296.282.089",
+        "count": 1
+      },
+      {
+        "kind": "spend",
+        "category": "Operaciones de Crédito Público",
+        "total": "$192.780.000",
+        "count": 6
+      },
+      {
+        "kind": "spend",
+        "category": "Comodato",
+        "total": "$6",
+        "count": 6
+      }
+    ]
+  },
+  "nit:890900286|contracts|2024": {
+    "queriedAt": "2026-10-16T16:22:48.027Z",
+    "updatedAt": "2026-10-16T16:22:48.027Z",
+    "label": "Departamento de Antioquia (2024)",
+    "cards": [
+      {
+        "kind": "contract",
+        "entity": "DEPARTAMENTO DE ANTIOQUIA//",
+        "contractor": "ALCALDIA MUNICIPAL SAN CARLOS",
+        "object": "APOYAR AL MUNICIPIO DE SAN CARLOS CON EL SUMINISTRO DE MATERIALES POR PARTE DEL DEPARTAMENTO DE ANTIOQUIA PARA LLEVAR A CABO EL MEJORAMIENTO DE VIAS TERCIARIAS UBICADAS EN EL MUNICIPIO ASOCIADO",
+        "value": "$350.000.000",
+        "signedAt": "2024-12-31",
+        "status": "Cerrado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.7237976&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "DEPARTAMENTO DE ANTIOQUIA//",
+        "contractor": "ALCALDIA MUNICIPIO DE SAN FRANCISCO",
+        "object": "ENTREGAR A TÍTULO DE COMODATO AL MUNICIPIO DE SAN FRANCISCO; ANTIOQUIA; VEHÍCULO AUTOMOTOR DE PLACA ODR335; PROPIEDAD DEL DEPARTAMENTO DE ANTIOQUIA.",
+        "value": "$1",
+        "signedAt": "2024-12-31",
+        "status": "En ejecución",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.7259222&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "DEPARTAMENTO DE ANTIOQUIA//",
+        "contractor": "INSTITUTO PARA EL DESARROLLO DE ANTIOQUIA IDEA",
+        "object": "NCORPORACIÓN DE RECURSOS AL CONVENIO\nINTERADMINISTRATIVO MARCO PARA LA\nCONSTITUCIÓN DE UN FONDO ESPECIAL QUE\nCONTRIBUYE AL ACCESO A LA EDUCACIÓN A\nTRAVÉS DE ESTRATEGIAS DE TRANSPORTE\nESCOLAR.",
+        "value": "$4.927.055.781",
+        "signedAt": "2024-12-31",
+        "status": "En ejecución",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.7263152&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "DEPARTAMENTO DE ANTIOQUIA//",
+        "contractor": "ALCALDIA MUNICIPIO DE VALDIVIA",
+        "object": "Entregar a título de comodato al Municipio de Valdivia  Antioquia; vehículo de placas OLN 610; propiedad del Departamento de Antioquia.",
+        "value": "$1",
+        "signedAt": "2024-12-31",
+        "status": "Cerrado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.7261056&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "DEPARTAMENTO DE ANTIOQUIA//",
+        "contractor": "MUNICIPIO DE SAN ANDRES DE CUERQUIA",
+        "object": "ENTREGAR A TÍTULO DE COMODATO AL MUNICIPIO DE SAN ANDRÉS DE CUERQUIA; ANTIOQUIA; VEHÍCULO AUTOMOTOR DE PLACA ODR331; PROPIEDAD DEL DEPARTAMENTO DE ANTIOQUIA.",
+        "value": "$1",
+        "signedAt": "2024-12-31",
+        "status": "En ejecución",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.7258577&isFromPublicArea=True&isModal=true&asPopupView=true"
+      }
+    ]
+  },
+  "nit:890399011|contracts|12m": {
+    "queriedAt": "2026-10-16T16:22:48.224Z",
+    "updatedAt": "2026-10-16T16:22:48.224Z",
+    "label": "NIT 890399011 (últimos 12 meses)",
+    "cards": [
+      {
+        "kind": "contract",
+        "entity": "SECRETARIA DE EDUCACION DE CALI",
+        "contractor": "JHON ALEJANDRO JACANAMIJOY QUINCHOA",
+        "object": "Prestación de servicios de apoyo a la gestión a favor de la Secretaría de Educación del Distrito Especial de Santiago de Cali.",
+        "value": "$6.813.000",
+        "signedAt": "2026-10-14",
+        "status": "Aprobado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.11053841&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "PLANEACIÓN MUNICIPAL CALI**",
+        "contractor": "JHON STEVENS MURILLO PAJA",
+        "object": "Prestar servicios profesionales especializados en la Subdirección de Espacio Público y Ordenamiento Urbanístico del Departamento Administrativo de Planeación.",
+        "value": "$15.617.500",
+        "signedAt": "2026-10-14",
+        "status": "Aprobado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.11045305&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "SANTIAGO DE CALI DISTRITO ESPECIAL - SECRETARIA DE PAZ Y CULTURA CIUDADANA",
+        "contractor": "juan pablo murillo angulo",
+        "object": "Prestar los servicios profesionales a la Secretaría de Paz y Cultura Ciudadana; para el desarrollo del proyecto denominado:Implementación de Estrategias de prevención y promoción de los derechos humanos y la cultura ciudadana para sujetos de especial protección constitucional del Distrito de Santiago de Cali",
+        "value": "$11.841.000",
+        "signedAt": "2026-10-14",
+        "status": "Aprobado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.11053752&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "SECRETARIA DE EDUCACION DE CALI",
+        "contractor": "DANNA CAROLINA ZAMORA GUACHETA",
+        "object": "Prestación de servicios de apoyo a la gestión a favor de la Secretaría de Educación del Distrito Especial de Santiago de Cali.",
+        "value": "$6.813.000",
+        "signedAt": "2026-10-14",
+        "status": "Aprobado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.11053794&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "SANTIAGO DE CALI DISTRITO ESPECIAL - SECRETARIA DE VIVIENDA SOCIAL Y HABITAT",
+        "contractor": "GABRIEL ALFONSO CHAVARRIAGA AVILA",
+        "object": "Prestar los servicios profesionales a la Secretaria de Vivienda Social y Habitat del proyecto\ndenominado Implementación de obras de espacio público en el marco de la política pública de\nMIHábitat de Santiago de Cali BP-26005424",
+        "value": "$22.652.000",
+        "signedAt": "2026-10-14",
+        "status": "Aprobado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.11052652&isFromPublicArea=True&isModal=true&asPopupView=true"
+      }
+    ]
+  },
+  "tema:alimentacion escolar@Boyacá|contracts|12m": {
+    "queriedAt": "2026-10-16T16:22:48.589Z",
+    "updatedAt": "2026-10-16T16:22:48.589Z",
+    "label": "alimentacion escolar en Boyacá (últimos 12 meses)",
+    "cards": [
+      {
+        "kind": "contract",
+        "entity": "MUNICIPIO DE RAMIRIQUI",
+        "contractor": "FUPAVID",
+        "object": "BRINDAR EL SERVICIO DE ALIMENTACIÓN ESCOLAR A LOS ESTUDIANTES MATRICULADOS EN LAS INSTITUCIONES EDUCATIVAS OFICIALES Y SUS RESPECTIVAS SEDES; PARA SEGUIR GARANTIZANDO EL PROGRAMA DE ALIMENTACION ESCOLAR (PAE) DURANTE EL SEGUNDO SEMESTRE ACADEMICO 2026 EN EL MUNICIPIO DE RAMIRIQUI BOYACÁ",
+        "value": "$352.428.538",
+        "signedAt": "2026-09-17",
+        "status": "Modificado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.10826363&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "ALCALDÍA MUNICIPAL DE TIPACOQUE",
+        "contractor": "FUNDACION UNIDOS POR EL BIENESTAR COMUNITARIO",
+        "object": "AUNAR ESFUERZOS TECNICOS ADMINISTRATIVOS Y FINANCIEROS CON UNA PERSONA PRIVADA SIN ANIMO DE LUCRO PARA EL CUMPLIMIENTO DEL PROGRAMA DE ALIMENTACION ESCOLAR EN LA IMPLEMENTACIÓN Y EJECUCIÓN DEL PROGRAMA DE ALIMENTACIÓN ESCOLAR PAE; PARA GARANTIZAR EL PROGRAMA DE ALIMENTACION ESCOLAR PAE DURANTE EL SEGUNDO SEMESTRE VIGENCIA 2026",
+        "value": "$240.019.751",
+        "signedAt": "2026-08-31",
+        "status": "Modificado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.10680865&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "ALCALDIA MUNICIPAL DE PAUNA",
+        "contractor": "PROSERVIRTE",
+        "object": "AUNAR ESFUERZOS TÉCNICOS; ADMINISTRATIVOS Y FINANCIEROS; ENTRE EL MUNICIPIO DE PAUNA Y UNA (ESAL) PARA GARANTIZAR LA PRESTACION DEL SERVICIO DE ALIMENTACION ESCOLAR - PAE; DURANTE EL SEGUNDO SEMESTRE DEL AÑO 2026 A LOS ESTUDIANTES MATRICULADOS EN LAS INSTITUCIONES EDUCATIVAS OFICIALES DEL MUNICIPIO; DE ACUERDO A LOS LINEAMIENTOS TÉCNICO ADMINISTRATIVOS VIGENTES Y ATENDIENDO EL ALCANCE ESTABLECIDO EN EL CONVENIO INTERADMINISTRATIVO N° CO1.PCCNTR.8436429/2598 DE 2026 CELEBRADO ENTRE LA GOBERNACIÓN",
+        "value": "$545.666.938",
+        "signedAt": "2026-08-27",
+        "status": "Modificado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.10731363&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "MUNICIPIO DE LA UVITA",
+        "contractor": "FUNDACION UNIDOS POR EL BIENESTAR COMUNITARIO",
+        "object": "AUNAR ESFUERZOS TECNICOS; ADMINISTRATIVOS Y FINANCIEROS\nEN LA IMPLEMENTACION Y EJECUCION DEL PROGRAMA DE\nALIMENTACION ESCOLAR PAE; COMO ESTRATEGIA PARA\nGARANTIZAR LOS DERECHOS DE LAS NIÑAS; NIÑOS Y\nADOLESCENTES DE LAS INSTITUCIONES EDUCATIVAS DEL MUNICIPIO\nDE LA UVITA DURANTE EL SEGUNDO SEMESTRE DEL AÑO 2026;\nSEGÚN LO DISPUESTO EN EL CONVENIO INTERADMINISTRATIVO\nCO1.PCCNTR.9782596/2698",
+        "value": "$263.013.014",
+        "signedAt": "2026-08-27",
+        "status": "Modificado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.10728071&isFromPublicArea=True&isModal=true&asPopupView=true"
+      },
+      {
+        "kind": "contract",
+        "entity": "ALCALDIA MUNICIPIO DE MONIQUIRA+",
+        "contractor": "FUNDACION COLOMBIA EMPRENDE V. I.",
+        "object": "ANUAR ESFUERZOS TECNICOS; ADMINISTRATIVOS Y FINANCIEROS PARA BRINDAR ALIMENTACION ESCOLAR A LOS ESTUDIANTES MATRICULADOS EN LAS INSTITUCIONES EDUCATIVAS OFICIALES DEL MUNICIPIO DE MONIQUIRA DURANTE EL SEGUNDO SEMESTRE DE LA VIGENCIA 2026 DE ACUERDO CON LOS LINEAMIENTOS TECNICO ADMINISTRATIVOS VIGENTES SEGÚN RESOLUCION 0335 DE 2021",
+        "value": "$1.409.978.096",
+        "signedAt": "2026-08-26",
+        "status": "Modificado",
+        "url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.10735240&isFromPublicArea=True&isModal=true&asPopupView=true"
+      }
+    ]
+  },
+  "nit:899999001|spend|12m": {
+    "queriedAt": "2026-10-16T16:22:52.554Z",
+    "updatedAt": "2026-10-16T16:22:52.554Z",
+    "label": "Ministerio de Educacion Nacional (men) (últimos 12 meses)",
+    "cards": [
+      {
+        "kind": "spend",
+        "category": "Otro",
+        "total": "$321.344.925.360",
+        "count": 163
+      },
+      {
+        "kind": "spend",
+        "category": "Prestación de servicios",
+        "total": "$227.629.567.020",
+        "count": 957
+      },
+      {
+        "kind": "spend",
+        "category": "Decreto 092 de 2017",
+        "total": "$44.393.952.148",
+        "count": 4
+      },
+      {
+        "kind": "spend",
+        "category": "Negocio fiduciario",
+        "total": "$15.317.233.735",
+        "count": 1
+      },
+      {
+        "kind": "spend",
+        "category": "Compraventa",
+        "total": "$7.424.298.372",
+        "count": 10
+      },
+      {
+        "kind": "spend",
+        "category": "Consultoría",
+        "total": "$3.965.016.627",
+        "count": 5
+      },
+      {
+        "kind": "spend",
+        "category": "Interventoría",
+        "total": "$1.268.126.943",
+        "count": 3
+      },
+      {
+        "kind": "spend",
+        "category": "Obra",
+        "total": "$508.207.439",
+        "count": 1
+      },
+      {
+        "kind": "spend",
+        "category": "Arrendamiento de inmuebles",
+        "total": "$370.474.284",
+        "count": 2
+      },
+      {
+        "kind": "spend",
+        "category": "Suministros",
+        "total": "$100.960.000",
+        "count": 1
+      }
+    ]
+  },
+  "nit:890399011|top|12m": {
+    "queriedAt": "2026-10-16T16:22:53.267Z",
+    "updatedAt": "2026-10-16T16:22:53.267Z",
+    "label": "Alcaldía de Santiago de Cali (últimos 12 meses)",
+    "cards": [
+      {
+        "kind": "top",
+        "rank": 1,
+        "name": "Prestación de servicios profesionales especializados; con el fin de brindar soporte a las actividades adelantadas en la Unidad Administrativa Especial de Gestión de Bienes y Servicios; teniendo como fuente de financiación recursos propios.",
+        "value": "$62.244.000"
+      },
+      {
+        "kind": "top",
+        "rank": 2,
+        "name": "Prestación de servicios profesionales especializados en la Secretaría de Turismo de Cali para el fortalecimiento de las estrategias de promoción y comunicación a nivel local; nacional e internacional de Santiago de Cali",
+        "value": "$50.268.000"
+      },
+      {
+        "kind": "top",
+        "rank": 3,
+        "name": "Prestar los servicios profesionales especializados al Departamento Administrativo de las Tecnologías de la Información y las Comunicaciones (DATIC)",
+        "value": "$46.956.000"
+      },
+      {
+        "kind": "top",
+        "rank": 4,
+        "name": "Prestar los servicios profesionales especializados con el fin de brindar soporte a las actividades adelantadas en la Secretaría de Infraestructura del proyecto denominado BP-26005375 RECUPERACIÓN DE LA INFRAESTRUCTURA VIAL DE SANTIAGO DE CALI",
+        "value": "$42.216.000"
+      },
+      {
+        "kind": "top",
+        "rank": 5,
+        "name": "Prestación de Servicios Profesionales Especializados a la Secretaría de Bienestar Social; dentro del proyecto denominado: Fortalecimiento a la atención integral de la población víctima del conflicto armado en la ciudad de Santiago de Cali BP 26005436",
+        "value": "$37.482.000"
+      },
+      {
+        "kind": "top",
+        "rank": 6,
+        "name": "PRESTAR LOS SERVICIOS PROFESIONALES EN LA UNIDAD ADMINISTRATIVA \nESPECIAL DE SERVICIOS PÚBLICOS DEL DISTRITO DE SANTIAGO DE CALI",
+        "value": "$36.809.500"
+      },
+      {
+        "kind": "top",
+        "rank": 7,
+        "name": "Prestar los servicios profesionales con el fin de brindar soporte a las actividades\nadelantadas en el Departamento Administrativo de Gestión del Medio Ambiente - DAGMA en la ejecución del proyecto MEJORAMIENTO DE LA GESTIÓN INTEGRAL DEL RECURSO HÍDRICO EN SANTIAGO DE CALI BP-26005493.",
+        "value": "$33.978.000"
+      },
+      {
+        "kind": "top",
+        "rank": 8,
+        "name": "Prestación de Servicios Profesionales como Administrador (a) de Negocios en la Secretaría de Seguridad y Justicia.",
+        "value": "$33.978.000"
+      },
+      {
+        "kind": "top",
+        "rank": 9,
+        "name": "Prestar los servicios profesionales en la Secretaría de Desarrollo Territorial y Participación Ciudadana.",
+        "value": "$33.978.000"
+      },
+      {
+        "kind": "top",
+        "rank": 10,
+        "name": "Prestar los servicios profesionales con el fin de brindar soporte a las actividades adelantadas en la Secretaría de Infraestructura del proyecto denominado BP-26005375 RECUPERACIÓN DE LA INFRAESTRUCTURA VIAL DE SANTIAGO DE CALI",
+        "value": "$33.978.000"
       }
     ]
   }

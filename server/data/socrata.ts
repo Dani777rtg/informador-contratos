@@ -61,7 +61,7 @@ export async function fetchRows(c: Client, params: URLSearchParams, dataset = DA
 }
 
 // ---- Índice de entidades y desambiguación ----
-export interface Entity { nit: string; name: string; norm: string }
+export interface Entity { nit: string; name: string; norm: string; aka?: string[] }
 export const normalize = (s: string): string =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
 const SMALL = new Set(["de", "del", "la", "las", "el", "los", "y", "e", "en", "para", "por"]);
@@ -75,7 +75,12 @@ export function displayName(raw: string): string {
   return s.toLowerCase().split(" ").map((w, i) =>
     /\./.test(w) || ACRONYMS.has(w) ? w.toUpperCase() : i > 0 && SMALL.has(w) ? w : w.replace(/^\p{L}/u, (c) => c.toUpperCase())).join(" ");
 }
-export const toEntity = (nit: string, name: string): Entity => ({ nit, name: displayName(name), norm: normalize(name) });
+// Alias manual: en datos.gov.co el NIT 890399011 aparece con el nombre de una dependencia; se presenta como la alcaldía.
+const CLEAN: Record<string, { name: string; aka: string[] }> = { "890399011": { name: "Alcaldía de Santiago de Cali", aka: ["Alcaldía de Cali"] } };
+export const toEntity = (nit: string, name: string): Entity => {
+  const c = CLEAN[nit];
+  return c ? { nit, name: c.name, norm: normalize(c.name), aka: c.aka } : { nit, name: displayName(name), norm: normalize(name) };
+};
 
 export type Resolution =
   | { kind: "entity"; entity: Entity }
