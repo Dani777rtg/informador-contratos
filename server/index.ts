@@ -5,6 +5,7 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { randomBytes } from "node:crypto";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { applyTurn, createSessionCodec, emptyContext, type Ctx as Ctx2 } from "./session.js";
 import { serve } from "@hono/node-server";
 import { getConnInfo } from "@hono/node-server/conninfo";
@@ -73,6 +74,10 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     await next();
     for (const [k, v] of Object.entries(securityHeaders(createNonce()))) c.res.headers.set(k, v);
   });
+  // El front vive en Firebase Hosting (otro origen): CORS solo para los orígenes permitidos.
+  const allowed = (env.ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const corsMw = cors({ origin: (o) => (allowed.includes(o) ? o : null), allowMethods: ["GET", "POST"], allowHeaders: ["content-type"], maxAge: 600 });
+  for (const p of ["/api/*", "/session", "/health"]) app.use(p, corsMw);
   // Con sustitutos locales (MOCK_EXTERNALS=1, nunca en producción) el límite por defecto sube para no frenar las pruebas.
   const limiter = createRateLimiter({ limit: posNum(env.RATE_LIMIT_PER_MIN, mock ? 10_000 : 20) });
   const demand = createDemandGuard({});
