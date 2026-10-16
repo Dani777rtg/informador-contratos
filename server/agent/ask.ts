@@ -39,10 +39,11 @@ export function createAsker(d: AskDeps) {
       const latencyMs = Date.now() - t0;
       d.demand.record(a.tokens);
       d.metrics.record({ channel, tokens: a.tokens, latencyMs, firstTokenMs });
-      d.log({ tokens: a.tokens, latencyMs, channel });
+      const dc = r.toolCalls.find((t) => t.name === "decline");
+      d.log({ tokens: a.tokens, latencyMs, channel, route: r.degraded ? "respaldo" : "agente", tools: r.toolCalls.map((t) => t.name), declineCode: dc ? String(dc.args.code ?? "") : undefined });
       return { ...r, tokens: a.tokens, cached: a.cached };
     } catch (e) {
-      d.log({ tokens: 0, latencyMs: Date.now() - t0, channel, errorCode: "agent_error" });
+      d.log({ tokens: 0, latencyMs: Date.now() - t0, channel, errorCode: "agent_error", route: "agente", errorType: e instanceof Error ? e.name : "unknown" });
       throw e;
     } finally { jobs.delete(k); }
   };

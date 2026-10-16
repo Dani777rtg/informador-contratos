@@ -14,7 +14,8 @@ describe("voz y lenguaje llano (fallas reales)", () => {
     expect(spokenAmount(350_000_000)).toBe("350 millones de pesos");
   });
   it("chat: monto redondeado y nombres normales", () => {
-    expect(roundAmounts("Valor $27.123.456.789 firmado")).toBe("Valor $27.123 millones firmado");
+    expect(roundAmounts("Valor $27.123.456.789 firmado")).toBe("Valor $27.123 millones de pesos firmado");
+    expect(roundAmounts("Valor $2.700.123.456 COP firmado")).toBe("Valor $2.700 millones de pesos firmado");
     expect(normalNames("con CONSTRUCTORA ABC SAS y el PAE")).toBe("con Constructora Abc Sas y el PAE");
   });
 });

@@ -27,12 +27,12 @@ export function spokenAmount(n: number): string {
   return `${v} pesos`;
 }
 
-/** Monto escrito para chat: cifra clave redondeada («$27.000 millones»); el valor exacto queda en la tarjeta. */
+/** Monto escrito para chat: cifra clave redondeada («$27.000 millones de pesos»); el valor exacto queda en la tarjeta. */
 export function roundedPesos(n: number): string {
   const v = Math.abs(Math.round(n));
   const dots = (x: number) => String(x).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  if (v >= 1e12) return `$${dec(v / 1e12)} billones`;
-  if (v >= 1e6) return `$${dots(Math.round(v / 1e6))} millones`;
+  if (v >= 1e12) return `$${dec(v / 1e12)} billones de pesos`;
+  if (v >= 1e6) return `$${dots(Math.round(v / 1e6))} millones de pesos`;
   return `$${dots(v)}`;
 }
 
@@ -41,7 +41,7 @@ function parseNum(s: string): number {
   return /^\d{1,3}(\.\d{3})+$/.test(s) ? Number(s.replace(/\./g, "")) : Number(s.replace(/\./g, "").replace(",", "."));
 }
 const SCALE: Record<string, number> = { "mil millones": 1e9, millones: 1e6, millón: 1e6, billones: 1e12, billón: 1e12, mil: 1e3 };
-const MONEY = /\$\s?(\d(?:[\d.,]*\d)?)(?:\s+(mil millones|millones|millón|billones|billón|mil)(?!\p{L}))?/giu;
+const MONEY = /\$\s?(\d(?:[\d.,]*\d)?)(?:\s+(mil millones|millones|millón|billones|billón|mil)(?!\p{L}))?(?:\s+(?:de pesos|COP))?/giu;
 
 /** Reemplaza montos exactos de más de un millón por la cifra redondeada (texto de chat). */
 export function roundAmounts(text: string): string {

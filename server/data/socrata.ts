@@ -22,6 +22,8 @@ export interface Query {
 }
 export interface Client {
   base: string; token?: string; fetchFn?: typeof fetch; timeoutMs?: number;
+  /** Presupuesto total de la herramienta (ver data/budget.ts): corta consultas y reintentos. */
+  signal?: AbortSignal;
 }
 
 const filterCol = (c: string): string => (c === "documento_proveedor" ? c : col(c));
@@ -62,7 +64,7 @@ export async function fetchRows(c: Client, params: URLSearchParams, dataset = DA
   const headers: Record<string, string> = c.token ? { "X-App-Token": c.token } : {};
   const rows = await withRetry(async (p) => {
     // La señal cubre también la lectura del cuerpo.
-    const res = await f(`${c.base}/resource/${dataset}.json?${p}`, { headers, signal: AbortSignal.timeout(c.timeoutMs ?? timeoutFor(p)) });
+    const res = await f(`${c.base}/resource/${dataset}.json?${p}`, { headers, signal: c.signal ? AbortSignal.any([AbortSignal.timeout(c.timeoutMs ?? timeoutFor(p)), c.signal]) : AbortSignal.timeout(c.timeoutMs ?? timeoutFor(p)) });
     if (!res.ok) {
       if (res.status === 429) throw new SocrataUnavailable("429");
       if (res.status >= 500) throw new SocrataUnavailable("5xx");

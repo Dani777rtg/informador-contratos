@@ -30,6 +30,8 @@ export interface ToolResult {
   cards?: Card[];
   /** Cambios al contexto (entidad, periodo, contrato en foco, resultados). */
   context?: Partial<Ctx>;
+  /** Instrucción breve inyectada para el modelo (ya viaja también dentro de data.nota). */
+  note?: string;
 }
 /** Registro de herramientas: el LLM elige nombre y parámetros tipados, nunca SoQL. */
 export interface Tool {

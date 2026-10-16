@@ -8,6 +8,9 @@ const RULES: [RegExp, string][] = [
   [/\b(es|son|fue|est[aá]n?)\s+(muy\s+|demasiado\s+|tan\s+)?(caro|cara|caros|caras|barat[oa]s?|mal\s+hech[oa]s?|bien\s+hech[oa]s?|buen[oa]s?|mal[oa]s?|justo|injusto)\b|\best[aá]\s+(bien|mal)\s+hech[oa]|\bvale\s+(lo\s+que\s+cuesta|la\s+pena)\b/i, "NO-01"],
 ];
 
+// TM-16: declinar menos no abre fuga de datos personales; documento o contacto de una persona se rechaza sin LLM.
+RULES.push([/\b(c[eé]dula|documento de identidad|n[uú]mero de documento|tel[eé]fono|celular|whatsapp|correo(\s+electr[oó]nico)?|email|direcci[oó]n de (residencia|casa)|d[oó]nde vive)\b.*\b(de|del)\b|\b(dame|d[ií]me|pasa|necesito)\b.*\b(la c[eé]dula|el celular|el tel[eé]fono)\b/i, "NO-06"]);
+
 export function prefilter(message: string): string | null {
   return RULES.find(([re]) => re.test(message))?.[1] ?? null;
 }

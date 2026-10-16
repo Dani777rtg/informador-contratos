@@ -166,7 +166,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
     const t0 = Date.now();
     let agentUsed = false;
     const reply = (r: Record<string, unknown>) => {
-      if (!agentUsed) { const latencyMs = Date.now() - t0; metrics.record({ channel, tokens: 0, latencyMs }); logQuestion({ tokens: 0, latencyMs, channel }); }
+      if (!agentUsed) { const latencyMs = Date.now() - t0; metrics.record({ channel, tokens: 0, latencyMs }); logQuestion({ tokens: 0, latencyMs, channel, route: "atajo" }); }
       // Lenguaje llano: cifra clave redondeada y nombres en formato normal; el valor exacto queda en la tarjeta.
       const text = typeof r.text === "string" ? roundAmounts(normalNames(r.text)) : r.text;
       return { cards: [], period, source, state: codec.sign(cur), ...r, text, ...(channel === "voz" && typeof text === "string" ? { spoken: toSpoken(text) } : {}) } as Answer;

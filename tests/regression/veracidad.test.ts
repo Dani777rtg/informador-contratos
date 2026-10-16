@@ -60,7 +60,7 @@ describe("herramientas del agente", () => {
 
   it("top_contratistas agrupa por proveedor con ciudad en $where y nombre completo", async () => {
     calls.length = 0;
-    const r = await tools.top_contratistas.run({ ciudad: "Manizales" }, {});
+    const r = await tools.top_contratistas.run({ municipio: "Manizales" }, {});
     expect(calls[0].get("$group")).toBe("proveedor_adjudicado");
     expect(calls[0].get("$select")).not.toContain("documento");
     expect(calls[0].get("$where")).toContain("ciudad = 'Manizales'");
@@ -69,17 +69,17 @@ describe("herramientas del agente", () => {
   });
   it("municipio o entidad desconocidos: error explícito, sin consultar otra cosa", async () => {
     calls.length = 0;
-    expect((await tools.consultar_contratos.run({ tipo: "lista", ciudad: "Atlantis" }, { entity: { nit: "1", name: "X" } })).data).toMatchObject({ error: expect.stringContaining("Atlantis") });
-    expect((await tools.consultar_contratos.run({ tipo: "lista", entidad: "Ministerio de Salud" }, {})).data).toHaveProperty("error");
+    expect((await tools.buscar_contratos.run({ municipio: "Atlantis" }, { entity: { nit: "1", name: "X" } })).data).toMatchObject({ error: "lugar_desconocido" });
+    expect((await tools.buscar_contratos.run({ entidad: "Ministerio de Salud" }, {})).data).toHaveProperty("error");
     expect(calls).toHaveLength(0);
   });
   it("sin coincidencias lo dice", async () => {
     const empty = createTools({ client: { base: "http://x", fetchFn: (async () => Response.json([])) as unknown as typeof fetch }, cache: new Lru<Row[]>() }, [], async () => places);
-    expect((await empty.consultar_contratos.run({ tipo: "lista", ciudad: "Pasto", tema: "vías" }, {})).data).toHaveProperty("sinResultados");
+    expect((await empty.buscar_contratos.run({ municipio: "Pasto", tema: "vías" }, {})).data).toHaveProperty("sinResultados");
   });
   it("un seguimiento con ciudad nueva no hereda la entidad del contexto", async () => {
     calls.length = 0;
-    await tools.gasto_por_categoria.run({ ciudad: "Pasto" }, { entity: { nit: "899999001", name: "MEN" } });
+    await tools.gasto_por_categoria.run({ municipio: "Pasto" }, { entity: { nit: "899999001", name: "MEN" } });
     expect(calls[0].get("$where")).not.toContain("nit_entidad");
   });
 });

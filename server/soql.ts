@@ -1,7 +1,8 @@
 import { buildParams, COLUMNS, fetchRows, type Client, type Column, type Cond, type Row } from "./data/socrata.js";
 
+/** Valor exacto para tarjetas, con moneda: «$2.700.123.456 COP». */
 export const money = (v: number | string) =>
-  `$${String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+  `$${String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ".")} COP`;
 /** Los montos llegan como texto: numero finito o 0. */
 export const num = (v: unknown): number => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
