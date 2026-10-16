@@ -25,7 +25,7 @@ function rows(entity: string, nit: string, n: number, object = "Prestación de s
     proceso_de_compra: `CO1.BDOS.${i + 1}`, id_contrato: `CO1.${nit}.${i}`,
     presupuesto_general_de_la_nacion_pgn: String((i + 1) * 1000000), recursos_propios: String((i % 3) * 500000),
     sistema_general_de_participaciones: "0", sistema_general_de_regal_as: "0", recursos_de_credito: "0",
-    valor_facturado: String((i + 1) * 100000000), valor_pagado: String((i + 1) * 90000000), valor_pendiente_de_pago: String((i + 1) * 10000000), dias_adicionados: String(i * 10), departamento: "Valle del Cauca", ciudad: "Cali",
+    valor_facturado: String((i + 1) * 100000000), valor_pagado: String((i + 1) * 90000000), valor_pendiente_de_pago: String((i + 1) * 10000000), dias_adicionados: String(i * 10), modalidad_de_contratacion: "Contratación directa", fecha_de_inicio_del_contrato: "2026-02-01T00:00:00.000", fecha_de_fin_del_contrato: "2026-12-31T00:00:00.000", departamento: "Valle del Cauca", ciudad: "Cali",
   }));
 }
 

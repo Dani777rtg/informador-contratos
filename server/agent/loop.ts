@@ -173,7 +173,8 @@ export async function runAgent(a: {
   const defs = [...Object.values(a.tools).map((t) => ({ type: "function" as const, function: { name: t.name, description: t.description, parameters: t.parameters } })), DECLINE_TOOL];
   // Cifras permitidas: solo resultados de herramientas; mensaje y contexto aportan únicamente años y fechas.
   const allowed = () => [...allowedNumbers(results), ...yearNumbers(a.message, context)];
-  let used = 0; // herramientas ya ejecutadas en este turno (todas las rondas)
+  let toolFailed = false; // error, servicio no disponible o respaldo: la respuesta no se cachea
+  let used = 0;// herramientas ya ejecutadas en este turno (todas las rondas)
   const messages: LlmMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: `Contexto actual: ${JSON.stringify(context)}` },
@@ -221,12 +222,15 @@ export async function runAgent(a: {
         const args = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
         toolCalls.push({ name: c.name, args });
         const res = await tool.run(args, context);
+        const d = res.data as { error?: unknown; respaldo?: unknown } | null;
+        if (d && (d.error === "servicio_no_disponible" || d.error === "tool_error" || d.respaldo)) toolFailed = true; // nunca se guarda en caché (AC-01.8)
         const slim = compact(res.data);
         results.push(slim);
         cards.push(...(res.cards ?? []));
         context = { ...context, ...res.context };
         out = wrapData(slim);
       } catch (e) {
+        toolFailed = true;
         out = wrapData(e instanceof SocrataUnavailable ? SLOW_NOTICE : { error: "tool_error" });
       }
       messages.push({ role: "tool", tool_call_id: c.id, content: out });
@@ -234,5 +238,5 @@ export async function runAgent(a: {
   }
   // Nunca se muestra ni se habla marcado interno del modelo.
   if (DSML.test(text)) return { text: "No pude completar esa consulta. Intenta preguntarlo de otra forma, por ejemplo con el nombre de la entidad.", cards, toolCalls, tokens, context, degraded: true };
-  return { text: dropForbidden(verifyNumbers(scrub(text), allowed()).text), cards, toolCalls, tokens, context };
+  return { text: dropForbidden(verifyNumbers(scrub(text), allowed()).text), cards, toolCalls, tokens, context, ...(toolFailed ? { degraded: true } : {}) };
 }

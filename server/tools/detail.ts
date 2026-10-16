@@ -3,6 +3,7 @@ import { withCache } from "../cache.js";
 import { money, num } from "../soql.js";
 import { key, type Ctx } from "./search.js";
 import { redactText } from "../privacy/index.js";
+import { isOutlier, OUTLIER_NOTE } from "../data/outliers.js";
 
 // ponytail: columnas de adiciones (cb9c-h8sn) y modificaciones (u8cx-r425) por verificar contra datos reales.
 // Los textos libres pasan por la depuración de PII (números de 6+ dígitos y nombres de persona natural).
@@ -24,10 +25,15 @@ export const contractDetail = async (ctx: Ctx, id: string) => {
   const url = typeof r.urlproceso === "object" ? (r.urlproceso as { url?: string }).url : r.urlproceso;
   return {
     at: main.at, cached: main.cached,
+    // Ficha completa (AC-13.9): todo lo esencial de un contrato en una sola tarjeta.
     card: {
-      kind: "detail", url, value: money(num(r.valor_del_contrato)), invoiced: money(num(r.valor_facturado)),
-      paid: money(num(r.valor_pagado)), pending: money(num(r.valor_pendiente_de_pago)),
-      addedDays: num(r.dias_adicionados), modifications,
+      kind: "detail", id: r.id_contrato, object: r.objeto_del_contrato ?? "", entity: r.nombre_entidad ?? "", contractor: r.proveedor_adjudicado ?? "",
+      value: money(num(r.valor_del_contrato)), signedAt: (r.fecha_de_firma ?? "").slice(0, 10),
+      startAt: (r.fecha_de_inicio_del_contrato ?? "").slice(0, 10), endAt: (r.fecha_de_fin_del_contrato ?? "").slice(0, 10),
+      status: r.estado_contrato ?? "", modality: r.modalidad_de_contratacion ?? "", url: url ?? "",
+      invoiced: money(num(r.valor_facturado)), paid: money(num(r.valor_pagado)), pending: money(num(r.valor_pendiente_de_pago)),
+      addedDays: num(r.dias_adicionados), additions: modifications, modifications,
+      ...(isOutlier(num(r.valor_del_contrato)) ? { atipico: true, note: OUTLIER_NOTE } : {}),
     },
   };
 };

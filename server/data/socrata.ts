@@ -9,6 +9,7 @@ export const COLUMNS = [
   "proceso_de_compra", "departamento", "ciudad", "id_contrato", "sector", "modalidad_de_contratacion",
   "presupuesto_general_de_la_nacion_pgn", "sistema_general_de_participaciones", "sistema_general_de_regal_as",
   "recursos_propios", "recursos_de_credito", "valor_facturado", "valor_pagado", "valor_pendiente_de_pago", "dias_adicionados",
+  "fecha_de_inicio_del_contrato", "fecha_de_fin_del_contrato",
 ] as const;
 export type Column = (typeof COLUMNS)[number];
 export type Row = Partial<Record<Column, string>>;
@@ -26,7 +27,9 @@ export interface Client {
   signal?: AbortSignal;
 }
 
-const filterCol = (c: string): string => (c === "documento_proveedor" ? c : col(c));
+/** valor_del_contrato llega como texto en Socrata: comparar y ordenar siempre como número. */
+const numeric = (c: string): string => (c === "valor_del_contrato" ? `${c}::number` : c);
+const filterCol = (c: string): string => (c === "documento_proveedor" ? c : numeric(col(c)));
 const col = (c: string): Column => {
   if (!(COLUMNS as readonly string[]).includes(c)) throw new Error(`columna no permitida: ${c}`);
   return c as Column;
@@ -51,7 +54,7 @@ export function buildParams(q: Query): URLSearchParams {
       return `${filterCol(c.col)} ${c.op} ${lit(v)}`;
     }).join(" AND "));
   }
-  if (q.order) p.set("$order", `${col(q.order.col)}${q.order.desc ? " DESC" : ""}`);
+  if (q.order) p.set("$order", `${numeric(col(q.order.col))}${q.order.desc ? " DESC" : ""}`);
   p.set("$limit", String(Math.max(1, Math.min(MAX_LIMIT, Math.floor(q.limit ?? 10)))));
   if (q.offset) p.set("$offset", String(Math.max(0, Math.floor(q.offset))));
   return p;

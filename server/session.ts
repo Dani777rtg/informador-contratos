@@ -28,7 +28,7 @@ export function applyTurn(ctx: Ctx, t: Turn): Ctx {
 }
 
 const norm = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
-const ORDINALS: [RegExp, number][] = [[/\bel (primero|primer contrato)\b/, 0], [/\bel segundo\b/, 1], [/\bel tercero\b/, 2]];
+const ORDINALS: [RegExp, number][] = [[/\b(?:el|del|al) (primero|primer contrato)\b/, 0], [/\b(?:el|del|al) segundo\b/, 1], [/\b(?:el|del|al) tercer[oa]?\b/, 2], [/\b(?:el|del|al) cuarto\b/, 3], [/\b(?:el|del|al) quinto\b/, 4]];
 
 /**
  * Seguimiento corto sobre los resultados mostrados («dame ese contrato», «el más grande», «el primero», «ábrelo»):
@@ -37,9 +37,12 @@ const ORDINALS: [RegExp, number][] = [[/\bel (primero|primer contrato)\b/, 0], [
 export function resolveFollowUp(message: string, ctx: Ctx): string | null {
   const ids = ctx.results ?? [];
   const m = norm(message);
-  if (m.split(" ").length > 8) return null;
+  if (m.split(" ").length > 12) return null;
   const ord = ORDINALS.find(([re]) => re.test(m));
   if (ord) return ids[ord[1]] ?? null;
+  // Por número en la lista mostrada: «el contrato 3», «el número 2», «el detalle del 4».
+  const n = /\b(?:contrato|numero|nro|detalle del|el) (?:numero |no |# ?)?(\d{1,2})\b/.exec(m)?.[1];
+  if (n && Number(n) >= 1 && ids[Number(n) - 1]) return ids[Number(n) - 1];
   if (/\bel ultimo\b/.test(m)) return ids.at(-1) ?? null;
   if (/\bel (mas grande|mayor)\b/.test(m)) return ids[0] ?? null;
   if (/\b(ese|este) contrato\b|\babrelo\b|\bdame ese\b/.test(m)) return ctx.contract ?? ids[0] ?? null;

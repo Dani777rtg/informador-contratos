@@ -21,7 +21,7 @@ export const topicTerms = (tema: string): string => {
   return known ? known[2] : [...new Set([t, t.normalize("NFD").replace(/\p{M}/gu, "")])].filter(Boolean).join("|");
 };
 
-/** Un solo punto donde los filtros se vuelven condiciones. Sin entidad ni territorio el tema usa $q (rápido); con ellos, texto del objeto. */
+/** Un solo punto donde los filtros se vuelven condiciones. */
 export function buildWhere(f: Filters): Cond[] {
   const w: Cond[] = [];
   if (f.nit) w.push({ col: "nit_entidad", op: "=", value: f.nit });
@@ -29,10 +29,8 @@ export function buildWhere(f: Filters): Cond[] {
   if (f.departamento) w.push({ col: "departamento", op: "=", value: f.departamento });
   if (f.nitProveedor) w.push({ col: "documento_proveedor", op: "=", value: f.nitProveedor });
   if (f.proveedor) w.push({ col: "proveedor_adjudicado", op: "ulike", value: f.proveedor.slice(0, 80) });
-  if (f.tema) {
-    const scoped = f.nit || f.ciudad || f.departamento;
-    w.push(scoped ? { col: "objeto_del_contrato", op: "ulike", value: topicTerms(f.tema) } : { col: "objeto_del_contrato", op: "q", value: f.tema });
-  }
+  // Un solo criterio de tema para todas las herramientas (misma columna, con y sin tilde): lista y total cuadran.
+  if (f.tema) w.push({ col: "objeto_del_contrato", op: "ulike", value: topicTerms(f.tema) });
   w.push({ col: "fecha_de_firma", op: ">=", value: `${f.period.from}T00:00:00` });
   if (!f.period.defaulted) w.push({ col: "fecha_de_firma", op: "<=", value: `${f.period.to}T23:59:59` });
   return w;
@@ -40,9 +38,8 @@ export function buildWhere(f: Filters): Cond[] {
 
 /** Verificación en los resultados: descarta filas cuyo territorio o tema no coincide (el $q es difuso). */
 export function matching(rows: Row[], f: Pick<Filters, "ciudad" | "departamento" | "tema">): Row[] {
-  const terms = f.tema ? topicTerms(f.tema).split("|").map(normalize) : [];
+  // El tema ya lo aplica el servidor con el mismo criterio que los totales (buildWhere): aquí solo se verifica el territorio.
   return rows.filter((r) =>
     (!f.ciudad || normalize(r.ciudad ?? "") === normalize(f.ciudad)) &&
-    (!f.departamento || normalize(r.departamento ?? "") === normalize(f.departamento)) &&
-    (!terms.length || terms.some((t) => normalize(r.objeto_del_contrato ?? "").includes(t))));
+    (!f.departamento || normalize(r.departamento ?? "") === normalize(f.departamento)));
 }

@@ -16,7 +16,13 @@ const dec = (x: number) => String(Math.round(x * 10) / 10).replace(".", ",");
 /** Monto en pesos dicho de forma natural: «27 mil millones de pesos», «mil doscientos millones de pesos». */
 export function spokenAmount(n: number): string {
   const v = Math.abs(Math.round(n));
-  if (v >= 1e12) return `${dec(v / 1e12)} ${v >= 2e12 ? "billones" : "billón"} de pesos`;
+  if (v >= 1e12) {
+    // 1 billón = 1.000.000 de millones = 1.000 mil millones: la parte que sobra se dice en mil millones.
+    let b = Math.floor(v / 1e12), k = Math.round((v - b * 1e12) / 1e9);
+    if (k >= 1000) { b += 1; k = 0; }
+    const head = b === 1 ? "un billón" : `${b} billones`;
+    return `${head}${k ? ` ${k === 1 ? "mil" : `${words(k)} mil`} millones` : ""} de pesos`;
+  }
   if (v >= 1e10) return `${Math.round(v / 1e9)} mil millones de pesos`;
   if (v >= 1e9) {
     const m = Math.round(v / 1e7) * 10, k = Math.floor(m / 1000), rest = m % 1000; // millones, a la decena

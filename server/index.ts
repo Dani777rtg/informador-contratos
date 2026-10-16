@@ -16,7 +16,8 @@ import demoAnswers from "./fallback/demo-answers.json" with { type: "json" };
 import { demoKey, type DemoEntry, type DemoKind } from "./fallback/demo.js";
 import { Lru } from "./cache.js";
 import { createPlaces, findPlace } from "./data/places.js";
-import { TOPICS } from "./tools/filters.js";
+import { OUTLIER_NOTE } from "./data/outliers.js";
+import { TOPICS, topicTerms } from "./tools/filters.js";
 import { roundAmounts, roundedPesos, normalNames, toSpoken } from "./speech/spoken.js";
 import { byValue, contractCard, MAX_VISIBLE, searchContracts, type Ctx } from "./tools/search.js";
 import { fundingBreakdown, spendByCategory, topContracts } from "./tools/spend.js";
@@ -219,7 +220,11 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
         const d = await contractDetail(ctx, id);
         if (!d) return reply({ text: "No encontré ese contrato. Prueba pidiendo de nuevo la lista de contratos." });
         cur = applyTurn(prev, { contract: id });
-        return reply({ text: "Este es el detalle y los pagos del contrato.", cards: [d.card], ...withSource(d.at, d.cached) });
+        const c = d.card;
+        return reply({
+          text: `${c.contractor ?? "El contratista"} firmó con ${c.entity ?? "la entidad"} un contrato por ${c.value}${c.status ? `, hoy ${String(c.status).toLowerCase()}` : ""}. Se ha pagado ${c.paid} y quedan pendientes ${c.pending}.`,
+          cards: [c], ...withSource(d.at, d.cached),
+        });
       } catch { return fail(); }
     }
 
@@ -260,7 +265,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
     if (explicit && !year) period = { from: day(from), to: day(now), defaulted: true };
     if (res.kind === "entity") { where.push({ col: "nit_entidad", op: "=", value: res.entity.nit }); label = res.entity.name; }
     else if (nit) { where.push({ col: "nit_entidad", op: "=", value: nit }); label = `NIT ${nit}`; }
-    else if (topic) { where.push({ col: "objeto_del_contrato", op: "q", value: topic }); label = topic; }
+    else if (topic) { where.push({ col: "objeto_del_contrato", op: "ulike", value: topicTerms(topic) }); label = topic; }
     else if (prev.entity) { where.push({ col: "nit_entidad", op: "=", value: prev.entity.nit }); label = prev.entity.name; }
     else return reply({ text: "No encontré una entidad, NIT o tema en tu pregunta. Prueba con el nombre de la entidad." });
     const turnEntity = res.kind === "entity" ? res.entity : nit ? { nit, name: `NIT ${nit}` } : undefined;
@@ -293,7 +298,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
         const key = kind === "top" ? `El mayor es de ${roundedPesos(Number(String(first.value).replace(/\D/g, "")))}${first.contractor ? `, con ${normalNames(String(first.contractor)).replace(/\.$/, "")}` : ""}.`
           : kind === "spend" ? `Lo que más se contrata es ${String(first.category).toLowerCase()}.`
           : `La fuente principal es ${String(first.source).toLowerCase()}.`;
-        return reply({ text: `${intro} ${label}. ${key} ${periodText}`, cards: r.cards, ...withSource(r.at, r.cached) });
+        return reply({ text: `${intro} ${label}. ${key} ${periodText}${r.atipicos?.length ? ` Un contrato aparte: ${OUTLIER_NOTE}.` : ""}`, cards: [...r.cards, ...(r.atipicos ?? [])], ...withSource(r.at, r.cached) });
       }
       const r = await searchContracts(ctx, where);
       const found = r.value;
@@ -304,7 +309,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
       cur = applyTurn(cur, { results: shown.map((x) => x.id_contrato).filter((i): i is string => Boolean(i)) });
       return reply({
         text: `Estos son los contratos de ${label}, de mayor a menor valor. ${periodText}`,
-        cards: shown.map(contractCard), hasMore: found.length > MAX_VISIBLE, ...withSource(r.at, r.cached),
+        cards: [...shown.map(contractCard), ...r.atipicos], hasMore: found.length > MAX_VISIBLE, ...withSource(r.at, r.cached),
       });
     } catch {
       const demo = DEMO[demoKey(where, kind, period)];

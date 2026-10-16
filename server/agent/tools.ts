@@ -9,6 +9,7 @@ import { buildWhere, matching, type Filters } from "../tools/filters.js";
 import { contractDetail } from "../tools/detail.js";
 import { listDocuments } from "../tools/documents.js";
 import { fromSnapshot, loadSnapshot, snapshotPlaces, type Scope } from "../fallback/snapshot.js";
+import { isOutlier, OUTLIER_NOTE } from "../data/outliers.js";
 import { roundedPesos } from "../speech/spoken.js";
 import type { Ctx, Tool, ToolRegistry, ToolResult } from "./loop.js";
 
@@ -122,22 +123,30 @@ const placeLists = new Map<string, () => Promise<Place[]>>();
 const placesFor = (c: DataCtx["client"]) => { let p = placeLists.get(c.base); if (!p) placeLists.set(c.base, p = createPlaces(c)); return p; };
 
 
-interface Live { cards: { kind: string }[]; ids?: string[]; hayMas?: boolean; at?: Date; cached?: boolean }
+type Atip = { kind: string; atipico: boolean; note: string } & Record<string, unknown>;
+interface Live { cards: { kind: string }[]; ids?: string[]; hayMas?: boolean; at?: Date; cached?: boolean; atipicos?: Atip[] }
+
+const valueOf = (c: Record<string, unknown>) => Number(String(c.value ?? "").replace(/\D/g, ""));
 
 async function live(name: string, f: Filters, args: Record<string, unknown>, limit: number, dctx: DataCtx): Promise<Live> {
   const where = buildWhere(f);
   const cut = <T extends { cards: unknown[] }>(r: T) => ({ ...r, cards: r.cards.slice(0, limit) });
+  // Los atípicos nunca entran en totales ni rankings (además del filtro del servidor, se descartan aquí) y salen aparte.
+  const split = <T extends { cards: { kind: string }[]; atipicos?: unknown[] }>(r: T): T => {
+    const atip = (r.atipicos ?? []).filter((c) => isOutlier(valueOf(c as Record<string, unknown>))) as Atip[];
+    return { ...r, atipicos: atip, cards: r.cards.filter((c) => !isOutlier(valueOf(c as Record<string, unknown>))) };
+  };
   switch (name) {
-    case "gasto_total": return totalSpend(dctx, where);
-    case "gasto_por_categoria": return cut(await spendByCategory(dctx, where));
-    case "top_entidades": return cut(await topEntities(dctx, where));
-    case "top_contratistas": return cut(await topContractors(dctx, where, str(args.orden, 10) === "cantidad" ? "count" : "sum"));
-    case "contratos_mayores": { const t = await topContracts(dctx, where); return { ...cut(t), ids: t.ids.slice(0, limit) }; }
+    case "gasto_total": return split(await totalSpend(dctx, where));
+    case "gasto_por_categoria": return split(cut(await spendByCategory(dctx, where)));
+    case "top_entidades": return split(cut(await topEntities(dctx, where)));
+    case "top_contratistas": return split(cut(await topContractors(dctx, where, str(args.orden, 10) === "cantidad" ? "count" : "sum")));
+    case "contratos_mayores": { const t = split(await topContracts(dctx, where)); return { ...cut(t), ids: t.ids.slice(0, limit) }; }
     default: {
       const r = await searchContracts(dctx, where);
-      const found = matching(r.value, f);
+      const found = matching(r.value, f).filter((x) => !isOutlier(Number(x.valor_del_contrato ?? 0)));
       const shown = byValue(found.slice(0, Math.min(limit, MAX_VISIBLE)));
-      return { cards: shown.map(contractCard), ids: shown.map((x) => x.id_contrato).filter((i): i is string => Boolean(i)), hayMas: found.length > shown.length, at: r.at, cached: r.cached };
+      return split({ cards: shown.map(contractCard), atipicos: r.atipicos, ids: shown.map((x) => x.id_contrato).filter((i): i is string => Boolean(i)), hayMas: found.length > shown.length, at: r.at, cached: r.cached });
     }
   }
 }
@@ -148,7 +157,14 @@ async function detail(args: Record<string, unknown>, dctx: DataCtx): Promise<Too
   const det = await contractDetail(dctx, id);
   if (!det) return { data: { error: "sin_resultados", nota: "No encontré ese contrato." } };
   const cards: ToolResult["cards"] = [det.card];
-  const data: Record<string, unknown> = { ...say(det.card) as object };
+  const { modifications: _m, ...slimCard } = det.card;
+  const c = det.card, amt = (s: string) => say(s) as string;
+  const data: Record<string, unknown> = {
+    ...say(slimCard) as object,
+    // Dos frases para la voz; la ficha completa va en la tarjeta.
+    resumen: `${c.contractor ?? "El contratista"} firmó con ${c.entity ?? "la entidad"} un contrato por ${amt(c.value)} el ${c.signedAt || "(sin fecha)"}${c.status ? `, hoy ${String(c.status).toLowerCase()}` : ""}. Se ha pagado ${amt(c.paid)} y quedan pendientes ${amt(c.pending)}.`,
+    ...(c.atipico ? { nota: OUTLIER_NOTE } : {}),
+  };
   if (args.documentos === true) {
     const [k] = await socrataQuery(dctx.client, { where: [{ col: "id_contrato", op: "=", value: id }], limit: 1 });
     if (k?.proceso_de_compra) {
@@ -206,8 +222,10 @@ export async function runTool(name: string, args: Record<string, unknown>, data:
       return { data: { sinResultados: `No hay contratos de ${label} entre ${f.period.from} y ${f.period.to}. Dilo así; no muestres datos de otra entidad o territorio.`, periodo: f.period, error: "sin_resultados" }, context: ctxOut(f) };
     }
     // `ids` va en el mismo orden que `resultado`: con ellos el modelo (voz incluida) abre el detalle de «ese contrato».
-    const data = { resultado: say(res.cards), ...(res.ids?.length ? { ids: res.ids } : {}), filtros: label, periodo: f.period, ...(res.hayMas ? { hayMas: true } : {}), ...(note ? { nota: note } : {}) };
-    return remember(d.base.cache, memoKey, { data, cards: res.cards as ToolResult["cards"], context: ctxOut(f, res.ids), note });
+    const atipicos = res.atipicos ?? [];
+    if (atipicos.length) note = `${note ? `${note} ` : ""}Hay ${atipicos.length === 1 ? "un contrato" : `${atipicos.length} contratos`} fuera de los totales y rankings; di de forma neutral que ${OUTLIER_NOTE}.`;
+    const data = { resultado: say(res.cards), ...(res.ids?.length ? { ids: res.ids } : {}), filtros: label, periodo: f.period, ...(res.hayMas ? { hayMas: true } : {}), ...(atipicos.length ? { atipicos: say(atipicos) } : {}), ...(note ? { nota: note } : {}) };
+    return remember(d.base.cache, memoKey, { data, cards: [...res.cards, ...atipicos] as ToolResult["cards"], context: ctxOut(f, res.ids), note });
   } catch (e) {
     if (!(e instanceof SocrataUnavailable)) throw e;
     const snap = loadSnapshot();

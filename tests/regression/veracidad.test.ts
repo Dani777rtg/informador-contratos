@@ -31,7 +31,10 @@ describe("territorio (O-1: nunca datos de otro lugar)", () => {
     expect(p.get("$q")).toBeNull();
     expect(p.get("$where")).toContain("ciudad = 'Cartagena'");
     expect(p.get("$where")).toContain("upper(objeto_del_contrato) like '%SALUD%'");
-    expect(buildParams({ where: buildWhere({ tema: "salud", period }) }).get("$q")).toBe("salud");
+    // AC-01.8 (007): un solo criterio de tema, con o sin territorio.
+    const nat = buildParams({ where: buildWhere({ tema: "educación", period }) });
+    expect(nat.get("$q")).toBeNull();
+    expect(nat.get("$where")).toMatch(/like '%EDUCACIÓN%' OR upper\(objeto_del_contrato\) like '%EDUCACION%'/);
   });
   it("matching descarta filas de otro territorio o tema (extintores de Santa Marta no responden vías en Antioquia)", () => {
     const rows: Row[] = [
@@ -39,7 +42,7 @@ describe("territorio (O-1: nunca datos de otro lugar)", () => {
       { nombre_entidad: "MUNICIPIO DE MONTEBELLO", ciudad: "Montebello", departamento: "Antioquia", objeto_del_contrato: "Mantenimiento de las VÍAS del municipio" },
     ];
     expect(matching(rows, { departamento: "Antioquia", tema: "vías" }).map((r) => r.ciudad)).toEqual(["Montebello"]);
-    expect(matching(rows, { ciudad: "Santa Marta", tema: "vías" })).toEqual([]);
+    expect(matching(rows, { ciudad: "Montebello", tema: "vías" }).map((r) => r.ciudad)).toEqual(["Montebello"]); // el tema lo filtra el servidor (007)
   });
 });
 
