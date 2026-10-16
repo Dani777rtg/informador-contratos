@@ -39,9 +39,9 @@ describe("US-09 AC-09.1 proyecto GCP nuevo y dedicado", () => {
     }
   });
 
-  it("AC-09.1 cada comando gcloud/firebase de deploy.ps1 fija el proyecto explicitamente", () => {
+  it("AC-09.1 cada comando gcloud de deploy.ps1 fija el proyecto explicitamente", () => {
     const cmds = lines("scripts/deploy.ps1").filter(
-      (l) => !/^\s*#/.test(l) && /\b(gcloud|firebase)\b\s+\S+/.test(l),
+      (l) => !/^\s*#/.test(l) && /\bgcloud\b\s+\S+/.test(l),
     );
     expect(cmds.length).toBeGreaterThan(0);
     for (const l of cmds) expect(l, l).toMatch(/--project|-P\b|\$Project|\$env:/i);
@@ -54,7 +54,7 @@ describe("US-09 AC-09.1 proyecto GCP nuevo y dedicado", () => {
   });
 });
 
-describe("US-09 AC-09.2 Firebase Hosting + Cloud Run", () => {
+describe("US-09 AC-09.2 frontend y backend en un solo servicio Cloud Run", () => {
   it("AC-09.2 deploy.ps1 despliega Cloud Run con min-instances=0, max acotado, cpu boost y timeout 60 min", () => {
     const c = code("scripts/deploy.ps1");
     expect(c).toMatch(/run\s+deploy/);
@@ -68,15 +68,23 @@ describe("US-09 AC-09.2 Firebase Hosting + Cloud Run", () => {
     expect(code("scripts/deploy.ps1")).toMatch(/--allow-unauthenticated/);
   });
 
-  it("AC-09.2 el frontend se publica con Firebase Hosting", () => {
-    expect(exists("firebase.json")).toBe(true);
-    const cfg = JSON.parse(read("firebase.json"));
-    expect(cfg.hosting).toBeTruthy();
-    expect(code("scripts/deploy.ps1")).toMatch(/firebase\s+deploy[^\n]*hosting/);
+  it("AC-09.2 el Dockerfile construye el frontend y copia web/dist a la imagen", () => {
+    const f = exists("Dockerfile") ? "Dockerfile" : "server/Dockerfile";
+    expect(exists(f)).toBe(true);
+    const d = read(f);
+    expect(d).toMatch(/build:web|vite\s+build/);
+    expect(d).toMatch(/COPY[^\n]*web\/dist|web\/dist/);
   });
 
-  it("AC-09.2 existe un Dockerfile para el backend", () => {
-    expect(exists("Dockerfile") || exists("server/Dockerfile")).toBe(true);
+  it("AC-09.2 server/index.ts sirve los estaticos de web/dist en /", () => {
+    const s = read("server/index.ts");
+    expect(s).toMatch(/serveStatic|express\.static|fastifyStatic|@fastify\/static/);
+    expect(s).toMatch(/web[/\\'",\s]+dist|web\/dist/);
+  });
+
+  it("AC-09.2 deploy.ps1 ya no usa Firebase y no hay firebase.json", () => {
+    expect(code("scripts/deploy.ps1")).not.toMatch(/firebase/i);
+    expect(exists("firebase.json")).toBe(false);
   });
 });
 

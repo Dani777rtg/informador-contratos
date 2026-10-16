@@ -10,7 +10,7 @@ status: approved
 | Fecha límite | 2026-10-16 20:18 (-05:00) — hoy + 10 h |
 | Idioma | español de Colombia |
 | Datos y ley | públicos (SECOP) + personales de ciudadanos (preguntas, número de WhatsApp) — Ley 1581 de 2012, Res. MinTIC 1519/2020 — ASVS L2 |
-| Plataforma | GCP: Cloud Run (backend, min-instances=0) + Firebase Hosting (estático) + Firestore (solo contadores) |
+| Plataforma | GCP: Cloud Run (un solo servicio sirve frontend estático y API, min-instances=0; cambio 003) + Firestore (solo contadores) |
 | Confidencialidad | el código puede enviarse a Claude: sí — autorizado por el dueño del producto (repo público) |
 | Aprobador | dueño del producto (Daniel) |
 
@@ -190,7 +190,7 @@ risk: high — recursos de pago, facturación e infraestructura pública
 
 - **AC-09.1** THE SYSTEM SHALL desplegarse en un proyecto GCP nuevo y dedicado (el anterior `informador-contratos-1015` está en `DELETE_REQUESTED`; se crea otro ID) vinculado a `billingAccounts/01EE60-CCE2B7-BE4593`, verificable con `gcloud billing projects describe`, sin tocar `ourtalent-509101`, `agente-vocal-hackaton`, `app-507617` ni `reemplazarrhh`.
   serves: US-09
-- **AC-09.2** THE SYSTEM SHALL servir el frontend estático desde Firebase Hosting y el backend desde Cloud Run con `min-instances=0`, `max-instances` acotado, startup CPU boost y request timeout de 60 min, con URL pública HTTPS funcional desde un móvil.
+- **AC-09.2** THE SYSTEM SHALL servir el frontend estático y el backend desde el mismo servicio de Cloud Run (un solo origen; cambio 003) con `min-instances=0`, `max-instances` acotado, startup CPU boost y request timeout de 60 min, con URL pública HTTPS funcional desde un móvil.
   serves: US-09
 - **AC-09.3** WHEN el usuario abre la página o toca el micrófono THE SYSTEM SHALL enviar una petición ligera que despierte el backend antes de que llegue la pregunta (RNF-09a).
   serves: US-09
@@ -256,7 +256,7 @@ risk: low — pruebas locales con sustitutos y documentación
 | Decisión | Alternativa rechazada | Por qué |
 |---|---|---|
 | TypeScript/Node 22 + Hono + WebSocket (`ws`) en Cloud Run; un solo servicio | Python/FastAPI; varios microservicios | Un lenguaje para backend y navegador, WebSocket nativo, imagen pequeña, arranque rápido |
-| Frontend estático (Vite + TS, HTML semántico, CSS propio con tokens GOV.CO) en Firebase Hosting | Servirlo desde Cloud Run; Next.js | El estático no tiene arranque en frío y es casi gratis; es Google, dentro del proyecto |
+| Frontend estático (Vite + TS, HTML semántico, CSS propio con tokens GOV.CO) servido por el mismo servicio de Cloud Run (cambio 003) | Firebase Hosting; Next.js | Todo en Cloud Run, un solo origen y sin inicio de sesión extra; se acepta el arranque en frío en la primera visita |
 | WebSocket directo a la URL de Cloud Run (Hosting no proxea WebSocket) con `Origin` y token firmado | Pasar por load balancer | El balanceador cuesta ~$18/mes en reposo |
 | LLM `deepseek-flash` en modo sin razonamiento, llamadas a herramientas con esquema fijo, prefijo de prompt estático para caché | Que el LLM escriba SoQL; `deepseek-v4-pro` | Seguridad, velocidad y costo; el nombre se configura por variable de entorno |
 | Resolución de entidad contra un índice precalculado (NIT/nombre normalizado, ~5.100 entidades) cargado en memoria | `like '%x%'` en el servidor (> 2 min) | Velocidad y exactitud con nombres no normalizados |
@@ -270,7 +270,7 @@ risk: low — pruebas locales con sustitutos y documentación
 
 ```mermaid
 flowchart LR
-  B[Navegador estático<br/>Firebase Hosting] -- WSS + token firmado --> R[Cloud Run: Hono + ws]
+  B[Navegador] -- HTTPS + WSS mismo origen --> R[Cloud Run: Hono sirve web/dist + API + ws]
   R -- audio 16 kHz/80 ms --> F[Deepgram Flux /v2/listen]
   R -- herramientas tipadas --> A[Agente DeepSeek]
   A --> T[Herramientas SECOP]
@@ -382,7 +382,7 @@ serves: AC-09.1, AC-09.4, AC-09.5, TM-7, TM-8
 - Check: `gcloud billing projects describe <proyecto>` y `gcloud billing budgets list`
 - depends: —
 
-### T013 [US-09] Despliegue a Cloud Run + Firebase Hosting, precalentamiento y rollback (producción solo con aprobación)
+### T013 [US-09] Despliegue a Cloud Run (front y API), precalentamiento y rollback (producción solo con aprobación)
 serves: AC-09.2, AC-09.3, AC-09.6
 - Archivos: `scripts/deploy.ps1`, `docs/DEPLOY.md`, `web/src/warmup.ts`
 - Check: `curl https://<url>/health` y chat de prueba desde un móvil
@@ -442,7 +442,7 @@ serves: AC-11.3
 | El token de WhatsApp puede crear plantillas (tiene `whatsapp_business_management`); si Meta rechaza o tarda, se cumple AC-10.4 | Equipo | T014 |
 | El nombre del modelo DeepSeek sale de `DEEPSEEK_MODEL` (por defecto `deepseek-flash`), porque `deepseek-chat` ya no aparece | Equipo | T003 |
 | Los enlaces `url_descarga_documento` abren en el navegador del usuario (en servidor requieren User-Agent); se prueba desde un móvil | Equipo | T004 |
-| Firebase Hosting y Firestore (capa gratuita, mismo proyecto) cuentan como GCP | Daniel | T012 |
+| Firestore (capa gratuita, mismo proyecto) cuenta como GCP | Daniel | T012 |
 | Topes numéricos (20 peticiones/min, 1.000.000 de tokens/día, 120 min de voz/día, etc.) son valores iniciales ajustables por variable de entorno | Daniel | T011 |
 | Lighthouse ≥ 90 se mide en local sin garantía (P2) | Equipo | verify |
 | La prueba de usabilidad con 3–5 personas (criterio 6a) depende de personas externas; se hace si hay tiempo | Daniel | verify |
