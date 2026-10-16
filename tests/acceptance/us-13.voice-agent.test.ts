@@ -321,6 +321,45 @@ describe("US-13 voice agent: herramientas en el servidor", () => {
     expect(clientTypes()).not.toContain("FunctionCallResponse");
   });
 
+  it("AC-13.5 declinar por voz: decline está declarado en Settings y responde con la plantilla, sin función inexistente", async () => {
+    const { buildSettings } = await import("../../server/voice/agent");
+    const { DECLINE_CODES, decline } = await import("../../server/agent/decline");
+    const s: any = buildSettings({ DEEPSEEK_VOICE_API_KEY: KEY } as any);
+    const names: string[] = s.agent.think.functions.map((f: any) => f.name ?? f.function?.name);
+    expect(names).toContain("decline");
+    for (const m of String(s.agent.think.prompt).matchAll(/herramienta\s+(\w+)\(/g)) expect(names, m[1]).toContain(m[1]);
+    await boot();
+    await connect();
+    const code = (DECLINE_CODES as string[])[0];
+    const r = await callTool("decline", { code });
+    expect(r.name).toBe("decline");
+    expect(r.content).toContain(decline(code));
+    expect(r.content).not.toMatch(/NON_EXISTENT|desconocid|no_disponible/i);
+  });
+
+  it("AC-13.10 los keyterms de la transcripción incluyen los lugares principales", async () => {
+    const { buildSettings } = await import("../../server/voice/agent");
+    const { PLACE_KEYTERMS } = await import("../../server/data/places");
+    const k: string[] = (buildSettings({ DEEPSEEK_VOICE_API_KEY: KEY } as any) as any).agent.listen.provider.keyterms;
+    for (const t of ["Antioquia", "Nariño", "Boyacá", "Tunja"]) expect(k, t).toContain(t);
+    expect(PLACE_KEYTERMS.length).toBeGreaterThanOrEqual(132);
+  });
+
+  it("AC-07.4 cada turno de voz deja una línea de registro con canal, ruta, herramientas, código de resultado y tiempos, sin contenido", async () => {
+    await boot();
+    const ws = await connect();
+    await until(() => sent("Settings").length > 0);
+    ws.send(JSON.stringify({ type: "AskText", text: "ZZMARCA ¿contratos en Manizales?" }));
+    await until(() => frames.some((f) => f.json?.type === "AgentStartedSpeaking"));
+    await pause(300);
+    const line = logged.find((l) => /"channel":\s*"voz"/.test(l) && /latencyMs/.test(l) && /route/.test(l));
+    expect(line, logged.join("\n").slice(0, 400)).toBeTruthy();
+    expect(line).toMatch(/placeMatched/);
+    expect(line).toMatch(/resultCode/);
+    expect(line).toMatch(/tools/);
+    expect(logged.join("\n")).not.toContain("ZZMARCA");
+  });
+
   it("AC-13.7 una herramienta que no existe o de escritura devuelve error al agente sin consultar datos ni caerse", async () => {
     await boot();
     const ws = await connect();

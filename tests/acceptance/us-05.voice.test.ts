@@ -175,7 +175,7 @@ describe("US-05 voz manos libres (Voice Agent)", () => {
     expect(r.status).toBe(200);
   });
 
-  it("AC-05.6 docs/VOZ.md documenta el desglose del Voice Agent (fin de turno, herramienta, primer audio), p95 < 1 s, p50 ~500 ms, fuentes y decisiones", () => {
+  it("AC-05.6 docs/VOZ.md documenta el desglose del Voice Agent (fin de turno, herramienta, primer audio), p95 < 1 s, meta ~2 s p50, una sola llamada a datos, < 1.500 tokens, fuentes y decisiones", () => {
     const path = join(__dirname, "../../docs/VOZ.md");
     expect(existsSync(path)).toBe(true);
     const md = readFileSync(path, "utf8");
@@ -183,6 +183,9 @@ describe("US-05 voz manos libres (Voice Agent)", () => {
     expect(md).not.toMatch(/flux-general-multi/i);
     expect(md).toMatch(/p95/i);
     expect(md).toMatch(/p50/i);
+    expect(md).toMatch(/~?\s*2\s*s/i);
+    expect(md).toMatch(/una sola llamada|1 llamada|una llamada/i);
+    expect(md).toMatch(/1[.,]?500\s*tokens/i);
     expect(md).toMatch(/https?:\/\//);
     expect(md).toMatch(/decisi[oó]n|decisiones/i);
   });
@@ -212,6 +215,9 @@ describe("US-05 voz manos libres (Voice Agent)", () => {
   it("AC-05.9 spokenAmount habla las cifras en palabras", async () => {
     const { spokenAmount } = await import("../../server/speech/spoken");
     expect(spokenAmount(27_000_000_000)).toBe("27 mil millones de pesos");
+    expect(spokenAmount(944_000_000_000)).toBe("944 mil millones de pesos");
+    expect(spokenAmount(1_200_000_000_000)).toBe("un billón doscientos mil millones de pesos");
+    expect(spokenAmount(944_000_000_000)).not.toMatch(/billones/i);
     expect(spokenAmount(1_200_000_000)).toMatch(/^mil doscientos millones de pesos$/);
     for (const n of [27_000_000_000, 1_200_000_000, 350_000_000]) expect(spokenAmount(n)).not.toMatch(/[$.]|\d{4}/);
   });
@@ -228,10 +234,15 @@ describe("US-05 voz manos libres (Voice Agent)", () => {
     expect((out.match(/[.!?](\s|$)/g) ?? []).length).toBeLessThanOrEqual(2);
   });
 
-  it("AC-05.8 al superar los 10 min de sesión (tope ajustable) pasa a texto con aviso claro", async () => {
+  it("AC-05.8 al superar los 30 min de sesión (tope ajustable, por defecto 1800 s) pasa a texto con aviso claro", async () => {
     await boot({ VOICE_SESSION_MAX_SECONDS: "1" });
     await connect();
     await until(() => notice(/texto/i) && notice(/(l[ií]mite|tiempo|m[aá]ximo|tope)/i), 4000);
+  });
+
+  it("AC-05.8 el tope de sesión por defecto es 1800 s (30 min)", () => {
+    const src = readFileSync(join(__dirname, "../../server/voice/agent.ts"), "utf8");
+    expect(src).toMatch(/VOICE_SESSION_MAX_SECONDS,\s*1800\)/);
   });
 
   it("AC-05.8 al superar el tope diario de minutos de voz no abre voz y avisa que sigue por texto", async () => {

@@ -106,6 +106,39 @@ describe("AC-11.5 evaluacion con preguntas reales", () => {
     expect(ok / r.conversations.length).toBeGreaterThanOrEqual(0.9);
   });
 
+  it("AC-11.5 (cambio 007) conserva las preguntas originales 'en Nariño' y 'en Caldas'", () => {
+    const txt = arr(read("eval/real-questions.json")).map((q) => String(q.question)).join(" ");
+    expect(txt).toMatch(/en Nari[ñn]o/i);
+    expect(txt).toMatch(/en Caldas/i);
+  });
+
+  it("AC-11.5 (cambio 007) los chequeos no son triviales: cada expect declara algo comprobable (no solo ok:true)", () => {
+    for (const q of arr(read("eval/real-questions.json"))) {
+      const keys = Object.keys(q.expect ?? {}).filter((k) => !/^(ok|any|skip)$/i.test(k));
+      expect(keys.length, q.id).toBeGreaterThan(0);
+    }
+  });
+
+  it("AC-13.11 existe scripts/prod-probe.ts y el script npm probe:prod", () => {
+    expect(existsSync(resolve(root, "scripts/prod-probe.ts"))).toBe(true);
+    expect(read("package.json").scripts?.["probe:prod"]).toMatch(/prod-probe/);
+  });
+
+  it("AC-13.11 eval/prod-probe-results.json: >= 15 resultados con texto y voz, >= 90 % ok", () => {
+    expect(existsSync(resolve(root, "eval/prod-probe-results.json"))).toBe(true);
+    const r = read("eval/prod-probe-results.json");
+    expect(Number.isNaN(Date.parse(r.runAt))).toBe(false);
+    expect(typeof r.target).toBe("string");
+    expect(r.results.length).toBeGreaterThanOrEqual(15);
+    const canales = new Set(r.results.map((x: any) => x.channel));
+    expect(canales.has("texto") && canales.has("voz")).toBe(true);
+    for (const c of ["texto", "voz"]) {
+      const rs = r.results.filter((x: any) => x.channel === c);
+      expect(rs.length, c).toBeGreaterThanOrEqual(15);
+      expect(rs.filter((x: any) => x.ok === true).length / rs.length, c).toBeGreaterThanOrEqual(0.9);
+    }
+  });
+
   it("AC-11.5 package.json tiene el script eval:real", () => {
     expect(read("package.json").scripts?.["eval:real"]).toBeTruthy();
   });

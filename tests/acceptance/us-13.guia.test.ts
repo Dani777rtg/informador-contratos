@@ -19,7 +19,7 @@ import { resolve } from "node:path";
 const root = resolve(__dirname, "../..");
 const PERSON_DOC = "1020304050";
 
-type Mode = "ok" | "fail" | "slow" | "sinManizales";
+type Mode = "ok" | "fail" | "slow" | "sinManizales" | "atipico" | "muchos";
 interface Socrata { url: string; requests: string[]; mode: Mode; close(): Promise<void> }
 async function startSocrata(): Promise<Socrata> {
   const s = { requests: [], mode: "ok" } as unknown as Socrata;
@@ -41,6 +41,8 @@ async function startSocrata(): Promise<Socrata> {
       ? [{ ciudad: "Manizales", departamento: "Caldas", n: "9" }, { ciudad: "Pereira", departamento: "Risaralda", n: "7" }, { ciudad: "Medellín", departamento: "Antioquia", n: "20" }]
       : [base, { ...base, id_contrato: "CO1.PCCNTR.9002", valor_del_contrato: "3000000000" },
         { ...base, id_contrato: "CO1.PCCNTR.9003", proveedor_adjudicado: "Juan Pérez Gómez", tipodocproveedor: "Cédula de Ciudadanía", documento_proveedor: PERSON_DOC }];
+    if (!isPlaces && s.mode === "atipico") rows.unshift({ ...base, id_contrato: "CO1.PCCNTR.7777", valor_del_contrato: "25000000000000", total: "25000000000000", proveedor_adjudicado: "Atipica SAS" } as any);
+    if (!isPlaces && s.mode === "muchos") for (let i = 0; i < 12; i++) rows[i] = { ...base, id_contrato: `CO1.PCCNTR.${8000 + i}`, valor_del_contrato: String(4e9 - i * 1e8) } as any;
     res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(rows));
   });
   await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
@@ -271,7 +273,7 @@ describe("AC-13.6 presupuesto de tiempo y respaldo", () => {
     soc.mode = "fail";
     const r = await run("buscar_contratos", { municipio: "Manizales", tema: "tema-que-no-esta-en-el-respaldo-xyz" });
     expect(r.data).toBeTruthy();
-    if (r.data.error) expect(r.data.error).toBe("servicio_no_disponible");
+    expect(r.data.error).toBe("servicio_no_disponible"); // cambio 007: consulta fuera del respaldo
   }, 20_000);
 
   it("AC-13.6 caché en memoria: la misma consulta repetida no vuelve a datos.gov.co", async () => {
@@ -303,5 +305,121 @@ describe("AC-13.6 presupuesto de tiempo y respaldo", () => {
     const { MISSION_PROMPT } = await import("../../server/agent/mission");
     expect(MISSION_PROMPT).toMatch(/jerga|t[eé]cnic|explica/i);
     expect(MISSION_PROMPT).toMatch(/sugier|suger|siguiente/i);
+  });
+});
+
+describe("AC-13.1 (cambio 007) saludo cálido y tono cercano", () => {
+  it("AC-13.1 la misión pide tutear, frases cálidas y responder el saludo sin soltar datos", async () => {
+    const { MISSION_PROMPT } = await import("../../server/agent/mission");
+    expect(MISSION_PROMPT).toMatch(/tute|cercan|c[aá]lid/i);
+    expect(MISSION_PROMPT).toMatch(/salud/i);
+  });
+
+  it("AC-13.1 un saludo recibe un saludo y ninguna tarjeta ni cifra", async () => {
+    const { startServer } = await import("../../server/index");
+    const app = await startServer({ port: 0, env: { MOCK_EXTERNALS: "1", ALLOWED_ORIGINS: "http://localhost:5173" } });
+    try {
+      const r: any = await (await fetch(`http://127.0.0.1:${app.port}/api/chat`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "Hola, buenos días" }) })).json();
+      expect(r.text).toMatch(/hola|buen/i);
+      expect(r.cards ?? []).toHaveLength(0);
+      expect(r.text).not.toMatch(/\d/);
+    } finally { await app.close(); }
+  });
+});
+
+describe("AC-13.2 (cambio 007) lista en pantalla con ver más", () => {
+  it("AC-13.2 buscar_contratos entrega entre 5 y 10 tarjetas y ofrece ver más", async () => {
+    soc.mode = "muchos";
+    const r = await run("buscar_contratos", { municipio: "Manizales" });
+    const cs = (r.cards ?? []).filter((c: any) => c.kind === "contract");
+    expect(cs.length).toBeGreaterThanOrEqual(5);
+    expect(cs.length).toBeLessThanOrEqual(10);
+    expect(JSON.stringify(r)).toMatch(/ver m[aá]s|hayMas|hasMore|hay_mas/i);
+  });
+
+  it("AC-13.2 cascada: sin datos en el municipio ofrece ampliar", async () => {
+    soc.mode = "sinManizales";
+    const r = await run("buscar_contratos", { municipio: "Manizales" });
+    expect(`${r.note ?? ""} ${JSON.stringify(r.data)}`).toMatch(/ampli|departamento/i);
+  });
+});
+
+describe("AC-13.6 / AC-01.8 (cambio 007) un error no se repite desde caché", () => {
+  it("AC-13.6 tras una falla, la misma consulta vuelve a datos.gov.co y ya no devuelve el error ni el respaldo", async () => {
+    const ctx = await mkCtx();
+    const { runTool } = await tools();
+    soc.mode = "fail";
+    await runTool("buscar_contratos", { municipio: "Manizales", tema: "tema-que-no-esta-en-el-respaldo-xyz" }, ctx);
+    soc.mode = "ok";
+    const n = dataRequests().length;
+    const r: any = await runTool("buscar_contratos", { municipio: "Manizales", tema: "tema-que-no-esta-en-el-respaldo-xyz" }, ctx);
+    expect(dataRequests().length).toBeGreaterThan(n);
+    expect(r.data?.error).toBeUndefined();
+  }, 30_000);
+
+  it("AC-13.6 el respaldo precalculado trae totales, rankings, contratos mayores y listas por tema", () => {
+    const snap = JSON.parse(gunzipSync(readFileSync(resolve(root, "server/fallback/snapshot.json.gz"))).toString("utf8"));
+    const keys = Object.keys(snap).join(" ").toLowerCase();
+    expect(keys).toMatch(/total|agg/);
+    expect(keys).toMatch(/top|rank/);
+    expect(keys).toMatch(/mayor|largest|big|top/);
+    expect(keys).toMatch(/tema|topic|lista/);
+  });
+});
+
+describe("AC-13.8 montos atípicos", () => {
+  it("AC-13.8 isOutlier: > 10 billones o > 50 % del total del territorio", async () => {
+    const { isOutlier } = await import("../../server/data/outliers");
+    expect(isOutlier(25e12)).toBe(true);
+    expect(isOutlier(5e9)).toBe(false);
+    expect(isOutlier(6e9, 10e9)).toBe(true);
+    expect(isOutlier(4e9, 10e9)).toBe(false);
+  });
+
+  it("AC-13.8 contratos_mayores excluye el atípico del ranking y lo muestra aparte con nota neutral", async () => {
+    soc.mode = "atipico";
+    const r = await run("contratos_mayores", { municipio: "Manizales" });
+    const ranking = (r.cards ?? []).filter((c: any) => !c.atipico);
+    expect(JSON.stringify(ranking)).not.toContain("Atipica");
+    expect(r.data?.atipicos?.length ?? 0).toBeGreaterThan(0);
+    expect((r.cards ?? []).some((c: any) => c.atipico === true)).toBe(true);
+    expect(r.note ?? "").toMatch(/inusualmente alto y as[ií] aparece registrado en SECOP/i);
+    expect(r.note ?? "").not.toMatch(/corrup|sobrecosto|sospech|fraude/i);
+  });
+
+  it("AC-13.8 la misma pregunta da el mismo dato (texto y voz comparten herramienta) y el total excluye el atípico", async () => {
+    soc.mode = "atipico";
+    const a = await run("gasto_total", { municipio: "Manizales" });
+    const b = await run("gasto_total", { municipio: "Manizales" });
+    expect(JSON.stringify(a.data)).toBe(JSON.stringify(b.data));
+    expect(JSON.stringify(a.data?.total ?? a.data)).not.toMatch(/25000000000000/);
+  });
+});
+
+describe("AC-13.9 detalle de contrato", () => {
+  it("AC-13.9 detalle_contrato devuelve una tarjeta detail con la ficha completa", async () => {
+    const r = await run("detalle_contrato", { id_contrato: "CO1.PCCNTR.9001" });
+    const d = (r.cards ?? []).find((c: any) => c.kind === "detail");
+    expect(d).toBeTruthy();
+    for (const k of ["object", "entity", "contractor", "value", "signedAt", "startAt", "endAt", "status", "modality", "paid", "invoiced", "pending", "additions", "url"]) expect(d, k).toHaveProperty(k);
+  });
+
+  it("AC-13.9 la misión cubre 'ábrelo', 'el primero' o el número del contrato", async () => {
+    const { MISSION_PROMPT } = await import("../../server/agent/mission");
+    expect(MISSION_PROMPT).toMatch(/[aá]brelo|el primero|por su n[uú]mero/i);
+  });
+});
+
+describe("AC-13.10 comprensión del lugar", () => {
+  it("AC-13.10 PLACE_KEYTERMS trae los 32 departamentos y al menos 100 municipios", async () => {
+    const { PLACE_KEYTERMS } = await import("../../server/data/places");
+    expect(PLACE_KEYTERMS.length).toBeGreaterThanOrEqual(132);
+    for (const t of ["Antioquia", "Nariño", "Caldas", "Boyacá", "Tunja", "Manizales", "Pasto", "Medellín"]) expect(PLACE_KEYTERMS, t).toContain(t);
+  });
+
+  it("AC-13.10 un lugar dudoso pide confirmación en vez de decir que no hay datos", async () => {
+    const { matchPlace } = await import("../../server/data/places");
+    const m: any = matchPlace("Tunha");
+    expect(String(m.confirmar ?? "")).toMatch(/^¿Dijiste .+, en .+\?$/);
   });
 });

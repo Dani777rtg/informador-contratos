@@ -64,6 +64,15 @@ describe("US-09 AC-09.2 frontend y backend en un solo servicio Cloud Run", () =>
     expect(c).toMatch(/--timeout[ =](3600|60m)\b/);
   });
 
+  it("AC-09.2 (cambio 007) min-instances=1 en el demo: COSTOS.md documenta costo diario y el comando para volver a 0", () => {
+    expect(code("scripts/deploy.ps1")).toMatch(/\[ValidateSet\(\s*0\s*,\s*1\s*\)\]|MinInstances/);
+    const md = readFileSync(join(__dirname, "../../docs/COSTOS.md"), "utf8");
+    expect(md).toMatch(/min-instances/i);
+    expect(md).toMatch(/-MinInstances\s+0|min-instances[ =]0/i);
+    expect(md).toMatch(/d[ií]a|diario/i);
+    expect(md).toMatch(/USD|US\$|\$|COP/);
+  });
+
   it("AC-09.2 el servicio es publico por HTTPS (allow-unauthenticated)", () => {
     expect(code("scripts/deploy.ps1")).toMatch(/--allow-unauthenticated/);
   });

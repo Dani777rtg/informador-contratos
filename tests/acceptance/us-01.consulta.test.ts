@@ -118,6 +118,8 @@ describe("US-01", () => {
     const d = r.cards.find((c) => c.kind === "detail");
     expect(d).toBeTruthy();
     for (const k of ["url", "value", "invoiced", "paid", "pending", "addedDays"]) expect(d![k], k).toBeDefined();
+    // AC-13.9 (cambio 007): ficha completa
+    for (const k of ["object", "entity", "contractor", "signedAt", "startAt", "endAt", "status", "modality", "additions"]) expect(d, `AC-13.9 ${k}`).toHaveProperty(k);
     expect(Array.isArray(d!.modifications)).toBe(true);
   });
 
@@ -150,6 +152,22 @@ describe("US-01", () => {
       // dates/period figures are allowed when they come from the declared period or source
       if (!allowed.has(n) && !flat(r.period).includes(n) && !flat(r.source).includes(n)) throw new Error(`cifra no respaldada: ${n}`);
     }
+  });
+
+  it("AC-01.8 (cambio 007) el tema con y sin tilde da la misma lista y el mismo total", async () => {
+    const a = await ask("¿Cuántos contratos de educación tiene la Alcaldía de Cali?");
+    const b = await ask("¿Cuántos contratos de educacion tiene la Alcaldía de Cali?");
+    const sig = (r: Awaited<ReturnType<typeof ask>>) => JSON.stringify(r.cards.map((c) => [c.kind, c.value ?? c.total ?? c.count]));
+    expect(sig(a)).toBe(sig(b));
+  });
+
+  it("AC-01.8 (cambio 007) una respuesta de falla no se guarda en caché", async () => {
+    await mock("fail");
+    await ask("contratos de la Alcaldía de Cali");
+    await mock("ok");
+    const r = await ask("contratos de la Alcaldía de Cali");
+    expect(r.cached).not.toBe(true);
+    expect(r.cards.filter((c) => c.kind === "contract").length).toBeGreaterThan(0);
   });
 
   it("AC-01.9 datos.gov.co lento: 1 reintento con tope de 6,5 s de API, responde sin esperar más (cambio 006)", async () => {

@@ -60,7 +60,7 @@ risk: high — integración externa con datos.gov.co y datos personales público
   serves: US-01
 - **AC-01.7** IF el usuario no indica periodo THEN THE SYSTEM SHALL usar los últimos 12 meses y decirlo (RF-09).
   serves: US-01
-- **AC-01.8** THE SYSTEM SHALL generar cada cifra mostrada o hablada solo a partir del resultado de la consulta (tarjetas desde datos estructurados) y descartar del texto del LLM cualquier número que no esté en esos resultados (RNF-01).
+- **AC-01.8** THE SYSTEM SHALL generar cada cifra mostrada o hablada solo a partir del resultado de la consulta (tarjetas desde datos estructurados) y descartar del texto del LLM cualquier número que no esté en esos resultados (RNF-01); ordena por valor numérico (::number), usa un solo criterio de tema para todas las herramientas (con y sin tilde, mismas columnas) para que lista y total cuadren, y nunca guarda en caché una respuesta de error o de respaldo (cambio 007).
   serves: US-01
 - **AC-01.9** IF datos.gov.co responde lento o falla THEN THE SYSTEM SHALL hacer 1 reintento con tope de 6,5 s de API y, si sigue fallando, responder desde la copia comprimida de agregados y contratos recientes del contenedor o la caché, avisando la fecha de los datos; si no hay respaldo, decir en una frase qué pasó y qué hacer, nunca "la búsqueda falló" a secas (RNF-08; cambio 006).
   serves: US-01
@@ -136,13 +136,13 @@ risk: high — integración externa pagada (Deepgram) con audio de ciudadanos
   serves: US-05
 - **AC-05.5** IF la sesión de voz se corta THEN THE SYSTEM SHALL mantener el micrófono continuo y el KeepAlive del protocolo del agente, reintentar la sesión y solo avisar que la voz no está disponible si no se recupera; el chat por texto sigue funcionando (RF-19b; cambio 006).
   serves: US-05
-- **AC-05.6** THE SYSTEM SHALL medir fin de turno → primera palabra del Voice Agent (fin de turno, herramienta, primer audio) con objetivo p95 < 1 s y meta p50 ≈ 500 ms, y documentar fuentes y decisiones en `docs/VOZ.md` (RNF-02b, RF-19g; cambio 006).
+- **AC-05.6** THE SYSTEM SHALL medir fin de turno → primera palabra del Voice Agent (fin de turno, herramienta, primer audio) con objetivo p95 < 1 s y meta p50 ≈ 500 ms, y documentar fuentes y decisiones en `docs/VOZ.md` (RNF-02b, RF-19g; cambio 006); en la práctica la meta de esta versión es ~2 s p50 en voz, con una sola llamada a datos por pregunta en los casos comunes y < 1.500 tokens por turno (cambio 007).
   serves: US-05
 - **AC-05.7** THE SYSTEM SHALL no guardar audio ni transcripciones en disco ni en logs (RNF-16).
   serves: US-05
-- **AC-05.8** IF se supera el tope diario de minutos de voz o los 10 min de una sesión THEN THE SYSTEM SHALL pasar a texto con aviso claro.
+- **AC-05.8** IF se supera el tope diario de minutos de voz o los 10 min de una sesión THEN THE SYSTEM SHALL pasar a texto con aviso claro; la sesión de voz dura hasta 30 min (cambio 007).
   serves: US-05
-- **AC-05.9** THE SYSTEM SHALL hablar las cifras en español natural de Colombia ("27 mil millones de pesos"), las fechas de forma natural ("15 de marzo de 2026"), sin códigos, identificadores, siglas crudas ni nombres en mayúsculas, en máximo 2 frases (RNF-06; cambio 005).
+- **AC-05.9** THE SYSTEM SHALL hablar las cifras en español natural de Colombia ("27 mil millones de pesos"), las fechas de forma natural ("15 de marzo de 2026"), sin códigos, identificadores, siglas crudas ni nombres en mayúsculas, en máximo 2 frases (RNF-06; cambio 005); sin error de escala: 944.000.000.000 se dice "944 mil millones de pesos", 1.200.000.000.000 "un billón doscientos mil millones de pesos" y 27.000.000.000 "27 mil millones de pesos" (cambio 007).
   serves: US-05
 
 ### US-06 Una sola conversación voz + texto (Must)
@@ -170,7 +170,7 @@ risk: high — datos personales (Ley 1581 de 2012) y datos bancarios en el datas
   serves: US-07
 - **AC-07.3** WHEN el usuario entra por primera vez, o antes de pedir su número de WhatsApp, THE SYSTEM SHALL mostrar un aviso de privacidad corto (qué se guarda, para qué, por cuánto tiempo, derechos) y registrar la aceptación (RNF-16).
   serves: US-07
-- **AC-07.4** THE SYSTEM SHALL registrar por turno solo tokens, latencia, canal, código de error, intención, ruta (atajo, agente, respaldo), herramientas llamadas, código de declinación y motivo de cierre de la voz, sin texto de pregunta ni respuesta, sin NIT, nombres, teléfonos ni IP, con plazo de borrado de 30 días documentado (cambio 006).
+- **AC-07.4** THE SYSTEM SHALL registrar por turno solo tokens, latencia, canal, código de error, intención, ruta (atajo, agente, respaldo), herramientas llamadas, código de declinación y motivo de cierre de la voz, sin texto de pregunta ni respuesta, sin NIT, nombres, teléfonos ni IP, con plazo de borrado de 30 días documentado (cambio 006); en voz el registro es por turno (lugar reconocido o no, herramienta, código de resultado, ruta y tiempos), sin contenido (cambio 007).
   serves: US-07
 
 ### US-08 Seguridad y anti-abuso (Must)
@@ -198,7 +198,7 @@ risk: high — recursos de pago, facturación e infraestructura pública
 
 - **AC-09.1** THE SYSTEM SHALL desplegarse en un proyecto GCP nuevo y dedicado (el anterior `informador-contratos-1015` está en `DELETE_REQUESTED`; se crea otro ID) vinculado a `billingAccounts/01EE60-CCE2B7-BE4593`, verificable con `gcloud billing projects describe`, sin tocar `ourtalent-509101`, `agente-vocal-hackaton`, `app-507617` ni `reemplazarrhh`.
   serves: US-09
-- **AC-09.2** THE SYSTEM SHALL servir el frontend estático y el backend desde el mismo servicio de Cloud Run (un solo origen; cambio 003) con `min-instances=0`, `max-instances` acotado, startup CPU boost y request timeout de 60 min, con URL pública HTTPS funcional desde un móvil.
+- **AC-09.2** THE SYSTEM SHALL servir el frontend estático y el backend desde el mismo servicio de Cloud Run (un solo origen; cambio 003) con `min-instances=0`, `max-instances` acotado, startup CPU boost y request timeout de 60 min, con URL pública HTTPS funcional desde un móvil; durante el demo `min-instances=1` por decisión explícita del dueño, con costo documentado en docs/COSTOS.md, y vuelta a 0 después (RNF-09a; cambio 007).
   serves: US-09
 - **AC-09.3** WHEN el usuario abre la página o toca el micrófono THE SYSTEM SHALL enviar una petición ligera que despierte el backend antes de que llegue la pregunta (RNF-09a).
   serves: US-09
@@ -236,7 +236,7 @@ risk: high — la evaluación real (AC-11.5, cambio 004) llama a servicios exter
   serves: US-11
 - **AC-11.4** THE SYSTEM SHALL generar el reporte de métricas de la misión (tiempos, tokens, pruebas, linter, vulnerabilidades y resultados de límites) de la sección 7b del cliente.
   serves: US-11
-- **AC-11.5** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una evaluación con ~60 preguntas y ~10 conversaciones de varios turnos tipo ciudadano (`eval/real-questions.json`, `npm run eval:real`, contra datos.gov.co y DeepSeek reales; texto y voz, preguntas exploratorias por territorio, cambios de tema, seguimientos de contrato, montos en pesos, fallas de datos.gov.co) con ≥ 90 % de respuestas correctas —datos de la entidad, territorio y tema pedidos, sin marcado interno, con fuente, cifras habladas en palabras y sin muletillas— y dejar el resultado en `eval/real-results.json` (cambios 004, 005 y 006).
+- **AC-11.5** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una evaluación con ~60 preguntas y ~10 conversaciones de varios turnos tipo ciudadano (`eval/real-questions.json`, `npm run eval:real`, contra datos.gov.co y DeepSeek reales; texto y voz, preguntas exploratorias por territorio, cambios de tema, seguimientos de contrato, montos en pesos, fallas de datos.gov.co) con ≥ 90 % de respuestas correctas —datos de la entidad, territorio y tema pedidos, sin marcado interno, con fuente, cifras habladas en palabras y sin muletillas— y dejar el resultado en `eval/real-results.json` (cambios 004, 005 y 006); con los chequeos estrictos restaurados según la auditoría de QA y las preguntas originales "en Nariño"/"en Caldas" (cambio 007).
   serves: US-11
 
 ### US-12 Carga local y documentos de entrega (Should)
@@ -258,19 +258,27 @@ Como ciudadano curioso quiero preguntar por lo que se gastó en mi municipio, de
 serves: O-1, O-5
 risk: high — integración externa (Deepgram Voice Agent recibe la clave de DeepSeek), datos personales de contratistas y núcleo funcional del producto (cambio 006)
 
-- **AC-13.1** THE SYSTEM SHALL actuar con una misión explícita: guiar al ciudadano de lo general a lo particular sin opinar, máximo 2 frases y 1 pregunta por turno, pedir un dato a la vez sin repetir lo ya dicho, por voz como máximo 3 resultados y el resto en pantalla, y decir cuando no sabe (cambio 006).
+- **AC-13.1** THE SYSTEM SHALL actuar con una misión explícita: guiar al ciudadano de lo general a lo particular sin opinar, máximo 2 frases y 1 pregunta por turno, pedir un dato a la vez sin repetir lo ya dicho, por voz como máximo 3 resultados y el resto en pantalla, y decir cuando no sabe (cambio 006); si el usuario saluda, responde el saludo con calidez y se ofrece a ayudar sin soltar datos; tono cercano (tutear, frases cálidas, sin sonar a formulario) (cambio 007).
   serves: US-13
-- **AC-13.2** WHEN el usuario pregunta cuánto se gastó, en qué se gastó más, qué entidades gastaron más, qué contratistas recibieron más o cuáles fueron los contratos más grandes en un municipio, departamento o el país y un periodo THE SYSTEM SHALL responder de inmediato con herramientas de parámetros cerrados (`gasto_total`, `gasto_por_categoria`, `top_entidades`, `top_contratistas`, `contratos_mayores`, `buscar_contratos`, `detalle_contrato`) y SoQL construido por el servidor, sin exigir entidad ni NIT, y ofrecer afinar (cambio 006).
+- **AC-13.2** WHEN el usuario pregunta cuánto se gastó, en qué se gastó más, qué entidades gastaron más, qué contratistas recibieron más o cuáles fueron los contratos más grandes en un municipio, departamento o el país y un periodo THE SYSTEM SHALL responder de inmediato con herramientas de parámetros cerrados (`gasto_total`, `gasto_por_categoria`, `top_entidades`, `top_contratistas`, `contratos_mayores`, `buscar_contratos`, `detalle_contrato`) y SoQL construido por el servidor, sin exigir entidad ni NIT, y ofrecer afinar (cambio 006); al pedir contratos siempre muestra contratos: 3 por voz y 5 a 10 en pantalla con "ver más"; si la consulta falla, cascada (consulta liviana → respaldo de listas por municipio y tema → ofrecer ampliar a otro territorio o año), nunca "no pude" si hay algo que mostrar (cambio 007).
   serves: US-13
 - **AC-13.3** THE SYSTEM SHALL reconocer municipios y entidades por coincidencia aproximada contra listas oficiales (tolera errores del STT) y, si un municipio no tiene datos, ampliar al departamento diciéndolo (cambio 006).
   serves: US-13
 - **AC-13.4** WHEN el usuario se refiere a algo mostrado ("ese contrato", "el más grande", "esa empresa", "esa entidad") THE SYSTEM SHALL resolverlo con lo que quedó en la conversación y nunca negarse a dar el detalle de un contrato mostrado (cambio 006).
   serves: US-13
-- **AC-13.5** THE SYSTEM SHALL declinar solo por NO-01..NO-16 con definiciones precisas: los rankings por valor están permitidos (solo se prohíben "mejores/peores"); el nombre del contratista y los datos publicados del contrato se muestran; el documento o contacto de una persona natural nunca; abrir o mostrar un contrato o su documento oficial no es una acción prohibida; nunca declinar por dato faltante o no encontrado (cambio 006).
+- **AC-13.5** THE SYSTEM SHALL declinar solo por NO-01..NO-16 con definiciones precisas: los rankings por valor están permitidos (solo se prohíben "mejores/peores"); el nombre del contratista y los datos publicados del contrato se muestran; el documento o contacto de una persona natural nunca; abrir o mostrar un contrato o su documento oficial no es una acción prohibida; nunca declinar por dato faltante o no encontrado (cambio 006); declinar por voz responde con la plantilla sin llamar funciones inexistentes (cambio 007).
   serves: US-13
-- **AC-13.6** THE SYSTEM SHALL tener un presupuesto de tiempo (1 reintento, tope de 6,5 s de API), caché en memoria y una copia comprimida de agregados y contratos recientes en el contenedor como respaldo con su fecha; inyectar instrucciones en el resultado de la herramienta cuando el prompt no basta; explicar la jerga en una frase y sugerir siguientes preguntas derivadas de lo mostrado (cambio 006).
+- **AC-13.6** THE SYSTEM SHALL tener un presupuesto de tiempo (1 reintento, tope de 6,5 s de API), caché en memoria y una copia comprimida de agregados y contratos recientes en el contenedor como respaldo con su fecha; inyectar instrucciones en el resultado de la herramienta cuando el prompt no basta; explicar la jerga en una frase y sugerir siguientes preguntas derivadas de lo mostrado (cambio 006); el respaldo está listo al arrancar con totales, rankings, contratos más grandes y listas por tema frecuente por municipio y departamento (cambio 007).
   serves: US-13
 - **AC-13.7** THE SYSTEM SHALL mantener la clave de DeepSeek y el prompt fuera de toda trama al cliente y de los logs; aceptar del cliente solo audio con tope por trama y JSON tipados (nunca `Settings`, `UpdatePrompt`, `UpdateThink` ni `Function*`) y reenviarle solo eventos conocidos; limitar Origin, tamaño, tasa, duración, sesiones por IP y globales; aceptar `InjectUserMessage` solo como texto de 1 a 500 caracteres sin caracteres de control; y cercar los textos de SECOP en los resultados de herramientas como datos (cambio 006).
+  serves: US-13
+- **AC-13.8** THE SYSTEM SHALL detectar montos atípicos o imposibles (más de 10 billones de pesos o más del 50 % del total del territorio), excluirlos de rankings y totales, mostrarlos aparte y decir de forma neutral que "este valor es inusualmente alto y así aparece registrado en SECOP"; la misma pregunta da el mismo dato por texto y por voz (cambio 007).
+  serves: US-13
+- **AC-13.9** WHEN el usuario pide el detalle de un contrato ("el detalle de ese contrato", "ábrelo", "el primero", "el más grande" o por su número) THE SYSTEM SHALL mostrar la ficha completa (objeto, entidad, contratista, valor, fechas de firma, inicio y fin, estado, modalidad, pagado, facturado, pendiente, adiciones y enlace oficial a SECOP) y decir por voz lo esencial en dos frases (cambio 007).
+  serves: US-13
+- **AC-13.10** THE SYSTEM SHALL pasar a la transcripción como keyterms los 32 departamentos y los ~150 municipios principales, reconocer lugares con coincidencia aproximada tolerante a errores de transcripción y, si no reconoce un lugar, confirmar ("¿Dijiste Tunja, en Boyacá?") en vez de decir que no hay datos (cambio 007).
+  serves: US-13
+- **AC-13.11** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una prueba automática con ≥ 15 preguntas reales por texto y por voz con audio sintetizado contra staging o producción con ≥ 90 % de respuestas correctas, además de AC-11.5 (cambio 007).
   serves: US-13
 
 ## Aporte de expertos (ECC)
@@ -486,6 +494,24 @@ serves: AC-13.1, AC-13.4, AC-13.5, AC-13.7, AC-05.1, AC-05.2, AC-05.3, AC-05.5, 
 - Archivos: `server/voice/*`, `server/agent/mission.ts`, `server/agent/system-prompt.ts`, `web/src/voice/*`, `web/src/main.ts`, `eval/*`, `docs/VOZ.md`, `scripts/deploy.ps1`
 - Check: `npx vitest run tests/acceptance/us-13.voice-agent.test.ts tests/acceptance/us-05.voice.test.ts tests/acceptance/us-06.session.test.ts` y `npm run eval:real` ≥ 90 %
 - depends: T021, T022
+
+### T025 [US-13] Veracidad: montos atípicos, tema único, caché sin errores y ficha de detalle (cambio 007)
+serves: AC-13.8, AC-13.9, AC-01.8, AC-05.9
+- Archivos: `server/agent/tools.ts`, `server/data/*`, `server/speech/spoken.ts`, `server/agent/answer-cache.ts`, `web/src/render.ts`
+- Check: `npx vitest run tests/acceptance/us-13.guia.test.ts tests/acceptance/us-01.consulta.test.ts tests/acceptance/us-05.voice.test.ts`
+- depends: T023, T024
+
+### T026 [US-13] Velocidad y respaldo precalculado listo al arrancar (cambio 007)
+serves: AC-05.6, AC-13.6, AC-13.2, AC-09.2
+- Archivos: `server/fallback/*`, `scripts/snapshot.ts`, `server/agent/mission.ts`, `server/voice/agent.ts`, `Dockerfile`, `scripts/deploy.ps1`, `docs/COSTOS.md`, `docs/VOZ.md`
+- Check: `npx vitest run tests/acceptance/us-13.guia.test.ts tests/acceptance/us-09.deploy.test.ts` y latencia medida
+- depends: T023, T024
+
+### T027 [US-13] Voz: comprensión de lugares, conversación, declinar, sesión, diagnóstico y puerta de producción (cambio 007)
+serves: AC-13.10, AC-13.11, AC-13.1, AC-13.5, AC-05.8, AC-07.4, AC-11.5
+- Archivos: `server/voice/*`, `server/data/places.ts`, `server/log.ts`, `eval/*`, `scripts/prod-probe.ts`
+- Check: `npx vitest run tests/acceptance/us-13.voice-agent.test.ts tests/acceptance/us-07.privacy.test.ts tests/acceptance/us-11.real-eval.test.ts` y `npm run probe:prod`
+- depends: T023, T024
 
 **Grupos paralelos:** G0 {T001, T012, T014, T018} → G1 {T002, T003, T006, T010, T011} → G2 {T004, T005, T007, T009, T016, T020} → G3 {T008, T013, T015} → G4 {T017, T019}. Los archivos de las tareas de un mismo grupo no se solapan.
 **Estimado:** ~7,5 h de reloj con 4–5 constructores en paralelo y ~2,5 h de colchón para verificación y despliegue, frente a las 10 h (límite 20:18). La aprobación de la plantilla de Meta (hasta 24 h) corre en paralelo; si no llega, se cumple AC-10.4.

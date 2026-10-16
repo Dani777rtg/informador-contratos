@@ -93,6 +93,18 @@ describe('US-07', () => {
     for (const leak of ['Zipaquirá', 'gastó mucho', '890399011', '3001234567', '203.0.113.77']) expect(all).not.toContain(leak);
   });
 
+  it('AC-07.4 (cambio 007) registro por turno de voz: lugar reconocido, código de resultado, ruta y tiempos, sin contenido', async () => {
+    const { createQuestionLogger } = await logMod();
+    const lines: string[] = [];
+    createQuestionLogger((l: string) => lines.push(l))({
+      channel: 'voz', intent: 'ranking', route: 'agente', tools: ['top_entidades'], placeMatched: 'confirmar',
+      resultCode: 'ok', latencyMs: 1800, tokens: 900, question: '¿Cuánto en Tunja?', text: 'respuesta privada',
+    });
+    const all = lines.join('\n');
+    for (const v of ['confirmar', 'resultCode', 'placeMatched', 'agente', '1800']) expect(all).toContain(v);
+    for (const leak of ['Tunja', 'respuesta privada']) expect(all).not.toContain(leak);
+  });
+
   it('AC-07.4 documenta el plazo de borrado de 30 días', () => {
     const doc = readFileSync(resolve(root, 'docs/PRIVACIDAD.md'), 'utf8');
     expect(doc).toMatch(/30\s*días/i);
