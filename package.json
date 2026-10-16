@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "test:a11y": "vitest run tests/acceptance/us-04.ui.test.ts",
     "eval": "tsx eval/run.ts",
+    "eval:real": "tsx eval/real.ts",
     "scan:secrets": "tsx scripts/scan-secrets.ts",
     "loadtest:local": "tsx loadtest/run.ts",
     "wa:template": "tsx scripts/whatsapp-template.ts",

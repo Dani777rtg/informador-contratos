@@ -9,7 +9,9 @@ export const MOCK_ENTITIES: Entity[] = [
   toEntity("899999061", "Alcaldía de Bogotá"),
 ];
 
-const wait = () => new Promise((r) => setTimeout(r, Number(process.env.MOCK_LATENCY_MS_SOCRATA ?? 0)));
+const MOCK_PLACES = [["Cali", "Valle del Cauca"], ["Manizales", "Caldas"], ["Cartagena", "Bolívar"], ["Medellín", "Antioquia"], ["Pasto", "Nariño"]];
+
+const wait =() => new Promise((r) => setTimeout(r, Number(process.env.MOCK_LATENCY_MS_SOCRATA ?? 0)));
 
 type Mode = "ok" | "slow" | "fail" | "empty";
 
@@ -60,6 +62,8 @@ export function createSocrataMock() {
       return c.json([d("Contrato firmado.pdf", 101), d("Contrato firmado.pdf", 101), d("Estudio previo.pdf", 102)]);
     }
     if (!c.req.param("id").startsWith("jbjy-vk9h")) return c.json([]);
+    // Lista de municipios (consulta $group=ciudad,departamento).
+    if (c.req.query("$group") === "ciudad,departamento") return c.json(MOCK_PLACES.map(([ciudad, departamento]) => ({ ciudad, departamento, n: "10" })));
     const agg = (rs: Row[]) => (c.req.query("$select") ?? "").includes("sum(") ? aggregate(rs, c.req.query("$select")!, c.req.query("$group") ?? null) : rs;
     if (hit) return c.json(agg(rows(hit.name, hit.nit, 8)));
     if (/ALUMBRADO/i.test(where + (c.req.query("$q") ?? ""))) return c.json(rows("Alcaldía de Cali", "890399011", 3, "Mantenimiento de alumbrado público"));

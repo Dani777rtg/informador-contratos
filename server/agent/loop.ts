@@ -7,8 +7,8 @@ import { MAX_TOOLS_PER_TURN } from "../guards/validate";
 export { MAX_TOOLS_PER_TURN };
 const LLM_TIMEOUT_MS = 30_000;
 const MAX_ROUNDS = 2; // ronda 1 con herramientas, ronda 2 solo redacta
-const MAX_ROWS = 5;
-const MAX_STR = 60;
+const MAX_ROWS = 10;
+const MAX_STR = 140; // nombres completos de contratistas y entidades
 
 /** Versión compacta de un resultado para el LLM: ≤5 filas, textos cortos, sin URLs. Las tarjetas completas no pasan por aquí. */
 export function compact(v: unknown): unknown {

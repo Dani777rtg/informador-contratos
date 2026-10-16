@@ -6,17 +6,19 @@ import type { createAsker } from "../agent/ask.js";
 import { posNum } from "../guards/validate.js";
 import { clientIp, type createRateLimiter } from "../guards/rate-limit.js";
 import type { createDemandGuard } from "../guards/demand.js";
+import { toSpoken } from "../speech/spoken.js";
 import { issueSessionToken, verifyUpgrade } from "../guards/ws-auth.js";
 
 type Env = Record<string, string | undefined>;
 
-const ACK = "Claro, déjame buscar eso.";
-const ACK_MS = 500;
 const NO_VOICE = "La voz no está disponible por ahora; seguimos por texto.";
 
 /** Voz (Flux STT + Aura TTS) sobre WebSocket. Sin persistencia: ni audio ni transcripciones tocan disco ni logs. */
 export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec: ReturnType<typeof createSessionCodec>,
-  guards: { limiter?: ReturnType<typeof createRateLimiter>; demand?: ReturnType<typeof createDemandGuard> } = {}) {
+  guards: { limiter?: ReturnType<typeof createRateLimiter>; demand?: ReturnType<typeof createDemandGuard> } = {},
+  /** Mismo flujo que el chat de texto (atajos, agente, seguimientos). Sin él, solo el agente. */
+  chat?: (message: string, context: Ctx) => Promise<Record<string, unknown> & { text: string; state: string }>) {
+  const respond = chat ?? (async (m: string, c: Ctx) => { const r = await ask(m, c, "voz"); return { text: r.text, cards: r.cards, state: codec.sign(r.context) }; });
   const secret = env.SESSION_SECRET ?? randomBytes(32).toString("hex");
   const origins = (env.ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const sessionMax = posNum(env.VOICE_SESSION_MAX_SECONDS, 600) * 1000;
@@ -88,21 +90,16 @@ export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec
       const my = ++gen;
       const t0 = Date.now();
       const timing: Record<string, number> = {};
-      let spokenAny = false;
-      const ack = spoken ? setTimeout(() => { if (my === gen && !spokenAny) { spokenAny = true; void speak(ACK, true); } }, ACK_MS) : null;
       try {
-        const r = await ask(message, context, "voz", (s) => {
-          if (my !== gen) return;
-          timing.firstToken ??= Date.now() - t0;
-          if (ack) clearTimeout(ack);
-          if (spoken) { spokenAny = true; void speak(s, true); }
-        });
-        if (ack) clearTimeout(ack);
+        // Sin acuse ni relleno: mientras busca solo hay estado visual; lo primero que se oye es la respuesta real, en palabras y en máximo 2 frases.
+        const r = await respond(message, context);
+        timing.total = Date.now() - t0;
         if (my !== gen) return;
-        context = r.context;
-        send({ type: "message", text: r.text, cards: r.cards, timing, state: codec.sign(context) });
+        context = codec.verify(r.state) ?? context;
+        const say = toSpoken(r.text);
+        if (spoken) for (const part of say.split(/(?<=[.!?])\s+/).filter(Boolean)) void speak(part + " ", true);
+        send({ type: "message", ...r, spoken: say, timing });
       } catch {
-        if (ack) clearTimeout(ack);
         if (my === gen) send({ type: "message", text: "No pude responder en este momento. Intenta de nuevo." });
       }
     }

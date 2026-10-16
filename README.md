@@ -22,6 +22,7 @@ En PowerShell: `$env:MOCK_EXTERNALS="1"; npx tsx server/index.ts`.
 ## Pruebas
 - `npm test`: unitarias y de aceptación (vitest).
 - `npm run eval -- --mock`: evaluación del agente con sustitutos.
+- `npm run eval:real -- --env-file=<ruta al .env>`: ~27 preguntas ciudadanas contra datos.gov.co y DeepSeek **reales** (`eval/real-questions.json`); comprueba que las tarjetas correspondan a la entidad, municipio, departamento y tema pedidos, sin marcado DSML y con fuente. Imprime ok/falla, ms y tokens por pregunta, p50/p95, y escribe `eval/real-results.json`. Cuesta centavos; sale con 1 si hay menos de 90 % ok.
 - `npm run loadtest:local`: carga contra el servidor con sustitutos. **Solo local, nunca contra la nube.**
 - Otros: `npm run lint`, `npm run typecheck`, `npm run test:e2e`, `npm run scan:secrets`.
 
@@ -64,7 +65,7 @@ Copia `.env.example` a `.env`. Con `MOCK_EXTERNALS=1` no se necesita ninguna cla
 ## API
 Cuerpo máximo en `/api/*`: 8 KB. Los errores de `/api/*` tienen forma `{ "text": "...", "cards": [] }`.
 
-**POST `/api/chat`**: `{ "message": string, "state"?: string }`. `state` es el de la respuesta anterior; si es inválido o caducó, empieza conversación nueva. 200: `{ "text", "cards": [], "period": {from,to,defaulted?}, "source": {dataset,queriedAt,dataUpdatedAt,url}, "state" }`. Otros códigos: 400 mensaje inválido o tope de turnos, 413 cuerpo grande, 429 límite por IP (`retry-after`), 503 tope diario, 500 error interno.
+**POST `/api/chat`**: `{ "message": string, "state"?: string }`. `state` es el de la respuesta anterior; si es inválido o caducó, empieza conversación nueva. 200: `{ "text", "cards": [], "period": {from,to,defaulted?}, "source": {dataset,queriedAt,dataUpdatedAt,url}, "state" }`. Si responde el agente, añade `tokens` y `filters` (municipio, departamento, tema, entidad usados). Las tarjetas `contract`/`top` incluyen `city` y `department`; `contractor` es un ranking de contratistas. Otros códigos: 400 mensaje inválido o tope de turnos, 413 cuerpo grande, 429 límite por IP (`retry-after`), 503 tope diario, 500 error interno.
 
 **POST `/session`**: sin cuerpo; requiere cabecera `Origin` permitida. 200 `{ "token" }`; 403 `{ "error": "origin" }`.
 

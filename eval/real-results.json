@@ -1,0 +1,467 @@
+{
+ "runAt": "2026-10-16T17:50:54.387Z",
+ "results": [
+  {
+   "id": "manizales-mayor",
+   "ok": true,
+   "text": "El contrato más grande firmado en Manizales es la operación exclusiva del juego de apuestas permanentes o chance, de la Empresa Departamental para la Salud con Susuerte S.A., por unos $62.000 millones (7 de julio de 2026). El alcance de esta consulta son las entidades de Manizales, Caldas, entre el 16 de octubre de 2025 y el 16 de octubre de 2026.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:02.945Z",
+    "dataUpdatedAt": "2026-10-16T17:49:02.945Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 21287,
+   "tokens": 4167
+  },
+  {
+   "id": "antioquia-vias-empresa",
+   "ok": true,
+   "text": "Este año, la Empresa de Desarrollo Territorial de Don Matías es la que registra más contratos de vías en Antioquia: 18 contratos por unos $15.000 millones. Le siguen Edur Marinilla y Edurha Carepa, con 8 contratos cada una.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:24.231Z",
+    "dataUpdatedAt": "2026-10-16T17:49:24.231Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 5409,
+   "tokens": 3290
+  },
+  {
+   "id": "cartagena-salud-gasto",
+   "ok": true,
+   "text": "En salud, las entidades de Cartagena (Bolívar) registran contratos por categoría entre el 16 de octubre de 2025 y el 16 de octubre de 2026. La categoría con mayor monto es Prestación de servicios: $84.047 millones. El detalle por categoría está en la tarjeta.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:29.640Z",
+    "dataUpdatedAt": "2026-10-16T17:49:29.640Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 3705,
+   "tokens": 3121
+  },
+  {
+   "id": "men-contratista",
+   "ok": true,
+   "text": "El contratista que más recibe del Ministerio de Educación es el Consejo Regional Indígena del Cauca, con cerca de $69.000 millones en 2 contratos. Los siguientes son Correagro ($58.000 millones) y la Universidad Nacional de Colombia ($35.000 millones).",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:33.345Z",
+    "dataUpdatedAt": "2026-10-16T17:49:33.345Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 2989,
+   "tokens": 3183
+  },
+  {
+   "id": "pasto-contratos",
+   "ok": true,
+   "text": "En Pasto (Nariño) aparecen contratos de la Alcaldía de Pasto, en su mayoría de prestación de servicios y apoyo a la gestión. No: son valores por $9 millones, $8 millones, $6 millones y $6 millones, firmados el 14 de octubre de 2026 y en estado \"Aprobado\". Hay más resultados; dime si quieres filtrar por entidad, tema o periodo.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:36.334Z",
+    "dataUpdatedAt": "2026-10-16T17:49:36.334Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 3599,
+   "tokens": 3435
+  },
+  {
+   "id": "medellin-mayor",
+   "ok": true,
+   "text": "El contrato más grande en Medellín es la concesión del Estadio Atanasio Girardot y su área de influencia, por $1,2 billones. Lo firmó el Instituto de Deportes y Recreación de Medellín con la Empresa de Desarrollo Urbano de Medellín.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:39.933Z",
+    "dataUpdatedAt": "2026-10-16T17:49:39.933Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 2861,
+   "tokens": 4137
+  },
+  {
+   "id": "bogota-salud",
+   "ok": true,
+   "text": "El mayor es del Departamento de Cundinamarca - Secretaría de Salud con la ESE Hospital de La Vega, por unos $231 millones, para el programa de enfermedades transmitidas por vectores. Hay más resultados, ¿quieres que los liste o los ordene por valor?",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:42.794Z",
+    "dataUpdatedAt": "2026-10-16T17:49:42.794Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 3139,
+   "tokens": 3515
+  },
+  {
+   "id": "medellin-gasto",
+   "ok": true,
+   "text": "Esto es lo que gasta por categoría Distrito Especial de Ciencia Tecnologia e Innovacion de Medellin. Lo que más se contrata es otro. No indicaste periodo, así que usé los últimos 12 meses.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:45.933Z",
+    "dataUpdatedAt": "2026-10-16T17:49:46.649Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 716,
+   "tokens": 0
+  },
+  {
+   "id": "cali-top",
+   "ok": true,
+   "text": "Estos son los contratos más grandes de Alcaldía de Santiago de Cali. El mayor es de $418.906 millones, con Banco Davivienda. No indicaste periodo, así que usé los últimos 12 meses.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:46.649Z",
+    "dataUpdatedAt": "2026-10-16T17:49:47.183Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 534,
+   "tokens": 0
+  },
+  {
+   "id": "antioquia-fuentes",
+   "ok": true,
+   "text": "Así se reparte, por fuente de recursos, el dinero de Departamento de Antioquia. La fuente principal es presupuesto general de la nación. No indicaste periodo, así que usé los últimos 12 meses.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:47.183Z",
+    "dataUpdatedAt": "2026-10-16T17:49:48.271Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 1089,
+   "tokens": 0
+  },
+  {
+   "id": "narino-pae",
+   "ok": true,
+   "text": "En Nariño encontré contratos del programa de alimentación escolar (PAE) de la Gobernación de Nariño, en Pasto, con corte al 16 de octubre de 2026. El mayor es con el Consejo Comunitario Integración del Telembí, por $5.576 millones. Hay más de cinco registros; la tarjeta muestra el detalle.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:48.272Z",
+    "dataUpdatedAt": "2026-10-16T17:49:48.272Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 4521,
+   "tokens": 3460
+  },
+  {
+   "id": "caldas-vias",
+   "ok": true,
+   "text": "Encontré contratos de vías en Caldas, entre ellos el mejoramiento de vías terciarias de la Gobernación de Caldas por $470 millones y apoyos al control de tránsito en Chinchiná por $6,2 millones cada uno. Hay más resultados; ¿quieres que filtre por municipio o por entidad?",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:52.793Z",
+    "dataUpdatedAt": "2026-10-16T17:49:52.793Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 3178,
+   "tokens": 3597
+  },
+  {
+   "id": "manizales-educacion",
+   "ok": true,
+   "text": "El mayor registrado en la muestra es por unos $24 millones. Hay más resultados disponibles si quieres que amplíe la lista.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:55.971Z",
+    "dataUpdatedAt": "2026-10-16T17:49:55.971Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 3108,
+   "tokens": 3528
+  },
+  {
+   "id": "minsalud-gasto",
+   "ok": true,
+   "text": "Esto es lo que gasta por categoría salud. Lo que más se contrata es otro. No indicaste periodo, así que usé los últimos 12 meses.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:49:59.079Z",
+    "dataUpdatedAt": "2026-10-16T17:50:03.202Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 4123,
+   "tokens": 0
+  },
+  {
+   "id": "mindefensa-top",
+   "ok": true,
+   "text": "Estos son los contratos más grandes de Ministerio de Defensa Nacional. El mayor es de $12.700 millones, con CODALTEC. No indicaste periodo, así que usé los últimos 12 meses.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:03.202Z",
+    "dataUpdatedAt": "2026-10-16T17:50:03.662Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 460,
+   "tokens": 0
+  },
+  {
+   "id": "bogota-pae-empresa",
+   "ok": true,
+   "text": "No pude consultar el modelo en este momento. Intenta de nuevo en unos minutos.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:03.662Z",
+    "dataUpdatedAt": "2026-10-16T17:50:03.662Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 16924,
+   "tokens": 2264
+  },
+  {
+   "id": "cartagena-contratista",
+   "ok": true,
+   "text": "En Cartagena, el contratista que más recibe es el Consorcio Proteccion Cartagena, con $165.000 millones, según los contratos de entidades de Cartagena en el último año.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:20.587Z",
+    "dataUpdatedAt": "2026-10-16T17:50:20.587Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 4737,
+   "tokens": 3196
+  },
+  {
+   "id": "boyaca-vias-gasto",
+   "ok": true,
+   "text": "La mayor parte está en contratos de obra: **$89.204 millones** en 74 contratos.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:25.324Z",
+    "dataUpdatedAt": "2026-10-16T17:50:25.324Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 5079,
+   "tokens": 3128
+  },
+  {
+   "id": "pasto-salud-gasto",
+   "ok": true,
+   "text": "El detalle por tipo de contrato está en la tarjeta.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:30.403Z",
+    "dataUpdatedAt": "2026-10-16T17:50:30.403Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 3263,
+   "tokens": 3021
+  },
+  {
+   "id": "antioquia-gob",
+   "ok": true,
+   "text": "Estos son los contratos de Departamento de Antioquia, de mayor a menor valor. No indicaste periodo, así que usé los últimos 12 meses.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:33.666Z",
+    "dataUpdatedAt": "2026-10-16T17:50:34.066Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 400,
+   "tokens": 0
+  },
+  {
+   "id": "alumbrado",
+   "ok": true,
+   "text": "Estos son los contratos de alumbrado público, de mayor a menor valor. No indicaste periodo, así que usé los últimos 12 meses.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:34.066Z",
+    "dataUpdatedAt": "2026-10-16T17:50:34.536Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 470,
+   "tokens": 0
+  },
+  {
+   "id": "bucaramanga",
+   "ok": true,
+   "text": "Estos son los contratos de Municipio de Bucaramanga, de mayor a menor valor. No indicaste periodo, así que usé los últimos 12 meses.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:34.536Z",
+    "dataUpdatedAt": "2026-10-16T17:50:35.020Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 484,
+   "tokens": 0
+  },
+  {
+   "id": "manizales-2024",
+   "ok": true,
+   "text": "En 2024, los contratos más grandes en Manizales tienen como mayor el de reposición de infraestructura del Hospital Departamental Universitario Santa Sofía de Caldas, por unos $124.809 millones, con la Unión Temporal Santa Sofía. El siguiente es el suministro de energía para alumbrado público del Instituto de Valorización de Manizales, por unos $39.139 millones.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:35.020Z",
+    "dataUpdatedAt": "2026-10-16T17:50:35.020Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 3539,
+   "tokens": 4489
+  },
+  {
+   "id": "pasto-2024",
+   "ok": true,
+   "text": "En 2024, para entidades de Pasto (Nariño), el contrato más grande que aparece es de Loteria de Nariño con Libre Expresión, por unos $1.972 millones, firmado el 31 de diciembre de 2024. Hay más resultados en la tarjeta y el listado sigue.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:38.560Z",
+    "dataUpdatedAt": "2026-10-16T17:50:38.560Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 2831,
+   "tokens": 3686
+  },
+  {
+   "id": "medellin-gasto-2024",
+   "ok": true,
+   "text": "Esto es lo que gasta por categoría Distrito Especial de Ciencia Tecnologia e Innovacion de Medellin. Lo que más se contrata es otro. Periodo: 2024-01-01 a 2024-12-31.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:41.390Z",
+    "dataUpdatedAt": "2026-10-16T17:50:41.911Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 522,
+   "tokens": 0
+  },
+  {
+   "id": "men-2024",
+   "ok": true,
+   "text": "En 2024, para el Ministerio de Educación Nacional, el primer lugar entre los contratistas con más valor recibido es Fundación Pies Descalzos, con $74.000 millones. Los detalles de los 10 primeros están en la tarjeta.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:41.912Z",
+    "dataUpdatedAt": "2026-10-16T17:50:41.912Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 2648,
+   "tokens": 3286
+  },
+  {
+   "id": "cartagena-a-pasto",
+   "ok": true,
+   "text": "En Pasto (Nariño), el gasto en salud del último año se concentra en prestación de servicios, con $11.820 millones. Le siguen \"Otro\" con $9.246 millones y suministros con $825 millones.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:44.560Z",
+    "dataUpdatedAt": "2026-10-16T17:50:44.560Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 3319,
+   "tokens": 3119
+  },
+  {
+   "id": "manizales-ese-contrato",
+   "ok": true,
+   "text": "Este es el detalle y los pagos del contrato.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:47.879Z",
+    "dataUpdatedAt": "2026-10-16T17:50:48.234Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 995,
+   "tokens": 0
+  },
+  {
+   "id": "voz-manizales-mayor",
+   "ok": true,
+   "text": "El contrato más grande en Manizales es la concesión para la operación exclusiva del juego de apuestas permanentes o chance, de la Empresa Departamental para la Salud con Susuerte S.A., por unos $62.317 millones (7 de julio de 2026). Los datos cubren entidades de Manizales, Caldas, entre octubre de 2025 y octubre de 2026.",
+   "spoken": "El contrato más grande en Manizales es la concesión para la operación exclusiva del juego de apuestas permanentes o chance, de la Empresa Departamental para la Salud con Susuerte S A, por unos 62 mil millones de pesos (7 de julio de 2026). Los datos cubren entidades de Manizales, Caldas, entre octubre de 2025 y octubre de 2026.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:48.874Z",
+    "dataUpdatedAt": "2026-10-16T17:50:48.874Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 2318,
+   "tokens": 4147
+  },
+  {
+   "id": "voz-manizales-detalle",
+   "ok": true,
+   "text": "Este es el detalle y los pagos del contrato.",
+   "spoken": "Este es el detalle y los pagos del contrato.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:51.192Z",
+    "dataUpdatedAt": "2026-10-16T17:50:51.609Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 926,
+   "tokens": 0
+  },
+  {
+   "id": "voz-cartagena-gasto",
+   "ok": true,
+   "text": "En salud, las entidades de Cartagena (Bolívar) registran contratos por categoría entre el 16 de octubre de 2025 y el 16 de octubre de 2026. La categoría con mayor monto es Prestación de servicios: $84.047 millones. El detalle por categoría está en la tarjeta.",
+   "spoken": "En salud, las entidades de Cartagena (Bolívar) registran contratos por categoría entre el 16 de octubre de 2025 y el 16 de octubre de 2026. La categoría con mayor monto es Prestación de servicios: 84 mil millones de pesos.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:52.118Z",
+    "dataUpdatedAt": "2026-10-16T17:50:52.118Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 16,
+   "tokens": 0
+  },
+  {
+   "id": "voz-men-contratista",
+   "ok": true,
+   "text": "El contratista que más recibe del Ministerio de Educación es el Consejo Regional Indígena del Cauca, con cerca de $69.000 millones en 2 contratos. Los siguientes son Correagro ($58.000 millones) y la Universidad Nacional de Colombia ($35.000 millones).",
+   "spoken": "El contratista que más recibe del Ministerio de Educación es el Consejo Regional Indígena del Cauca, con cerca de 69 mil millones de pesos en 2 contratos. Los siguientes son Correagro (58 mil millones de pesos) y la Universidad Nacional de Colombia (35 mil millones de pesos).",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:52.136Z",
+    "dataUpdatedAt": "2026-10-16T17:50:52.136Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 32,
+   "tokens": 0
+  },
+  {
+   "id": "voz-cali-top",
+   "ok": true,
+   "text": "Estos son los contratos más grandes de Alcaldía de Santiago de Cali. El mayor es de $418.906 millones, con Banco Davivienda. No indicaste periodo, así que usé los últimos 12 meses.",
+   "spoken": "Estos son los contratos más grandes de Alcaldía de Santiago de Cali. El mayor es de 419 mil millones de pesos, con Banco Davivienda.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:52.168Z",
+    "dataUpdatedAt": "2026-10-16T17:50:52.577Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 409,
+   "tokens": 0
+  },
+  {
+   "id": "voz-cali-primero",
+   "ok": true,
+   "text": "Este es el detalle y los pagos del contrato.",
+   "spoken": "Este es el detalle y los pagos del contrato.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:52.578Z",
+    "dataUpdatedAt": "2026-10-16T17:50:53.004Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 1007,
+   "tokens": 0
+  },
+  {
+   "id": "voz-medellin-gasto",
+   "ok": true,
+   "text": "Esto es lo que gasta por categoría Distrito Especial de Ciencia Tecnologia e Innovacion de Medellin. Lo que más se contrata es otro. No indicaste periodo, así que usé los últimos 12 meses.",
+   "spoken": "Esto es lo que gasta por categoría Distrito Especial de Ciencia Tecnologia e Innovacion de Medellin. Lo que más se contrata es otro.",
+   "source": {
+    "dataset": "jbjy-vk9h",
+    "queriedAt": "2026-10-16T17:50:53.584Z",
+    "dataUpdatedAt": "2026-10-16T17:50:54.386Z",
+    "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+   },
+   "ms": 803,
+   "tokens": 0
+  }
+ ]
+}

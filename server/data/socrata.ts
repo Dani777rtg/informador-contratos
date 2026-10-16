@@ -11,7 +11,10 @@ export const COLUMNS = [
 export type Column = (typeof COLUMNS)[number];
 export type Row = Partial<Record<Column, string>>;
 
-export interface Cond { col: Column; op: "=" | ">=" | "<=" | "like" | "q"; value: string | number }
+/** Columnas solo para filtrar (nunca se seleccionan ni se devuelven): documento del proveedor. */
+export type FilterCol = Column | "documento_proveedor";
+/** "ulike": upper(col) contiene alguno de los términos separados por "|". */
+export interface Cond { col: FilterCol; op: "=" | ">=" | "<=" | "like" | "ulike" | "q"; value: string | number }
 export interface Query {
   select?: Column[]; where?: Cond[]; order?: { col: Column; desc?: boolean }; limit?: number; offset?: number;
 }
@@ -19,6 +22,7 @@ export interface Client {
   base: string; token?: string; fetchFn?: typeof fetch; timeoutMs?: number;
 }
 
+const filterCol = (c: string): string => (c === "documento_proveedor" ? c : col(c));
 const col = (c: string): Column => {
   if (!(COLUMNS as readonly string[]).includes(c)) throw new Error(`columna no permitida: ${c}`);
   return c as Column;
@@ -35,8 +39,12 @@ export function buildParams(q: Query): URLSearchParams {
   const conds = q.where?.filter((c) => c.op !== "q");
   if (conds?.length) {
     p.set("$where", conds.map((c) => {
+      if (c.op === "ulike") {
+        const terms = String(c.value).split("|").map((t) => t.replace(/[%_]/g, "").toUpperCase()).filter(Boolean);
+        return `(${terms.map((t) => `upper(${filterCol(c.col)}) like ${lit(`%${t}%`)}`).join(" OR ")})`;
+      }
       const v = c.op === "like" ? `%${String(c.value).replace(/[%_]/g, "")}%` : c.value;
-      return `${col(c.col)} ${c.op} ${lit(v)}`;
+      return `${filterCol(c.col)} ${c.op} ${lit(v)}`;
     }).join(" AND "));
   }
   if (q.order) p.set("$order", `${col(q.order.col)}${q.order.desc ? " DESC" : ""}`);
@@ -56,7 +64,7 @@ export async function fetchRows(c: Client, params: URLSearchParams, dataset = DA
   if (!res.ok) throw new Error(`socrata ${res.status}`);
   const rows = (await res.json()) as Row[];
   // Contratos sin agregación: solo columnas de la lista permitida (misma regla que privacy.sanitizeRow; no se importa por ciclo).
-  if (dataset !== DATASET || params.has("$group") || !Array.isArray(rows)) return rows;
+  if (dataset !== DATASET || params.has("$group") || params.get("$select")?.includes("(") || !Array.isArray(rows)) return rows;
   return rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => (COLUMNS as readonly string[]).includes(k)))) as Row[];
 }
 
@@ -105,7 +113,14 @@ export function resolveEntity(message: string, index: Entity[]): Resolution {
   // El lugar pesa más que la palabra genérica: gana el que más tokens no genéricos comparte con la pregunta.
   const score = (t: string[]) => new Set(t.filter((w) => w.length > 2 && !GENERIC.has(w) && mt.includes(w))).size;
   const best = Math.max(0, ...cands.map(({ t }) => score(t)));
+  // Una palabra de la pregunta que sí está en nombres de entidades pero en ningún candidato ("Ministerio de Salud" sin ese ministerio en el índice): no listar entidades ajenas.
+  if (best === 0 && mt.some((w) => w.length > 2 && !GENERIC.has(w) && withTokens.some(({ t }) => t.includes(w)))) return { kind: "none" };
   let tied = cands.filter(({ t }) => score(t) === best);
+  // Ministerio: el nombre más corto gana frente a sus dependencias (Ejército, etc.) si es claramente más corto.
+  if (g === "ministerio" && tied.length > 1) {
+    const [a, b] = [...tied].sort((x, y) => x.t.length - y.t.length);
+    if (b.t.length - a.t.length >= 2) tied = [a];
+  }
   // Clara la alcaldía/gobernación: el nombre empieza por la palabra genérica o por el lugar mencionado ("Santiago de Cali Distrito…"), no por una dependencia.
   const heads = tied.filter(({ t }) => { const p = t.slice(0, t.indexOf(g)); return !p.length || p.some((w) => mt.includes(w)); });
   if (heads.length === 1) tied = heads;

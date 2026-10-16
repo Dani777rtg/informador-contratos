@@ -14,7 +14,8 @@ function cardText(c: Card): string {
     case "contract": return [c.entity, c.contractor, c.object, c.value, c.signedAt, c.status].map(s).filter(Boolean).join(" · ");
     case "spend": return `${s(c.category)}: ${s(c.total)} (${s(c.count)} contratos)`;
     case "funding": return `${s(c.source)}: ${s(c.total)}`;
-    case "top": return `${s(c.rank)}. ${s(c.name)}: ${s(c.value)}`;
+    case "top": return [`${s(c.rank)}. ${s(c.name)}: ${s(c.value)}`, c.entity, c.contractor, c.signedAt].map(s).filter(Boolean).join(" · ");
+    case "contractor": return `${s(c.rank)}. ${s(c.name)}: ${s(c.total)} (${s(c.count)} contratos)`;
     case "detail": return `Valor ${s(c.value)} · facturado ${s(c.invoiced)} · pagado ${s(c.paid)} · pendiente ${s(c.pending)}`;
     default: return "";
   }

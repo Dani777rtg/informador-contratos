@@ -11,7 +11,7 @@ Del fin de turno del usuario a la primera palabra del agente: **p95 < 1 s**, met
 | 1 | Detección de fin de turno | Flux (`EndOfTurn`), servidor | Umbral `eot_threshold=0.7`; es la etapa que más pesa. |
 | 2 | STT final | Incluido en Flux: la transcripción llega con el evento de fin de turno | Se transcribe mientras el usuario habla, no después. |
 | 3 | LLM primer token | `timing.firstToken` en el mensaje `message` del servidor | Streaming; no se espera la respuesta completa. |
-| 4 | Datos (consulta SECOP) | Tiempo de la herramienta dentro del turno | Si pasa de 500 ms se dice un acuse breve. |
+| 4 | Datos (consulta SECOP) | Tiempo de la herramienta dentro del turno | Sin acuse ni relleno (AC-05.4): solo estado visual «Buscando en SECOP…». |
 | 5 | TTS primer audio | Primer frame binario tras el primer `Speak`+`Flush` | Una conexión TTS por conversación, sin costo de handshake. |
 
 Latencia percibida = suma de las etapas hasta el **primer audio** reproducible.
@@ -30,7 +30,7 @@ Latencia percibida = suma de las etapas hasta el **primer audio** reproducible.
 - **Streaming LLM → TTS por frases**: se envía al TTS la primera frase completa en cuanto el LLM la termina, sin esperar el resto.
 - **Barge-in**: al detectar voz del usuario (`StartOfTurn`) el servidor envía `Clear` al TTS y `interrupt` al cliente, que vacía su cola de audio.
 - **Eco y ruido**: `getUserMedia` con `echoCancellation`, `noiseSuppression` y `autoGainControl`; evita que el agente se oiga a sí mismo y se interrumpa. https://developer.mozilla.org/docs/Web/API/MediaTrackConstraints
-- **Acuses**: si la consulta tarda más de 500 ms, el agente dice una frase corta en vez de callar.
+- **Sin acuses**: no se dicen muletillas; lo primero que se oye es la respuesta. Todo lo que va al TTS pasa por `toSpoken` (`server/speech/spoken.ts`): cifras en palabras («27 mil millones de pesos»), fechas naturales, sin códigos ni mayúsculas crudas, máximo 2 frases. Análisis (mayores, gasto, fuentes) y seguimientos («dame ese contrato», «el primero») salen por atajo sin LLM; las listas de contratos las resume el agente.
 - **Captura**: AudioWorklet (hilo de audio, sin bloquear la UI) https://developer.mozilla.org/docs/Web/API/AudioWorklet
 
 ## Decisiones

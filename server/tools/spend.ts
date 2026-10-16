@@ -1,7 +1,7 @@
 import { query, type Column, type Cond } from "../data/socrata.js";
 import { withCache } from "../cache.js";
 import { aggregate, money, num } from "../soql.js";
-import { key, type Ctx } from "./search.js";
+import { contractCard, key, type Ctx } from "./search.js";
 
 type Raw = Record<string, string | undefined>;
 
@@ -31,9 +31,23 @@ export const fundingBreakdown = async (ctx: Ctx, where: Cond[]) => {
 };
 
 export const topContracts = async (ctx: Ctx, where: Cond[]) => {
-  // ponytail: el valor es texto, SoQL ordenaria lexicografico; se traen <=100 y se ordena aqui. Exacto solo sobre esa muestra.
-  const r = await withCache(ctx.cache, key("top", where), () => query(ctx.client, { where, limit: 100 }));
-  const cards = [...r.value].sort((a, b) => num(b.valor_del_contrato) - num(a.valor_del_contrato)).slice(0, 10)
-    .map((x, i) => ({ kind: "top", rank: i + 1, name: x.objeto_del_contrato, value: money(num(x.valor_del_contrato)) }));
+  // valor_del_contrato es numérico en Socrata: el orden DESC del servidor es exacto sobre todo el filtro.
+  const r = await withCache(ctx.cache, key("top", where), () => query(ctx.client, { where, order: { col: "valor_del_contrato", desc: true }, limit: 10 }));
+  const rows = [...r.value].sort((a, b) => num(b.valor_del_contrato) - num(a.valor_del_contrato));
+  const cards = rows.map((x, i) => ({
+    kind: "top", rank: i + 1, name: x.objeto_del_contrato, value: money(num(x.valor_del_contrato)),
+    entity: x.nombre_entidad, city: x.ciudad, department: x.departamento, contractor: x.proveedor_adjudicado, signedAt: (x.fecha_de_firma ?? "").slice(0, 10), url: contractCard(x).url,
+  }));
+  // ids en el mismo orden (valor desc): base de «el más grande», «el primero»…
+  return { cards, ids: rows.map((x) => x.id_contrato).filter((i): i is string => Boolean(i)), at: r.at, cached: r.cached };
+};
+
+/** Ranking de contratistas por valor total adjudicado (nombre completo; el documento nunca se selecciona). */
+export const topContractors = async (ctx: Ctx, where: Cond[], by: "sum" | "count" = "sum") => {
+  const r = await withCache(ctx.cache, key(`contractors-${by}`, where), () =>
+    aggregate(ctx.client, { group: "proveedor_adjudicado", sums: ["valor_del_contrato"], where, limit: 10, by }));
+  const cards = (r.value as Raw[]).filter((x) => x.proveedor_adjudicado).map((x, i) => ({
+    kind: "contractor", rank: i + 1, name: x.proveedor_adjudicado, total: money(num(x.s_valor_del_contrato)), count: num(x.n),
+  }));
   return { cards, at: r.at, cached: r.cached };
 };

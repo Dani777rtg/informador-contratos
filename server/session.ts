@@ -6,6 +6,8 @@ export interface Ctx {
   period?: { from: string; to: string };
   contract?: string;
   results?: string[];
+  /** Filtros de la última consulta (municipio, departamento, tema, contratista) para seguimientos. */
+  filtros?: { ciudad?: string; departamento?: string; tema?: string; proveedor?: string; tipo?: string };
   /** Turnos ya respondidos en la conversación (firmado con el contexto). */
   turns?: number;
 }
@@ -23,6 +25,25 @@ export function applyTurn(ctx: Ctx, t: Turn): Ctx {
   if (ctx.turns !== undefined) out.turns = ctx.turns;
   for (const [k, v] of Object.entries(rest)) if (v !== undefined) (out as Record<string, unknown>)[k] = v;
   return out;
+}
+
+const norm = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+const ORDINALS: [RegExp, number][] = [[/\bel (primero|primer contrato)\b/, 0], [/\bel segundo\b/, 1], [/\bel tercero\b/, 2]];
+
+/**
+ * Seguimiento corto sobre los resultados mostrados («dame ese contrato», «el más grande», «el primero», «ábrelo»):
+ * devuelve el id del contrato o null. Los resultados vienen ordenados por valor, así que «el más grande» es el primero.
+ */
+export function resolveFollowUp(message: string, ctx: Ctx): string | null {
+  const ids = ctx.results ?? [];
+  const m = norm(message);
+  if (m.split(" ").length > 8) return null;
+  const ord = ORDINALS.find(([re]) => re.test(m));
+  if (ord) return ids[ord[1]] ?? null;
+  if (/\bel ultimo\b/.test(m)) return ids.at(-1) ?? null;
+  if (/\bel (mas grande|mayor)\b/.test(m)) return ids[0] ?? null;
+  if (/\b(ese|este) contrato\b|\babrelo\b|\bdame ese\b/.test(m)) return ctx.contract ?? ids[0] ?? null;
+  return null;
 }
 
 export function createSessionCodec(o: { keys: Record<number, string>; currentKeyVersion: number; now?: () => number }) {

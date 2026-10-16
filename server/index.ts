@@ -6,7 +6,7 @@ import type { Server } from "node:http";
 import { randomBytes } from "node:crypto";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { applyTurn, createSessionCodec, emptyContext, type Ctx as Ctx2 } from "./session.js";
+import { applyTurn, createSessionCodec, emptyContext, resolveFollowUp, type Ctx as Ctx2 } from "./session.js";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { getConnInfo } from "@hono/node-server/conninfo";
@@ -15,7 +15,10 @@ import { DATASET, fetchRows, query as socrataQuery, normalize, resolveEntity, to
 import demoAnswers from "./fallback/demo-answers.json" with { type: "json" };
 import { demoKey, type DemoEntry, type DemoKind } from "./fallback/demo.js";
 import { Lru } from "./cache.js";
-import { contractCard, MAX_VISIBLE, searchContracts, type Ctx } from "./tools/search.js";
+import { createPlaces, findPlace } from "./data/places.js";
+import { TOPICS } from "./tools/filters.js";
+import { roundAmounts, roundedPesos, normalNames, toSpoken } from "./speech/spoken.js";
+import { byValue, contractCard, MAX_VISIBLE, searchContracts, type Ctx } from "./tools/search.js";
 import { fundingBreakdown, spendByCategory, topContracts } from "./tools/spend.js";
 import { contractDetail } from "./tools/detail.js";
 import { prefilter } from "./agent/guardrails.js";
@@ -40,17 +43,7 @@ import { createNonce, securityHeaders } from "./headers.js";
 
 type Env = Record<string, string | undefined>;
 const DEMO = demoAnswers as Record<string, DemoEntry>;
-// Temas comunes -> términos para $q (texto completo de Socrata; nunca like '%x%' sobre contratos).
-const TOPICS: [RegExp, string][] = [
-  [/alimentacion escolar|\bpae\b/, "alimentacion escolar"], [/alumbrado publico/, "alumbrado publico"],
-  [/\b(vias?|carreteras?|pavimentacion)\b/, "vias"], [/\bsalud\b/, "salud"], [/\beducacion\b/, "educacion"],
-  [/\bagua\b|acueducto/, "agua"], [/\bseguridad\b/, "seguridad"],
-];
-// Nombres como aparecen en el campo departamento del dataset.
-const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "San Andrés, Providencia y Santa Catalina", "Santander", "Sucre", "Tolima", "Valle del Cauca", "Vaupés", "Vichada"]
-  .map((d): [string, string] => [normalize(d), d]).concat([["bogota", "Distrito Capital de Bogotá"]]);
-
-
+type Answer = Record<string, unknown> & { text: string; state: string };
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
 function loadEntities(mock: boolean): Entity[] {
@@ -65,7 +58,7 @@ function loadEntities(mock: boolean): Entity[] {
   }
 }
 
-export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void } {
+export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; chat: (message: string, state: string | undefined, channel: "texto" | "voz") => Promise<Answer>; warm: () => void } {
   const mock = env.MOCK_EXTERNALS === "1";
   if (mock && env.NODE_ENV === "production") throw new Error("MOCK_EXTERNALS=1 no se permite con NODE_ENV=production.");
   const app = new Hono();
@@ -104,17 +97,18 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     await next();
   });
   const ctx: Ctx = { client, cache: new Lru<Row[]>() };
+  const places = createPlaces(client);
   const metrics = createMetrics();
   const logQuestion = createQuestionLogger((line) => console.log(line));
   const llm = createDeepseekLlm({
     baseUrl: env.DEEPSEEK_BASE_URL ?? (mock ? "http://mock.local/__mock/deepseek/v1" : undefined), apiKey: env.DEEPSEEK_API_KEY,
     ...(mock && !env.DEEPSEEK_BASE_URL ? { fetch: ((u: string, i?: RequestInit) => app.request(u.replace("http://mock.local", ""), i)) as typeof fetch } : {}),
   });
-  const ask = createAsker({ tools: createTools(ctx, entities), llm, metrics, log: logQuestion, demand });
+  const ask = createAsker({ tools: createTools(ctx, entities, places), llm, metrics, log: logQuestion, demand });
   // HMAC_SECRET viene de Secret Manager en producción; sin él (local) la clave es efímera y las sesiones no sobreviven a un reinicio.
   const codec = createSessionCodec({ keys: { 1: env.HMAC_SECRET || randomBytes(32).toString("hex") }, currentKeyVersion: 1 });
 
-  const voice = createVoice(env, ask, codec, { limiter, demand });
+  const voice = createVoice(env, ask, codec, { limiter, demand }, (m, c) => answer(m, c, "voz"));
   attach = (s) => { voice.attach(s); mockAttach?.(s); };
 
   app.get("/api/metrics", (c) => env.METRICS_TOKEN && c.req.header("x-metrics-token") === env.METRICS_TOKEN ? c.json(metrics.report()) : c.json({ error: "forbidden" }, 403));
@@ -155,7 +149,11 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     const verified = codec.verify(state) ?? emptyContext();
     const v = validateClientMessage({ type: "message", text: body.message }, { turnCount: verified.turns ?? 0 });
     if (!v.ok) return c.json({ text: v.error, cards: [] }, 400);
-    const message = body.message as string;
+    return c.json(await answer(body.message as string, verified, "texto"));
+  });
+
+  /** Una respuesta del asistente (texto y voz comparten atajos, agente y contexto). */
+  async function answer(message: string, verified: Ctx2, channel: "texto" | "voz"): Promise<Answer> {
     const prev: Ctx2 = { ...verified, turns: (verified.turns ?? 0) + 1 };
     let cur = prev;
     const now = new Date();
@@ -167,8 +165,10 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     const t0 = Date.now();
     let agentUsed = false;
     const reply = (r: Record<string, unknown>) => {
-      if (!agentUsed) { const latencyMs = Date.now() - t0; metrics.record({ channel: "texto", tokens: 0, latencyMs }); logQuestion({ tokens: 0, latencyMs, channel: "texto" }); }
-      return c.json({ cards: [], period, source, state: codec.sign(cur), ...r });
+      if (!agentUsed) { const latencyMs = Date.now() - t0; metrics.record({ channel, tokens: 0, latencyMs }); logQuestion({ tokens: 0, latencyMs, channel }); }
+      // Lenguaje llano: cifra clave redondeada y nombres en formato normal; el valor exacto queda en la tarjeta.
+      const text = typeof r.text === "string" ? roundAmounts(normalNames(r.text)) : r.text;
+      return { cards: [], period, source, state: codec.sign(cur), ...r, text, ...(channel === "voz" && typeof text === "string" ? { spoken: toSpoken(text) } : {}) } as Answer;
     };
 
     const where: Cond[] = [];
@@ -202,9 +202,11 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
       } catch { return fail(); }
     }
     // Detalle de un contrato de la lista anterior (el contexto firmado lleva sus id_contrato).
-    if (/detalle|pagos|avance/.test(norm)) {
+    // También «dame ese contrato», «el más grande», «el primero», «ábrelo»: se resuelven sobre los resultados mostrados (del atajo o del agente).
+    const followId = resolveFollowUp(message, prev);
+    if (/detalle|pagos|avance/.test(norm) || followId) {
       const ids = (prev.results ?? []).filter((i) => /^[\w.-]{1,60}$/.test(i));
-      const id = ids[/segundo/.test(norm) ? 1 : /tercer/.test(norm) ? 2 : 0];
+      const id = followId && /^[\w.-]{1,60}$/.test(followId) ? followId : ids[/segundo/.test(norm) ? 1 : /tercer/.test(norm) ? 2 : 0];
       if (!id) return reply({ text: "Primero pídeme los contratos de una entidad y luego el detalle de uno." });
       try {
         const d = await contractDetail(ctx, id);
@@ -220,16 +222,29 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
       return reply({ text: "Hay varias entidades con ese nombre. ¿Cuál te interesa?", options: res.options.map((e) => e.name) });
     }
     const topicHit = TOPICS.find(([re]) => re.test(norm));
-    const topic = topicHit?.[1];
-    const place = DEPARTAMENTOS.filter(([k]) => ` ${norm} `.includes(` ${k} `)).sort((a, b) => b[0].length - a[0].length)[0]?.[1];
-    // Atajo de reglas: entidad/NIT/tema explícitos o seguimiento claro; lo demás lo resuelve el agente.
-    const followUp = prev.entity && (year || /mas grandes|mayores|btopb|de donde|fuente|origen|recursos|gasta|gasto|en que|contratos|lista/.test(norm) || /^\s*yb/.test(norm));
-    if (res.kind !== "entity" && !nit && !topic && !followUp) {
+    // Un tema que ya es parte del nombre de la entidad ("Ministerio de Educación") no es un filtro aparte.
+    const topic = topicHit && !(res.kind === "entity" && res.entity.norm.includes(normalize(topicHit[1]))) ? topicHit[1] : undefined;
+    const byEntity = res.kind === "entity" || Boolean(nit);
+    // Pregunta por contratistas o por un lugar: el atajo no sabe responderla, la resuelve el agente con filtros completos.
+    const ranking = /\b(empresas?|contratistas?|proveedor(es)?|quien(es)?)\b|que mas|mas contratos/.test(norm);
+    // Atajo sin LLM solo con intención y filtros inequívocos: entidad (o NIT) sola, tema nacional solo, o seguimiento de un atajo previo (sin filtros del agente).
+    const pf = prev.filtros;
+    const analyticsIntent = /mas grandes?|mayor(es)?|\btop\b|de donde|fuente|origen|recursos|gasta|gasto|en que/.test(norm);
+    const followBase = !byEntity && !topic && prev.entity && !pf?.ciudad && !pf?.departamento && !pf?.tema && !pf?.proveedor && pf?.tipo !== "top_contratistas" &&
+      (year || analyticsIntent || /contratos|lista/.test(norm));
+    // La lista de municipios solo hace falta (y solo se espera) si el atajo es posible: así "hola" no espera a Socrata.
+    const known = !ranking && !byEntity && (topic || followBase) ? await places() : [];
+    const hasTerr = Boolean(findPlace(message, known).ciudad || findPlace(message, known).departamento || findPlace(message, known).ambiguous);
+    const followUp = followBase && !hasTerr && known.length > 0;
+    // En voz una lista de contratos no se lee: la resume el agente; los análisis (mayores, gasto, fuentes) y seguimientos sí salen por atajo.
+    const spokenList = channel === "voz" && !analyticsIntent && !(followUp && pf?.tipo && pf.tipo !== "lista");
+    const shortcut = !ranking && !spokenList && (byEntity ? !topic : topic ? !hasTerr && known.length > 0 : Boolean(followUp)); // sin la lista de municipios no se puede descartar un territorio: al agente
+    if (!shortcut) {
       agentUsed = true;
       try {
-        const a = await ask(message, prev, "texto");
+        const a = await ask(message, prev, channel);
         cur = a.context;
-        return reply({ text: a.text || "No pude armar una respuesta con datos oficiales. Intenta con el nombre de la entidad.", cards: a.cards, period: cur.period ?? period, cached: a.cached });
+        return reply({ text: a.text || (a.cards.length ? "Estos son los resultados de tu consulta, con datos oficiales de SECOP." : "No pude armar una respuesta con datos oficiales. Intenta con el nombre de la entidad."), cards: a.cards, period: cur.period ?? period, cached: a.cached, tokens: a.tokens, filters: { ...cur.filtros, entity: cur.entity?.name } });
       } catch { return fail(); }
     }
     // Seguimiento ("¿y en 2024?"): sin entidad/NIT/tema nuevos se reutiliza la entidad del contexto.
@@ -238,11 +253,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     if (explicit && !year) period = { from: day(from), to: day(now), defaulted: true };
     if (res.kind === "entity") { where.push({ col: "nit_entidad", op: "=", value: res.entity.nit }); label = res.entity.name; }
     else if (nit) { where.push({ col: "nit_entidad", op: "=", value: nit }); label = `NIT ${nit}`; }
-    else if (topic) {
-      where.push({ col: "objeto_del_contrato", op: "q", value: topic });
-      if (place) where.push({ col: "departamento", op: "=", value: place });
-      label = place ? `${topic} en ${place}` : topic;
-    }
+    else if (topic) { where.push({ col: "objeto_del_contrato", op: "q", value: topic }); label = topic; }
     else if (prev.entity) { where.push({ col: "nit_entidad", op: "=", value: prev.entity.nit }); label = prev.entity.name; }
     else return reply({ text: "No encontré una entidad, NIT o tema en tu pregunta. Prueba con el nombre de la entidad." });
     const turnEntity = res.kind === "entity" ? res.entity : nit ? { nit, name: `NIT ${nit}` } : undefined;
@@ -254,26 +265,38 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     if (!period.defaulted) where.push({ col: "fecha_de_firma", op: "<=", value: `${period.to}T23:59:59` });
     const periodText = period.defaulted ? "No indicaste periodo, así que usé los últimos 12 meses." : `Periodo: ${period.from} a ${period.to}.`;
 
-    const analytics = /mas grandes|mayores|\btop\b/.test(norm) ? ["Estos son los contratos más grandes de", topContracts, "top"]
-      : /de donde|fuente|origen|recursos/.test(norm) ? ["Así se reparte, por fuente de recursos, el dinero de", fundingBreakdown, "funding"]
-      : /gasta|gasto|en que/.test(norm) ? ["Esto es lo que gasta por categoría", spendByCategory, "spend"] : undefined;
+    const TOP = ["Estos son los contratos más grandes de", topContracts, "top"], FUND = ["Así se reparte, por fuente de recursos, el dinero de", fundingBreakdown, "funding"], SPEND = ["Esto es lo que gasta por categoría", spendByCategory, "spend"];
+    // "¿Y en 2024?": sin intención nueva se conserva la del turno anterior.
+    const prevTipo = followUp && !/contratos|lista/.test(norm) ? pf?.tipo : undefined;
+    const analytics = /mas grandes?|mayor(es)?|\btop\b/.test(norm) ? TOP
+      : /de donde|fuente|origen|recursos/.test(norm) ? FUND
+      : /gasta|gasto|en que/.test(norm) ? SPEND
+      : prevTipo === "mayores" ? TOP : prevTipo === "fuentes_de_recursos" ? FUND : prevTipo === "gasto_por_categoria" ? SPEND : undefined;
+    cur = applyTurn(cur, { filtros: { tipo: analytics === TOP ? "mayores" : analytics === FUND ? "fuentes_de_recursos" : analytics === SPEND ? "gasto_por_categoria" : "lista" } });
     const kind: DemoKind = (analytics?.[2] as DemoKind | undefined) ?? "contracts";
     try {
       if (analytics) {
         const [intro, tool] = analytics as [string, typeof topContracts];
         const r = await tool(ctx, where);
-        if (!r.cards.length) return reply({ text: `No encontré datos para ${label} en el periodo consultado (últimos 12 meses). Prueba ampliando el periodo o revisando el nombre.` });
-        return reply({ text: `${intro} ${label}. ${periodText}`, cards: r.cards, ...withSource(r.at, r.cached) });
+        const noData = period.defaulted ? "en los últimos 12 meses" : `entre ${period.from} y ${period.to}`;
+        if (!r.cards.length) return reply({ text: `No encontré datos para ${label} ${noData}. Prueba ampliando el periodo o revisando el nombre.` });
+        if ("ids" in r) cur = applyTurn(cur, { results: r.ids as string[] });
+        // Cifra clave en lenguaje llano; el valor exacto queda en la tarjeta.
+        const first = r.cards[0] as Record<string, unknown>;
+        const key = kind === "top" ? `El mayor es de ${roundedPesos(Number(String(first.value).replace(/\D/g, "")))}${first.contractor ? `, con ${normalNames(String(first.contractor)).replace(/\.$/, "")}` : ""}.`
+          : kind === "spend" ? `Lo que más se contrata es ${String(first.category).toLowerCase()}.`
+          : `La fuente principal es ${String(first.source).toLowerCase()}.`;
+        return reply({ text: `${intro} ${label}. ${key} ${periodText}`, cards: r.cards, ...withSource(r.at, r.cached) });
       }
       const r = await searchContracts(ctx, where);
       const found = r.value;
       if (!found.length) {
-        return reply({ text: `No encontré contratos para ${label} en el periodo consultado (últimos 12 meses). Prueba ampliando el periodo o revisando el nombre.` });
+        return reply({ text: `No encontré contratos para ${label} ${period.defaulted ? "en los últimos 12 meses" : `entre ${period.from} y ${period.to}`}. Prueba ampliando el periodo o revisando el nombre.` });
       }
-      const shown = found.slice(0, MAX_VISIBLE);
+      const shown = byValue(found.slice(0, MAX_VISIBLE));
       cur = applyTurn(cur, { results: shown.map((x) => x.id_contrato).filter((i): i is string => Boolean(i)) });
       return reply({
-        text: `Estos son los contratos de ${label}. ${periodText}`,
+        text: `Estos son los contratos de ${label}, de mayor a menor valor. ${periodText}`,
         cards: shown.map(contractCard), hasMore: found.length > MAX_VISIBLE, ...withSource(r.at, r.cached),
       });
     } catch {
@@ -284,7 +307,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
         cards: demo.cards, cached: true, source: { ...source, dataUpdatedAt: demo.updatedAt },
       });
     }
-  });
+  }
   // Front (web/dist) en el mismo servicio; va al final: solo atiende lo que ninguna ruta anterior resolvió.
   app.use("*", async (c, next) => {
     await next();
@@ -292,7 +315,9 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
       c.res.headers.set("Cache-Control", c.req.path.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "no-cache");
   });
   app.use("*", serveStatic({ root: "web/dist" }));
-  return { app, attach };
+  // `chat`: mismo flujo que /api/chat, en proceso (evaluación con datos reales).
+  const chat = (message: string, state: string | undefined, channel: "texto" | "voz") => answer(message, codec.verify(state) ?? emptyContext(), channel);
+  return { app, attach, chat, warm: () => void places() };
 }
 
 export async function startServer({ port, env }: { port: number; env: Env }): Promise<{ port: number; close(): Promise<void> }> {
