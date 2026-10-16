@@ -1,4 +1,5 @@
 import { ask, type Reply } from "./api";
+import { loadState, saveState } from "./session";
 import { renderReply, renderError } from "./render";
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -17,7 +18,7 @@ $("accept").addEventListener("click", () => {
 });
 $("privacy-link").addEventListener("click", (e) => { e.preventDefault(); privacy.hidden = false; });
 
-let state: string | undefined;
+let state = loadState();
 async function send(message: string): Promise<void> {
   const text = message.trim();
   if (!text) return;
@@ -27,6 +28,7 @@ async function send(message: string): Promise<void> {
   try {
     const r: Reply = await ask(text, state);
     state = r.state;
+    saveState(state);
     status.textContent = "";
     $("examples").hidden = true;
     renderReply(answer, r, (t) => void send(t));

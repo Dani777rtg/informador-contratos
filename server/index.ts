@@ -3,7 +3,9 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
+import { randomBytes } from "node:crypto";
 import { Hono } from "hono";
+import { applyTurn, createSessionCodec, emptyContext } from "./session.js";
 import { serve } from "@hono/node-server";
 import { DATASET, fetchRows, query as socrataQuery, normalize, resolveEntity, toEntity, type Client, type Cond, type Entity, type Row } from "./data/socrata.js";
 import demoAnswers from "./fallback/demo-answers.json" with { type: "json" };
@@ -65,6 +67,8 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     await next();
   });
   const ctx: Ctx = { client, cache: new Lru<Row[]>() };
+  // HMAC_SECRET viene de Secret Manager en producción; sin él (local) la clave es efímera y las sesiones no sobreviven a un reinicio.
+  const codec = createSessionCodec({ keys: { 1: env.HMAC_SECRET || randomBytes(32).toString("hex") }, currentKeyVersion: 1 });
 
   app.get("/health", (c) => c.json({ ok: true }));
 
@@ -73,12 +77,16 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     const v = validateClientMessage({ type: "message", text: body.message }, { turnCount: 0 });
     if (!v.ok) return c.json({ text: v.error, cards: [] }, 400);
     const message = body.message as string;
-    const state = typeof body.state === "string" ? body.state : "";
+    // Estado firmado inválido, viejo o caducado -> conversación nueva, sin error.
+    const prev = codec.verify(body.state) ?? emptyContext();
+    let cur = prev;
     const now = new Date();
     const from = new Date(now); from.setFullYear(from.getFullYear() - 1);
-    const period = { from: day(from), to: day(now), defaulted: true };
+    const year = /\b(20[12]\d)\b/.exec(message)?.[1];
+    const period: { from: string; to: string; defaulted?: boolean } = year ? { from: `${year}-01-01`, to: `${year}-12-31` }
+      : prev.period ? prev.period : { from: day(from), to: day(now), defaulted: true };
     const source = { dataset: DATASET, queriedAt: now.toISOString(), dataUpdatedAt: now.toISOString(), url: `https://www.datos.gov.co/d/${DATASET}` };
-    const reply = (r: Record<string, unknown>) => c.json({ cards: [], period, source, state, ...r });
+    const reply = (r: Record<string, unknown>) => c.json({ cards: [], period, source, state: codec.sign(cur), ...r });
 
     const where: Cond[] = [];
     let label = "";
@@ -88,8 +96,8 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
 
     // Documentos del contrato de la lista anterior: solo enlaces oficiales, nunca el archivo.
     if (/documento|contrato firmado|estudio previo/.test(norm)) {
-      const ids = state.startsWith("ids:") ? state.slice(4).split(",").filter((i) => /^[\w.-]{1,60}$/.test(i)) : [];
-      const id = ids[/segundo/.test(norm) ? 1 : /tercer/.test(norm) ? 2 : 0];
+      const ids = (prev.results ?? []).filter((i) => /^[\w.-]{1,60}$/.test(i));
+      const id = /segundo|tercer|primer/.test(norm) || !prev.contract ? ids[/segundo/.test(norm) ? 1 : /tercer/.test(norm) ? 2 : 0] : prev.contract;
       if (!id) return reply({ text: "Primero pídeme los contratos de una entidad y luego los documentos de uno." });
       try {
         const [k] = await socrataQuery(client, { where: [{ col: "id_contrato", op: "=", value: id }], limit: 1 });
@@ -106,14 +114,15 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
         });
       } catch { return fail(); }
     }
-    // Detalle de un contrato de la lista anterior (el estado lleva sus id_contrato).
+    // Detalle de un contrato de la lista anterior (el contexto firmado lleva sus id_contrato).
     if (/detalle|pagos|avance/.test(norm)) {
-      const ids = state.startsWith("ids:") ? state.slice(4).split(",").filter((i) => /^[\w.-]{1,60}$/.test(i)) : [];
+      const ids = (prev.results ?? []).filter((i) => /^[\w.-]{1,60}$/.test(i));
       const id = ids[/segundo/.test(norm) ? 1 : /tercer/.test(norm) ? 2 : 0];
       if (!id) return reply({ text: "Primero pídeme los contratos de una entidad y luego el detalle de uno." });
       try {
         const d = await contractDetail(ctx, id);
         if (!d) return reply({ text: "No encontré ese contrato. Prueba pidiendo de nuevo la lista de contratos." });
+        cur = applyTurn(prev, { contract: id });
         return reply({ text: "Este es el detalle y los pagos del contrato.", cards: [d.card], ...withSource(d.at, d.cached) });
       } catch { return fail(); }
     }
@@ -124,11 +133,21 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
       return reply({ text: "Hay varias entidades con ese nombre. ¿Cuál te interesa?", options: res.options.map((e) => e.name) });
     }
     const topic = Object.keys(TOPICS).find((t) => norm.includes(t));
+    // Seguimiento ("¿y en 2024?"): sin entidad/NIT/tema nuevos se reutiliza la entidad del contexto.
+    const explicit = res.kind === "entity" || nit || topic;
     if (res.kind === "entity") { where.push({ col: "nit_entidad", op: "=", value: res.entity.nit }); label = res.entity.name; }
     else if (nit) { where.push({ col: "nit_entidad", op: "=", value: nit }); label = `NIT ${nit}`; }
     else if (topic) { where.push({ col: "objeto_del_contrato", op: "like", value: TOPICS[topic] }); label = topic; }
+    else if (prev.entity) { where.push({ col: "nit_entidad", op: "=", value: prev.entity.nit }); label = prev.entity.name; }
     else return reply({ text: "No encontré una entidad, NIT o tema en tu pregunta. Prueba con el nombre de la entidad." });
+    const turnEntity = res.kind === "entity" ? res.entity : nit ? { nit, name: `NIT ${nit}` } : undefined;
+    cur = applyTurn(prev, {
+      topicChange: explicit ? true : undefined, entity: turnEntity,
+      period: year ? { from: period.from, to: period.to } : undefined,
+    });
     where.push({ col: "fecha_de_firma", op: ">=", value: `${period.from}T00:00:00` });
+    if (!period.defaulted) where.push({ col: "fecha_de_firma", op: "<=", value: `${period.to}T23:59:59` });
+    const periodText = period.defaulted ? "No indicaste periodo, así que usé los últimos 12 meses." : `Periodo: ${period.from} a ${period.to}.`;
 
     const analytics = /mas grandes|mayores|\btop\b/.test(norm) ? ["Estos son los contratos más grandes de", topContracts]
       : /de donde|fuente|origen|recursos/.test(norm) ? ["Así se reparte, por fuente de recursos, el dinero de", fundingBreakdown]
@@ -138,7 +157,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
         const [intro, tool] = analytics as [string, typeof topContracts];
         const r = await tool(ctx, where);
         if (!r.cards.length) return reply({ text: `No encontré datos para ${label} en el periodo consultado (últimos 12 meses). Prueba ampliando el periodo o revisando el nombre.` });
-        return reply({ text: `${intro} ${label}. No indicaste periodo, así que usé los últimos 12 meses.`, cards: r.cards, ...withSource(r.at, r.cached) });
+        return reply({ text: `${intro} ${label}. ${periodText}`, cards: r.cards, ...withSource(r.at, r.cached) });
       }
       const r = await searchContracts(ctx, where);
       const found = r.value;
@@ -146,10 +165,10 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
         return reply({ text: `No encontré contratos para ${label} en el periodo consultado (últimos 12 meses). Prueba ampliando el periodo o revisando el nombre.` });
       }
       const shown = found.slice(0, MAX_VISIBLE);
+      cur = applyTurn(cur, { results: shown.map((x) => x.id_contrato).filter((i): i is string => Boolean(i)) });
       return reply({
-        text: `Estos son los contratos de ${label}. No indicaste periodo, así que usé los últimos 12 meses.`,
-        cards: shown.map(contractCard), hasMore: found.length > MAX_VISIBLE,
-        state: `ids:${shown.map((x) => x.id_contrato).filter(Boolean).join(",")}`, ...withSource(r.at, r.cached),
+        text: `Estos son los contratos de ${label}. ${periodText}`,
+        cards: shown.map(contractCard), hasMore: found.length > MAX_VISIBLE, ...withSource(r.at, r.cached),
       });
     } catch {
       const demo = res.kind === "entity" ? DEMO[res.entity.nit] : undefined;

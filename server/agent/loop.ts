@@ -4,13 +4,8 @@ import { allowedNumbers, verifyNumbers } from "./verify-numbers";
 export const MAX_TOOLS_PER_TURN = 3;
 const MAX_ROUNDS = 3;
 
-/** Contexto acumulado entre turnos (T009 lo firma y lo persiste). */
-export interface Ctx {
-  entity?: { nit: string; name: string };
-  period?: { from: string; to: string };
-  contract?: string;
-  results?: string[];
-}
+import type { Ctx } from "../session";
+export type { Ctx };
 export type Card = { kind: string } & Record<string, unknown>;
 
 export interface ToolResult {
