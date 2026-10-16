@@ -1,0 +1,13 @@
+{
+  "890399011": {
+    "updatedAt": "2026-10-01T00:00:00.000Z",
+    "label": "Alcaldía de Cali",
+    "cards": [
+      {
+        "kind": "contract", "entity": "Alcaldía de Cali", "contractor": "Contratista de ejemplo (respuesta precalculada)",
+        "object": "Prestación de servicios de apoyo a la gestión", "value": "$123.456.789", "signedAt": "2026-09-15",
+        "status": "En ejecución", "url": "https://www.datos.gov.co/d/jbjy-vk9h"
+      }
+    ]
+  }
+}

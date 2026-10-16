@@ -5,7 +5,12 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { DATASET, normalize, query, resolveEntity, toEntity, type Client, type Cond, type Entity, type Row } from "./data/socrata.js";
+import { DATASET, normalize, resolveEntity, toEntity, type Client, type Cond, type Entity, type Row } from "./data/socrata.js";
+import demoAnswers from "./fallback/demo-answers.json" with { type: "json" };
+import { Lru } from "./cache.js";
+import { contractCard, MAX_VISIBLE, searchContracts, type Ctx } from "./tools/search.js";
+import { fundingBreakdown, spendByCategory, topContracts } from "./tools/spend.js";
+import { contractDetail } from "./tools/detail.js";
 import { createSocrataMock, MOCK_ENTITIES } from "./mocks/socrata.js";
 import { createDeepseekMock } from "./mocks/deepseek.js";
 import { attachDeepgramMock } from "./mocks/deepgram.js";
@@ -16,11 +21,10 @@ import { validateClientMessage } from "./guards/validate.js";
 import { createNonce, securityHeaders } from "./headers.js";
 
 type Env = Record<string, string | undefined>;
-const MAX_VISIBLE = 5;
+const DEMO = demoAnswers as Record<string, { updatedAt: string; cards: Record<string, unknown>[] }>;
 // ponytail: temas fijos; la búsqueda libre por texto llega con T002 (herramientas SoQL).
 const TOPICS: Record<string, string> = { "alumbrado publico": "ALUMBRADO PUBLICO" };
 
-const money = (v: string) => `$${String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
 function loadEntities(env: Env, mock: boolean): Entity[] {
@@ -58,6 +62,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     if (!d.allowed) return c.json({ text: d.message, cards: [] }, 503);
     await next();
   });
+  const ctx: Ctx = { client, cache: new Lru<Row[]>() };
 
   app.get("/health", (c) => c.json({ ok: true }));
 
@@ -75,38 +80,64 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
 
     const where: Cond[] = [];
     let label = "";
+    const norm = normalize(message);
+    const withSource = (at: Date, cached: boolean) => ({ source: { ...source, dataUpdatedAt: at.toISOString() }, cached });
+    const fail = () => reply({ text: "No pude consultar datos.gov.co en este momento y no tengo una copia guardada. Intenta de nuevo en unos minutos." });
+
+    // Detalle de un contrato de la lista anterior (el estado lleva sus id_contrato).
+    if (/detalle|pagos|avance/.test(norm)) {
+      const ids = state.startsWith("ids:") ? state.slice(4).split(",").filter((i) => /^[\w.-]{1,60}$/.test(i)) : [];
+      const id = ids[/segundo/.test(norm) ? 1 : /tercer/.test(norm) ? 2 : 0];
+      if (!id) return reply({ text: "Primero pídeme los contratos de una entidad y luego el detalle de uno." });
+      try {
+        const d = await contractDetail(ctx, id);
+        if (!d) return reply({ text: "No encontré ese contrato. Prueba pidiendo de nuevo la lista de contratos." });
+        return reply({ text: "Este es el detalle y los pagos del contrato.", cards: [d.card], ...withSource(d.at, d.cached) });
+      } catch { return fail(); }
+    }
+
     const nit = /\bnit\s*:?\s*([\d.]{6,13})/i.exec(message)?.[1]?.replace(/\D/g, "");
     const res = resolveEntity(message, entities);
     if (res.kind === "ambiguous") {
       return reply({ text: "Hay varias entidades con ese nombre. ¿Cuál te interesa?", options: res.options.map((e) => e.name) });
     }
-    const topic = Object.keys(TOPICS).find((t) => normalize(message).includes(t));
+    const topic = Object.keys(TOPICS).find((t) => norm.includes(t));
     if (res.kind === "entity") { where.push({ col: "nit_entidad", op: "=", value: res.entity.nit }); label = res.entity.name; }
     else if (nit) { where.push({ col: "nit_entidad", op: "=", value: nit }); label = `NIT ${nit}`; }
     else if (topic) { where.push({ col: "objeto_del_contrato", op: "like", value: TOPICS[topic] }); label = topic; }
     else return reply({ text: "No encontré una entidad, NIT o tema en tu pregunta. Prueba con el nombre de la entidad." });
     where.push({ col: "fecha_de_firma", op: ">=", value: `${period.from}T00:00:00` });
 
-    let found: Row[];
+    const analytics = /mas grandes|mayores|\btop\b/.test(norm) ? ["Estos son los contratos más grandes de", topContracts]
+      : /de donde|fuente|origen|recursos/.test(norm) ? ["Así se reparte, por fuente de recursos, el dinero de", fundingBreakdown]
+      : /gasta|gasto|en que/.test(norm) ? ["Esto es lo que gasta por categoría", spendByCategory] : undefined;
     try {
-      found = await query(client, { where, order: { col: "fecha_de_firma", desc: true }, limit: MAX_VISIBLE + 1 });
+      if (analytics) {
+        const [intro, tool] = analytics as [string, typeof topContracts];
+        const r = await tool(ctx, where);
+        if (!r.cards.length) return reply({ text: `No encontré datos para ${label} en el periodo consultado (últimos 12 meses). Prueba ampliando el periodo o revisando el nombre.` });
+        return reply({ text: `${intro} ${label}. No indicaste periodo, así que usé los últimos 12 meses.`, cards: r.cards, ...withSource(r.at, r.cached) });
+      }
+      const r = await searchContracts(ctx, where);
+      const found = r.value;
+      if (!found.length) {
+        return reply({ text: `No encontré contratos para ${label} en el periodo consultado (últimos 12 meses). Prueba ampliando el periodo o revisando el nombre.` });
+      }
+      const shown = found.slice(0, MAX_VISIBLE);
+      return reply({
+        text: `Estos son los contratos de ${label}. No indicaste periodo, así que usé los últimos 12 meses.`,
+        cards: shown.map(contractCard), hasMore: found.length > MAX_VISIBLE,
+        state: `ids:${shown.map((x) => x.id_contrato).filter(Boolean).join(",")}`, ...withSource(r.at, r.cached),
+      });
     } catch {
-      return reply({ text: "No pude consultar datos.gov.co en este momento. Intenta de nuevo en unos minutos." });
+      const demo = res.kind === "entity" ? DEMO[res.entity.nit] : undefined;
+      if (!demo) return fail();
+      return reply({
+        text: `datos.gov.co no respondió; te muestro una respuesta precalculada del ${demo.updatedAt.slice(0, 10)}.`,
+        cards: demo.cards, cached: true, source: { ...source, dataUpdatedAt: demo.updatedAt },
+      });
     }
-    if (!found.length) {
-      return reply({ text: `No encontré contratos para ${label} en el periodo consultado (últimos 12 meses). Prueba ampliando el periodo o revisando el nombre.` });
-    }
-    const cards = found.slice(0, MAX_VISIBLE).map((r) => ({
-      kind: "contract", entity: r.nombre_entidad, contractor: r.proveedor_adjudicado, object: r.objeto_del_contrato,
-      value: money(r.valor_del_contrato ?? "0"), signedAt: (r.fecha_de_firma ?? "").slice(0, 10), status: r.estado_contrato,
-      url: typeof r.urlproceso === "object" ? (r.urlproceso as { url?: string }).url : r.urlproceso,
-    }));
-    return reply({
-      text: `Estos son los contratos de ${label}. No indicaste periodo, así que usé los últimos 12 meses.`,
-      cards, hasMore: found.length > MAX_VISIBLE,
-    });
   });
-
   return { app, attach };
 }
 

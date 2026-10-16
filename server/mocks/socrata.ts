@@ -18,7 +18,22 @@ function rows(entity: string, nit: string, n: number, object = "Prestación de s
     fecha_de_firma: `2026-0${(i % 9) + 1}-15T00:00:00.000`, estado_contrato: i % 2 ? "Terminado" : "En ejecución",
     urlproceso: { url: `https://community.secop.gov.co/Public/Tools/gv_ViewContract?id=${nit}${i}` } as unknown as string,
     tipo_de_contrato: "Prestación de servicios", origen_de_los_recursos: i % 2 ? "Recursos propios" : "Presupuesto General",
-    proceso_de_compra: `CO1.BDOS.${i + 1}`, departamento: "Valle del Cauca", ciudad: "Cali",
+    proceso_de_compra: `CO1.BDOS.${i + 1}`, id_contrato: `CO1.${nit}.${i}`,
+    presupuesto_general_de_la_nacion_pgn: String((i + 1) * 1000000), recursos_propios: String((i % 3) * 500000),
+    sistema_general_de_participaciones: "0", sistema_general_de_regal_as: "0", recursos_de_credito: "0",
+    valor_facturado: String((i + 1) * 100000000), valor_pagado: String((i + 1) * 90000000), valor_pendiente_de_pago: String((i + 1) * 10000000), dias_adicionados: String(i * 10), departamento: "Valle del Cauca", ciudad: "Cali",
+  }));
+}
+
+/** Agrega como lo haria SoQL: $group + sum(col) as alias + count(*) as n. */
+function aggregate(rs: Row[], select: string, group: string | null): Record<string, string>[] {
+  const sums = [...select.matchAll(/sum\((\w+)\) as (\w+)/g)];
+  const groups = new Map<string, Row[]>();
+  for (const r of rs) { const k = group ? String(r[group as keyof Row]) : ""; groups.set(k, [...(groups.get(k) ?? []), r]); }
+  return [...groups].map(([k, g]) => ({
+    ...(group ? { [group]: k } : {}),
+    ...Object.fromEntries(sums.map(([, c, a]) => [a, String(g.reduce((t, r) => t + Number(r[c as keyof Row] ?? 0), 0))])),
+    n: String(g.length),
   }));
 }
 
@@ -37,7 +52,9 @@ export function createSocrataMock() {
     if (mode === "empty") return c.json([]);
     const where = c.req.query("$where") ?? "";
     const hit = MOCK_ENTITIES.find((e) => where.includes(e.nit));
-    if (hit) return c.json(rows(hit.name, hit.nit, 8));
+    if (!c.req.param("id").startsWith("jbjy-vk9h")) return c.json([]);
+    const agg = (rs: Row[]) => (c.req.query("$select") ?? "").includes("sum(") ? aggregate(rs, c.req.query("$select")!, c.req.query("$group") ?? null) : rs;
+    if (hit) return c.json(agg(rows(hit.name, hit.nit, 8)));
     if (/ALUMBRADO/i.test(where)) return c.json(rows("Alcaldía de Cali", "890399011", 3, "Mantenimiento de alumbrado público"));
     return c.json([]);
   });

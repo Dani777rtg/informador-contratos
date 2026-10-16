@@ -4,7 +4,9 @@ export const MAX_LIMIT = 100;
 export const COLUMNS = [
   "nombre_entidad", "nit_entidad", "proveedor_adjudicado", "objeto_del_contrato", "valor_del_contrato",
   "fecha_de_firma", "estado_contrato", "urlproceso", "tipo_de_contrato", "origen_de_los_recursos",
-  "proceso_de_compra", "departamento", "ciudad",
+  "proceso_de_compra", "departamento", "ciudad", "id_contrato", "sector", "modalidad_de_contratacion",
+  "presupuesto_general_de_la_nacion_pgn", "sistema_general_de_participaciones", "sistema_general_de_regal_as",
+  "recursos_propios", "recursos_de_credito", "valor_facturado", "valor_pagado", "valor_pendiente_de_pago", "dias_adicionados",
 ] as const;
 export type Column = (typeof COLUMNS)[number];
 export type Row = Partial<Record<Column, string>>;
@@ -39,8 +41,10 @@ export function buildParams(q: Query): URLSearchParams {
   return p;
 }
 
-export async function query(c: Client, q: Query, dataset = DATASET): Promise<Row[]> {
-  const url = `${c.base}/resource/${dataset}.json?${buildParams(q)}`;
+export const query = (c: Client, q: Query, dataset = DATASET): Promise<Row[]> => fetchRows(c, buildParams(q), dataset);
+
+export async function fetchRows(c: Client, params: URLSearchParams, dataset = DATASET): Promise<Row[]> {
+  const url = `${c.base}/resource/${dataset}.json?${params}`;
   const f = c.fetchFn ?? fetch;
   const headers: Record<string, string> = c.token ? { "X-App-Token": c.token } : {};
   let timer: ReturnType<typeof setTimeout> | undefined;
