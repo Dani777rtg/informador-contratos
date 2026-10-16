@@ -17,7 +17,7 @@ Write-Host "Revisión anterior (para rollback): $prev"
 gcloud run deploy $Service --project $Project --region $Region --image $Image `
   --min-instances 0 --max-instances 5 --cpu-boost --timeout 3600 --allow-unauthenticated --no-traffic `
   --set-secrets 'DEEPSEEK_API_KEY=DEEPSEEK_API_KEY:latest,DEEPGRAM_API_KEY=DEEPGRAM_API_KEY:latest,DATOSGOV_APP_TOKEN=DATOSGOV_APP_TOKEN:latest,WHATSAPP_ACCESS_TOKEN=WHATSAPP_ACCESS_TOKEN:latest,HMAC_SECRET=HMAC_SECRET:latest' `
-  --set-env-vars "NODE_ENV=production,ALLOWED_ORIGINS=$HostingUrl"
+  --set-env-vars "NODE_ENV=production,ALLOWED_ORIGINS=$HostingUrl,GOOGLE_CLOUD_PROJECT=$Project,DEEPSEEK_MODEL=$(if ($env:DEEPSEEK_MODEL) { $env:DEEPSEEK_MODEL } else { 'deepseek-flash' }),WHATSAPP_API_VERSION=$env:WHATSAPP_API_VERSION,WHATSAPP_PHONE_NUMBER_ID=$env:WHATSAPP_PHONE_NUMBER_ID,WHATSAPP_BUSINESS_ACCOUNT_ID=$env:WHATSAPP_BUSINESS_ACCOUNT_ID"
 if ($LASTEXITCODE) { throw 'deploy falló' }
 
 # Producción solo con aprobación explícita del dueño.
