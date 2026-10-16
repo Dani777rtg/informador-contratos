@@ -23,6 +23,8 @@ export function createTopicGuard(entities: Entity[]) {
       uniquePlaces.some((p) => m.includes(` ${p} `) && !cur.includes(` ${p} `)) ||
       (TOPIC.test(m) && !TOPIC.test(cur));
     if (!changed) return ctx;
-    return ctx.turns === undefined ? {} : { turns: ctx.turns };
+    // «¿Y en Antioquia?»: cambia el lugar pero no la intención; solo el tipo de consulta sobrevive (ver followHint en loop.ts).
+    const keep = ctx.filtros?.tipo && /^\s*y\s+(en|de|del|para|con)\s/.test(m.replace(/^\s*[¿]/, " ")) ? { filtros: { tipo: ctx.filtros.tipo } } : {};
+    return ctx.turns === undefined ? keep : { turns: ctx.turns, ...keep };
   };
 }

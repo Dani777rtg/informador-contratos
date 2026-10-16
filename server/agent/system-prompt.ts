@@ -1,7 +1,8 @@
-import { MISSION_PROMPT } from "./mission";
+import { MISSION_PROMPT, VOICE_AMOUNTS } from "./mission.js";
 
-/** Mismo prompt que el Voice Agent: ambos canales comparten misión (AC-13.1). Prefijo estático para la caché por prefijo. */
-export const SYSTEM_PROMPT = MISSION_PROMPT;
+/** Misma misión que el Voice Agent (AC-13.1); solo cambia la línea de montos: cifras en texto, palabras en voz. Prefijo estático para la caché por prefijo. */
+const TEXT_AMOUNTS = '- Montos en pesos con cifra redondeada y escala ("$804.000 millones de pesos"), nunca en palabras ni con todos los dígitos; el número de contratos exacto como lo devuelve la herramienta ("5.560 contratos"); el valor exacto está en la tarjeta. Nombres en formato normal, sin códigos ni identificadores. Fechas naturales.';
+export const SYSTEM_PROMPT = MISSION_PROMPT.replace(VOICE_AMOUNTS, TEXT_AMOUNTS);
 
 export const DATA_OPEN = "<datos_secop>";
 export const DATA_CLOSE = "</datos_secop>";

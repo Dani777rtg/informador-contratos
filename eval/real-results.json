@@ -1,108 +1,108 @@
 {
- "runAt": "2026-10-16T19:37:44.626Z",
+ "runAt": "2026-10-16T22:56:32.467Z",
  "results": [
   {
    "id": "manizales-mayor",
    "ok": true,
-   "text": "El contrato más grande firmado en Manizales en el último año es la concesión del juego de apuestas permanentes o chance en Caldas, con Susuerte, por unos sesenta y dos mil trescientos millones de pesos, firmado el siete de julio, y lo contrató la Empresa Departamental para la Salud. ¿Quiere ver el detalle de ese contrato o el ranking de los más grandes de Manizales?",
+   "text": "El contrato más grande firmado con entidades con sede en Manizales es de la Empresa Departamental para la Salud con Susuerte S.A., por la operación del chance, con $62.317 millones de pesos, firmado el 7 de julio de 2026. ¿Quieres ver el detalle de ese contrato o los mayores contratistas de Manizales?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:24:58.915Z",
-    "dataUpdatedAt": "2026-10-16T19:24:58.915Z",
+    "queriedAt": "2026-10-16T22:43:09.186Z",
+    "dataUpdatedAt": "2026-10-16T22:43:09.186Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 6342,
-   "tokens": 5807
+   "ms": 3751,
+   "tokens": 3731
   },
   {
    "id": "antioquia-vias-empresa",
    "ok": true,
-   "text": "En Antioquia, entre enero y diciembre de este año, la que lidera en cantidad de contratos de vías es la Empresa de Desarrollo Territorial de Donmatías, con dieciocho contratos; le siguen Edur Marinilla y Edurha Carepa, con ocho cada una. Los demás resultados están en pantalla. ¿Quieres ver los contratos de alguna de ellas?",
+   "text": "En Antioquia, en 2025, la empresa con más contratos de vías es la Empresa de Desarrollo Territorial de Donmatías, con 18 contratos por unos $15.000 millones de pesos. ¿Quieres ver el detalle de alguno de esos contratos?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:05.244Z",
-    "dataUpdatedAt": "2026-10-16T19:25:05.244Z",
+    "queriedAt": "2026-10-16T22:43:12.926Z",
+    "dataUpdatedAt": "2026-10-16T22:43:12.926Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 10878,
-   "tokens": 5940
+   "ms": 7398,
+   "tokens": 3734
   },
   {
    "id": "cartagena-salud-gasto",
    "ok": true,
-   "text": "En Cartagena se han contratado unos ciento cuarenta y nueve mil millones de pesos en temas de salud, en mil setecientos setenta y un contratos, entre el 16 de octubre de 2025 y el 16 de octubre de 2026. ¿Quieres ver qué entidades de salud contratan más, o prefieres el listado de los contratos más grandes?",
+   "text": "En Cartagena, Bolívar, y solo contando entidades con sede allí, se han registrado $149.000 millones de pesos en 1.771 contratos de tema salud en el último año (octubre de 2025 a octubre de 2026). Ojo: ahí pueden entrar la gobernación o entidades nacionales con sede en el municipio. ¿Quieres ver las entidades que más han contratado en salud o los contratos más grandes?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:16.122Z",
-    "dataUpdatedAt": "2026-10-16T19:25:16.122Z",
+    "queriedAt": "2026-10-16T22:43:20.323Z",
+    "dataUpdatedAt": "2026-10-16T22:43:20.323Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 5304,
-   "tokens": 5674
+   "ms": 4422,
+   "tokens": 3630
   },
   {
    "id": "men-contratista",
    "ok": true,
-   "text": "En el Ministerio de Educación, entre octubre de dos mil veinticinco y octubre de dos mil veintiséis, el contratista que más recibe es el Consejo Regional Indígena del Cauca, con unos sesenta y nueve mil millones de pesos en dos contratos; le siguen Correagro y la Universidad Nacional. ¿Quieres ver el detalle de alguno de esos contratos?",
+   "text": "El Consejo Regional Indígena del Cauca es el que más recibe del Ministerio de Educación, con $69.277 millones de pesos según lo registrado en el SECOP. ¿Quieres ver el detalle de esos contratos?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:21.426Z",
-    "dataUpdatedAt": "2026-10-16T19:25:21.426Z",
+    "queriedAt": "2026-10-16T22:43:24.745Z",
+    "dataUpdatedAt": "2026-10-16T22:43:24.745Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3345,
-   "tokens": 5750
+   "ms": 3048,
+   "tokens": 3605
   },
   {
    "id": "pasto-contratos",
    "ok": true,
-   "text": "En Pasto, Nariño, en el último año la Alcaldía aparece con varios contratos de prestación de servicios; entre los primeros están uno de nueve millones, otro de ocho millones y uno de seis millones de pesos. Hay más resultados en pantalla, ¿quieres ver el detalle de alguno o prefieres el ranking de las entidades que más contratan en Pasto?",
+   "text": "En Pasto, entre octubre de 2025 y octubre de 2026, aparecen contratos de entidades con sede allí, como el acueducto de Tumaco por $57.978 millones de pesos y el PAE de la Alcaldía de Pasto por $25.969 millones de pesos. Ojo: hay un contrato registrado con un valor inusualmente alto, así aparece en SECOP. ¿Quieres ver el detalle de alguno o prefieres el panorama por entidad?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:24.770Z",
-    "dataUpdatedAt": "2026-10-16T19:25:24.770Z",
+    "queriedAt": "2026-10-16T22:43:27.793Z",
+    "dataUpdatedAt": "2026-10-16T22:43:27.793Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3276,
-   "tokens": 5988
+   "ms": 3430,
+   "tokens": 4439
   },
   {
    "id": "medellin-mayor",
    "ok": true,
-   "text": "En Medellín, entre octubre de 2025 y octubre de 2026, el contrato más grande es la concesión del Estadio Atanasio Girardot y su área de influencia, por un billón doscientos mil millones de pesos, firmado por el Instituto de Deportes y Recreación con la Empresa de Desarrollo Urbano. Le siguen un crédito de deuda pública del Distrito de Ciencia, Tecnología e Innovación con Bancolombia por quinientos tres mil millones, y un convenio del ICBF Regional Antioquia con ese mismo Distrito por ciento sesenta y cinco mil millones. ¿Quieres que abra el detalle del contrato del estadio?",
+   "text": "El contrato más grande en Medellín es la concesión del Estadio Atanasio Girardot, firmado el 16 de septiembre de 2026 con la Empresa de Desarrollo Urbano de Medellín por $1,2 billones de pesos. Ojo: son contratos de entidades con sede en Medellín, así que pueden incluir la gobernación o entidades nacionales. ¿Quieres que te muestre el detalle de ese contrato?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:28.046Z",
-    "dataUpdatedAt": "2026-10-16T19:25:28.046Z",
+    "queriedAt": "2026-10-16T22:43:31.223Z",
+    "dataUpdatedAt": "2026-10-16T22:43:31.223Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3188,
-   "tokens": 6123
+   "ms": 2879,
+   "tokens": 3747
   },
   {
    "id": "bogota-salud",
    "ok": true,
-   "text": "En Bogotá, en el último año, aparecen contratos de salud como uno del Instituto Nacional de Salud por unos veintiún millones de pesos y otro de la Unidad Prestadora de Salud Bogotá por unos cinco millones; en pantalla hay cinco en total. ¿Quieres ver el detalle de alguno de esos contratos?",
+   "text": "Estos son los contratos de salud más grandes registrados con entidades con sede en Bogotá, entre el 16 de octubre de 2025 y el 16 de octubre de 2026. El primero es de la Secretaría de Salud de Cundinamarca con el Hospital El Salvador de Ubaté, por $120.000 millones de pesos, firmado el 7 de noviembre de 2025. ¿Quieres ver el detalle de ese contrato o prefieres otro tema?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:31.234Z",
-    "dataUpdatedAt": "2026-10-16T19:25:31.234Z",
+    "queriedAt": "2026-10-16T22:43:34.102Z",
+    "dataUpdatedAt": "2026-10-16T22:43:34.102Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3536,
-   "tokens": 6317
+   "ms": 2752,
+   "tokens": 4348
   },
   {
    "id": "medellin-gasto",
    "ok": true,
-   "text": "Esto es lo que gasta por categoría Distrito Especial de Ciencia Tecnologia e Innovacion de Medellin. Lo que más se contrata es otro. No indicaste periodo, así que usé los últimos 12 meses.",
+   "text": "Esto es lo que gasta por categoría Distrito Especial de Ciencia Tecnologia e Innovacion de Medellin. Lo que más se contrata es prestación de servicios. No indicaste periodo, así que usé los últimos 12 meses.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:34.770Z",
-    "dataUpdatedAt": "2026-10-16T19:25:35.919Z",
+    "queriedAt": "2026-10-16T22:43:36.854Z",
+    "dataUpdatedAt": "2026-10-16T22:43:37.541Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 1151,
+   "ms": 689,
    "tokens": 0
   },
   {
@@ -111,76 +111,76 @@
    "text": "Estos son los contratos más grandes de Alcaldía de Santiago de Cali. El mayor es de $418.906 millones de pesos, con Banco Davivienda. No indicaste periodo, así que usé los últimos 12 meses.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:35.921Z",
-    "dataUpdatedAt": "2026-10-16T19:25:36.228Z",
+    "queriedAt": "2026-10-16T22:43:37.543Z",
+    "dataUpdatedAt": "2026-10-16T22:43:37.905Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 310,
+   "ms": 364,
    "tokens": 0
   },
   {
    "id": "antioquia-fuentes",
    "ok": true,
-   "text": "Así se reparte, por fuente de recursos, el dinero de Departamento de Antioquia. La fuente principal es presupuesto general de la naciã³n. No indicaste periodo, así que usé los últimos 12 meses.",
+   "text": "Así se reparte, por fuente de recursos, el dinero de Departamento de Antioquia. La fuente principal es presupuesto general de la nación. No indicaste periodo, así que usé los últimos 12 meses.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:36.230Z",
-    "dataUpdatedAt": "2026-10-16T19:25:37.133Z",
+    "queriedAt": "2026-10-16T22:43:37.907Z",
+    "dataUpdatedAt": "2026-10-16T22:43:38.647Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 904,
+   "ms": 742,
    "tokens": 0
   },
   {
    "id": "narino-pae",
    "ok": true,
-   "text": "En Nariño se han registrado unos doscientos cincuenta contratos de alimentación escolar por ciento treinta mil millones de pesos en el último año, y la Gobernación de Nariño concentra la mayor parte con casi cien mil millones. ¿Quieres ver los contratos más grandes de la Gobernación de Nariño o los de la Alcaldía de Pasto?",
+   "text": "En Nariño, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, los contratos de alimentación escolar suman $130.000 millones de pesos en 250 contratos. El más grande es de la Alcaldía de Pasto, con el Consorcio Nutriendo Corazones 2026 MC, por $25.969 millones de pesos; ¿quieres ver el detalle de ese contrato o las entidades que más contratan?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:37.135Z",
-    "dataUpdatedAt": "2026-10-16T19:25:37.135Z",
+    "queriedAt": "2026-10-16T22:43:38.648Z",
+    "dataUpdatedAt": "2026-10-16T22:43:38.648Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 4909,
-   "tokens": 5964
+   "ms": 5428,
+   "tokens": 4157
   },
   {
    "id": "caldas-vias",
    "ok": true,
-   "text": "En Caldas, el contrato de vías más grande es un empréstito de Inficaldas al municipio de Villamaría por nueve mil quinientos millones de pesos para construir vías, seguido de un mejoramiento y pavimentación de la vía entre Caldas y Antioquia, en Riosucio, por ocho mil quinientos treinta y cuatro millones, y de la segunda calzada de la Avenida El Sena en Manizales por siete mil ochocientos treinta y un millones; en pantalla hay siete contratos más. Son datos del último año. ¿Quieres que abra uno de esos contratos o prefieres ver otro municipio de Caldas?",
+   "text": "En Caldas, para el periodo del 16 de octubre de 2025 al 16 de octubre de 2026, estos son los contratos de vías más grandes: la Alcaldía de Villamaría con un préstamo de Inficaldas por $9.500 millones de pesos para construcción de vías; la Gobernación de Caldas con el mejoramiento y pavimentación de vías del hermanamiento Caldas–Antioquia en Riosucio por $8.534 millones de pesos; y el Municipio de Manizales con la segunda calzada de la Avenida El Sena por $7.831 millones de pesos (así viene registrado en SECOP). ¿Quieres que te muestre el detalle de alguno de estos contratos?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:42.044Z",
-    "dataUpdatedAt": "2026-10-16T19:25:42.044Z",
+    "queriedAt": "2026-10-16T22:43:44.078Z",
+    "dataUpdatedAt": "2026-10-16T22:43:44.078Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 4809,
-   "tokens": 7134
+   "ms": 4063,
+   "tokens": 4104
   },
   {
    "id": "manizales-educacion",
    "ok": true,
-   "text": "Entre octubre de 2025 y octubre de 2026, en Manizales se han registrado sesenta y dos contratos de educación por unos doce mil novecientos millones de pesos; la mayoría están en la modalidad de Decreto 092 de 2017, que son contratos directos con entidades sin ánimo de lucro. El Municipio de Manizales concentra la mayor parte, con cuarenta y un contratos; le siguen el Instituto de Cultura y Turismo y el SENA Regional Caldas (los demás quedan en pantalla). ¿Quieres ver el contrato más grande de esos, o prefieres otro periodo?",
+   "text": "En Manizales, Caldas, en el último año hay contratos de educación, y el más grande es uno del Municipio de Manizales con FunLuker por $7.461 millones de pesos para mejorar la enseñanza-aprendizaje en colegios oficiales. Los datos son de entidades con sede en ese municipio, con corte al 16 de octubre de 2026. ¿Quieres ver el detalle de ese contrato o prefieres pasar a los contratistas?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:46.853Z",
-    "dataUpdatedAt": "2026-10-16T19:25:46.853Z",
+    "queriedAt": "2026-10-16T22:43:48.140Z",
+    "dataUpdatedAt": "2026-10-16T22:43:48.140Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 4847,
-   "tokens": 6321
+   "ms": 3502,
+   "tokens": 4279
   },
   {
    "id": "minsalud-gasto",
    "ok": true,
-   "text": "Esto es lo que gasta por categoría salud. Lo que más se contrata es otro. No indicaste periodo, así que usé los últimos 12 meses.",
+   "text": "Esto es lo que gasta por categoría salud. Lo que más se contrata es prestación de servicios. No indicaste periodo, así que usé los últimos 12 meses.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:51.701Z",
-    "dataUpdatedAt": "2026-10-16T19:25:53.928Z",
+    "queriedAt": "2026-10-16T22:43:51.642Z",
+    "dataUpdatedAt": "2026-10-16T22:44:07.804Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 2229,
+   "ms": 16164,
    "tokens": 0
   },
   {
@@ -189,64 +189,64 @@
    "text": "Estos son los contratos más grandes de Ministerio de Defensa Nacional. El mayor es de $12.700 millones de pesos, con CODALTEC. No indicaste periodo, así que usé los últimos 12 meses.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:53.929Z",
-    "dataUpdatedAt": "2026-10-16T19:25:54.310Z",
+    "queriedAt": "2026-10-16T22:44:07.806Z",
+    "dataUpdatedAt": "2026-10-16T22:44:08.504Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 382,
+   "ms": 700,
    "tokens": 0
   },
   {
    "id": "bogota-pae-empresa",
    "ok": true,
-   "text": "En Bogotá, con contratos sobre alimentación escolar, la empresa que más recibe es el Consorcio Adecuaciones Comedores Escolares, con tres mil seiscientos ochenta y seis millones de pesos; le siguen Servicios Postales Nacionales y la empresa de medios públicos Inravisión con montos menores. Datos del último año en la ciudad. ¿Quieres ver el detalle de ese primer contrato?",
+   "text": "Estos son contratos de entidades con sede en Bogotá entre el 16 de octubre de 2025 y el 16 de octubre de 2026, así que no son solo del distrito. El primero es Consorcio Adecuaciones Comedores Escolares, con $3.686 millones de pesos en 1 contrato. ¿Quieres ver el detalle de ese contrato o prefieres ampliar el periodo?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:25:54.312Z",
-    "dataUpdatedAt": "2026-10-16T19:25:54.312Z",
+    "queriedAt": "2026-10-16T22:44:08.505Z",
+    "dataUpdatedAt": "2026-10-16T22:44:08.505Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 7301,
-   "tokens": 5839
+   "ms": 6781,
+   "tokens": 3806
   },
   {
    "id": "cartagena-contratista",
    "ok": true,
-   "text": "En Cartagena, en el último año, quien más recibe es el Consorcio Protección Cartagena, con unos ciento sesenta y cinco mil millones de pesos en un contrato. Le siguen el Consorcio Construvias, con unos ciento cincuenta y seis mil millones, y el Consorcio Distrito CTC, con unos ochenta y ocho mil millones; los demás quedan en pantalla. ¿Quieres ver el detalle de ese primer contrato?",
+   "text": "En Cartagena (Bolívar), entre el 16 de octubre de 2025 y el 16 de octubre de 2026, quien más recibe es Consorcio Protección Cartagena, con $164.863 millones de pesos en 1 contrato; son contratos de entidades con sede en ese municipio. ¿Quieres ver el detalle de ese contrato?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:01.612Z",
-    "dataUpdatedAt": "2026-10-16T19:26:01.612Z",
+    "queriedAt": "2026-10-16T22:44:15.287Z",
+    "dataUpdatedAt": "2026-10-16T22:44:15.287Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3866,
-   "tokens": 5776
+   "ms": 3369,
+   "tokens": 3725
   },
   {
    "id": "boyaca-vias-gasto",
    "ok": true,
-   "text": "Con el filtro de vías en Boyacá, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, hay unos cuatrocientos setenta y seis contratos por ciento cuarenta y dos mil quinientos millones de pesos. Quiere ver el ranking de las entidades que más contrataron en vías en Boyacá, o prefiere el de los contratistas?",
+   "text": "En Boyacá, en el último año (desde octubre de 2025), se han registrado $142.501 millones de pesos en 476 contratos relacionados con vías. ¿Quieres ver las entidades que más han contratado en ese tema?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:05.479Z",
-    "dataUpdatedAt": "2026-10-16T19:26:05.479Z",
+    "queriedAt": "2026-10-16T22:44:18.655Z",
+    "dataUpdatedAt": "2026-10-16T22:44:18.655Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 5334,
-   "tokens": 5675
+   "ms": 3745,
+   "tokens": 3535
   },
   {
    "id": "pasto-salud-gasto",
    "ok": true,
-   "text": "En Pasto, en contratación de salud, los procesos publicados entre el dieciséis de octubre de dos mil veinticinco y el dieciséis de octubre de dos mil veintiséis suman unos veintidós mil millones de pesos, en cerca de seiscientos noventa y cuatro contratos. ¿Quieres ver las entidades de salud que más contratan en Pasto?",
+   "text": "En Pasto, en salud, veo unos $22.000 millones de pesos en 694 contratos en el último año (2025-2026), con entidades con sede en el municipio (pueden incluir la gobernación o entidades nacionales). ¿Quieres ver las entidades o los contratistas que más aparecen en esa plata?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:10.813Z",
-    "dataUpdatedAt": "2026-10-16T19:26:10.813Z",
+    "queriedAt": "2026-10-16T22:44:22.401Z",
+    "dataUpdatedAt": "2026-10-16T22:44:22.401Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3646,
-   "tokens": 5669
+   "ms": 3088,
+   "tokens": 3600
   },
   {
    "id": "antioquia-gob",
@@ -254,11 +254,11 @@
    "text": "Estos son los contratos de Departamento de Antioquia, de mayor a menor valor. No indicaste periodo, así que usé los últimos 12 meses.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:14.459Z",
-    "dataUpdatedAt": "2026-10-16T19:26:15.057Z",
+    "queriedAt": "2026-10-16T22:44:25.489Z",
+    "dataUpdatedAt": "2026-10-16T22:44:25.720Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 600,
+   "ms": 232,
    "tokens": 0
   },
   {
@@ -267,11 +267,11 @@
    "text": "Estos son los contratos de alumbrado público, de mayor a menor valor. No indicaste periodo, así que usé los últimos 12 meses.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:15.058Z",
-    "dataUpdatedAt": "2026-10-16T19:26:15.668Z",
+    "queriedAt": "2026-10-16T22:44:25.721Z",
+    "dataUpdatedAt": "2026-10-16T22:44:26.143Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 611,
+   "ms": 424,
    "tokens": 0
   },
   {
@@ -280,382 +280,382 @@
    "text": "Estos son los contratos de Municipio de Bucaramanga, de mayor a menor valor. No indicaste periodo, así que usé los últimos 12 meses.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:15.670Z",
-    "dataUpdatedAt": "2026-10-16T19:26:16.372Z",
+    "queriedAt": "2026-10-16T22:44:26.144Z",
+    "dataUpdatedAt": "2026-10-16T22:44:26.332Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 704,
+   "ms": 189,
    "tokens": 0
   },
   {
    "id": "manizales-2024",
    "ok": true,
-   "text": "En 2024, en Manizales, los contratos más grandes fueron la reposición de la infraestructura del Hospital Universitario Santa Sofía, por ciento veinticinco mil millones de pesos, el suministro de energía para el alumbrado público, por treinta y nueve mil millones, y la vigilancia del municipio, por veintidós mil millones; en pantalla tienes el top diez completo. ¿Quieres abrir alguno de estos contratos?",
+   "text": "En Manizales, entre enero y diciembre de 2024, el contrato más grande fue la reposición de infraestructura fase 1 del Hospital Departamental Universitario Santa Sofía de Caldas, por $124.809 millones de pesos, con la Unión Temporal Santa Sofía. Ojo: son contratos de entidades con sede en ese municipio, así que pueden incluir la gobernación o entidades nacionales. ¿Quieres ver el detalle del primero o los contratistas que más recibieron ese año?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:16.373Z",
-    "dataUpdatedAt": "2026-10-16T19:26:16.373Z",
+    "queriedAt": "2026-10-16T22:44:26.334Z",
+    "dataUpdatedAt": "2026-10-16T22:44:26.334Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 4019,
-   "tokens": 7128
+   "ms": 2991,
+   "tokens": 4458
   },
   {
    "id": "pasto-2024",
    "ok": true,
-   "text": "En Pasto, durante todo 2024, la contratación pública sumó unos setecientos catorce mil millones de pesos en aproximadamente ocho mil ochocientos contratos. ¿Quieres ver las entidades que más contrataron ese año?",
+   "text": "En 2024, en Pasto (Nariño), el contrato más grande registrado fue del SENA Regional Nariño: mantenimiento de la red contraincendios por unos $155.000 millones de pesos, y le siguen tres de la Gobernación de Nariño, entre ellos la venta y producción de aguardiente y dos del programa de alimentación escolar. Estos son contratos de entidades con sede en ese municipio, así que pueden incluir la gobernación o entidades nacionales. ¿Quieres que vea el detalle de alguno o prefieres otra cosa de 2024?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:20.393Z",
-    "dataUpdatedAt": "2026-10-16T19:26:20.393Z",
+    "queriedAt": "2026-10-16T22:44:29.324Z",
+    "dataUpdatedAt": "2026-10-16T22:44:29.324Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3277,
-   "tokens": 5784
+   "ms": 3470,
+   "tokens": 4628
   },
   {
    "id": "medellin-gasto-2024",
    "ok": true,
-   "text": "Esto es lo que gasta por categoría Distrito Especial de Ciencia Tecnologia e Innovacion de Medellin. Lo que más se contrata es otro. Periodo: 2024-01-01 a 2024-12-31.",
+   "text": "Esto es lo que gasta por categoría Distrito Especial de Ciencia Tecnologia e Innovacion de Medellin. Lo que más se contrata es prestación de servicios. Periodo: 2024-01-01 a 2024-12-31.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:23.670Z",
-    "dataUpdatedAt": "2026-10-16T19:26:24.564Z",
+    "queriedAt": "2026-10-16T22:44:32.795Z",
+    "dataUpdatedAt": "2026-10-16T22:44:33.245Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 896,
+   "ms": 452,
    "tokens": 0
   },
   {
    "id": "men-2024",
    "ok": true,
-   "text": "En 2024, entre enero y diciembre, el contratista que más recibió del Ministerio de Educación fue la Fundación Pies Descalzos, con unos setenta y tres mil seiscientos millones de pesos en dos contratos. Los otros dos del top tres en pantalla son Correagro y el Consejo Regional Indígena del Cauca. ¿Quieres que te muestre un contrato de alguno de ellos?",
+   "text": "En 2024, los mayores contratistas del Ministerio de Educación fueron Fundación Pies Descalzos, con $73.655 millones de pesos en 2 contratos, y Correagro, con $73.106 millones en 3 contratos. ¿Quieres ver el detalle de alguno de esos contratos?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:24.565Z",
-    "dataUpdatedAt": "2026-10-16T19:26:24.565Z",
+    "queriedAt": "2026-10-16T22:44:33.247Z",
+    "dataUpdatedAt": "2026-10-16T22:44:33.247Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 2903,
-   "tokens": 6111
+   "ms": 3115,
+   "tokens": 3854
   },
   {
    "id": "cartagena-a-pasto",
    "ok": true,
-   "text": "En Pasto, en el último año, la contratación pública suma unos novecientos cuarenta y cinco mil millones de pesos, en unas nueve mil cuatrocientas cincuenta contrataciones. ¿Quieres ver qué entidades de Pasto concentran ese gasto?",
+   "text": "En Pasto, Nariño, en el último año se han registrado $898.000 millones de pesos en 9.453 contratos, según entidades con sede en ese municipio. ¿Quieres ver en qué se gasta o quiénes son los mayores contratistas?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:27.468Z",
-    "dataUpdatedAt": "2026-10-16T19:26:27.468Z",
+    "queriedAt": "2026-10-16T22:44:36.362Z",
+    "dataUpdatedAt": "2026-10-16T22:44:36.362Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3768,
-   "tokens": 5589
+   "ms": 2788,
+   "tokens": 3616
   },
   {
    "id": "manizales-ese-contrato",
    "ok": true,
-   "text": "Este es el detalle y los pagos del contrato.",
+   "text": "SUSUERTE S.A. firmó con Empresa Departamental Para la Salud un contrato por $62.317 millones de pesos, hoy aprobado. Se ha pagado $0 COP y quedan pendientes $62.317 millones de pesos.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:26:31.237Z",
-    "dataUpdatedAt": "2026-10-16T19:26:31.755Z",
+    "queriedAt": "2026-10-16T22:44:39.149Z",
+    "dataUpdatedAt": "2026-10-16T22:44:39.383Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 1479,
+   "ms": 770,
    "tokens": 0
   },
   {
    "id": "voz-manizales-mayor",
    "ok": true,
-   "text": "En Manizales, el contrato más grande de los últimos doce meses es la operación exclusiva del juego de apuestas permanentes o chance en Caldas, de la Empresa Departamental para la Salud con Susuerte, por sesenta y dos mil millones de pesos, firmado el siete de julio de 2026; en pantalla quedan también el empréstito del Municipio de Manizales por cuarenta y seis mil millones y la construcción y mejoramiento vial en la Avenida Kevin Ángel por treinta y cinco mil millones. ¿Quieres que abra el detalle de alguno de ellos?",
-   "spoken": "En Manizales, el contrato más grande de los últimos doce meses es la operación exclusiva del juego de apuestas permanentes o chance en Caldas, de la Empresa Departamental para la Salud con Susuerte, por sesenta y dos mil millones de pesos, firmado el siete de julio de 2026; en pantalla quedan también el empréstito del Municipio de Manizales por cuarenta y seis mil millones y la construcción y mejoramiento vial en la Avenida Kevin Ángel por treinta y cinco mil millones. ¿Quieres que abra el detalle de alguno de ellos?",
+   "text": "El contrato más grande registrado en Manizales es la concesión para operar el juego de apuestas permanentes o chance, de la Empresa Departamental Para la Salud con Susuerte S.A., por sesenta y dos mil millones de pesos, firmado el siete de julio de dos mil veintiséis; ojo, son contratos de entidades con sede en ese municipio. ¿Quieres que te abra el detalle de ese contrato o prefieres ver los que le siguen?",
+   "spoken": "El contrato más grande registrado en Manizales es la concesión para operar el juego de apuestas permanentes o chance, de la Empresa Departamental Para la Salud con Susuerte S.A., por sesenta y dos mil millones de pesos, firmado el siete de julio de dos mil veintiséis; ojo, son contratos de entidades con sede en ese municipio. ¿Quieres que te abra el detalle de ese contrato o prefieres ver los que le siguen?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:27:07.255Z"
+    "queriedAt": "2026-10-16T22:45:06.353Z"
    },
-   "ms": 33032,
+   "ms": 24922,
    "tokens": 0
   },
   {
    "id": "voz-manizales-detalle",
    "ok": true,
-   "text": "El contrato de la operación del chance en Caldas con Susuerte, firmado el siete de julio de 2026, está por sesenta y dos mil millones de pesos, sin pagos registrados hasta ahora y sin adiciones. No encontré documentos publicados para ese contrato, aunque puedes revisar el proceso en el enlace oficial; ¿quieres que te muestre en cambio los contratos más grandes del departamento de Caldas?",
-   "spoken": "El contrato de la operación del chance en Caldas con Susuerte, firmado el siete de julio de 2026, está por sesenta y dos mil millones de pesos, sin pagos registrados hasta ahora y sin adiciones. No encontré documentos publicados para ese contrato, aunque puedes revisar el proceso en el enlace oficial; ¿quieres que te muestre en cambio los contratos más grandes del departamento de Caldas?",
+   "text": "Ese contrato es de la Empresa Departamental Para la Salud con Susuerte S.A., por la operación exclusiva del chance en el departamento, firmado el siete de julio de dos mil veintiséis y aprobado, con licitación pública y fecha de terminación el tres de febrero de dos mil treinta y dos. Va por sesenta y dos mil millones de pesos y todavía no registra pagos, así que el saldo pendiente es el valor total. ¿Quieres ver los siguientes contratos más grandes de Manizales?",
+   "spoken": "Ese contrato es de la Empresa Departamental Para la Salud con Susuerte S.A., por la operación exclusiva del chance en el departamento, firmado el siete de julio de dos mil veintiséis y aprobado, con licitación pública y fecha de terminación el tres de febrero de dos mil treinta y dos. Va por sesenta y dos mil millones de pesos y todavía no registra pagos, así que el saldo pendiente es el valor total. ¿Quieres ver los siguientes contratos más grandes de Manizales?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:27:27.017Z"
+    "queriedAt": "2026-10-16T22:45:36.444Z"
    },
-   "ms": 19763,
+   "ms": 30092,
    "tokens": 0
   },
   {
    "id": "voz-cartagena-gasto",
    "ok": true,
-   "text": "En Cartagena se han contratado unos ciento cuarenta y nueve mil millones de pesos en temas de salud, en mil setecientos contratos, entre octubre de 2025 y octubre de 2026. ¿Quieres ver las entidades de salud que más contrataron o los contratos más grandes de ese tema?",
-   "spoken": "En Cartagena se han contratado unos ciento cuarenta y nueve mil millones de pesos en temas de salud, en mil setecientos contratos, entre octubre de 2025 y octubre de 2026. ¿Quieres ver las entidades de salud que más contrataron o los contratos más grandes de ese tema?",
+   "text": "En Cartagena, Bolívar, el tema de salud suma unos ciento cuarenta y nueve mil millones de pesos en mil setecientos contratos, con corte del 16 de octubre de 2025 al 16 de octubre de 2026; son contratos de entidades con sede en ese municipio, según el SECOP. ¿Quieres ver las entidades que más contratan en salud ahí?",
+   "spoken": "En Cartagena, Bolívar, el tema de salud suma unos ciento cuarenta y nueve mil millones de pesos en mil setecientos contratos, con corte del 16 de octubre de 2025 al 16 de octubre de 2026; son contratos de entidades con sede en ese municipio, según el SECOP. ¿Quieres ver las entidades que más contratan en salud ahí?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:27:51.377Z"
+    "queriedAt": "2026-10-16T22:46:00.794Z"
    },
-   "ms": 22847,
+   "ms": 22833,
    "tokens": 0
   },
   {
    "id": "voz-men-contratista",
    "ok": true,
-   "text": "En los últimos doce meses, quien más recibe del Ministerio de Educación es el Consejo Regional Indígena del Cauca, con sesenta y nueve mil millones de pesos en dos contratos; le siguen Correagro, con cincuenta y ocho mil millones en tres, y la Universidad Nacional de Colombia, con treinta y cinco mil millones en seis (el resto queda en pantalla). ¿Quiere ver el contrato más grande de ese listado?",
-   "spoken": "En los últimos doce meses, quien más recibe del Ministerio de Educación es el Consejo Regional Indígena del Cauca, con sesenta y nueve mil millones de pesos en dos contratos; le siguen Correagro, con cincuenta y ocho mil millones en tres, y la Universidad Nacional de Colombia, con treinta y cinco mil millones en seis (el resto queda en pantalla). ¿Quiere ver el contrato más grande de ese listado?",
+   "text": "El que más recibe del Ministerio de Educación es el Consejo Regional Indígena del Cauca, con sesenta y nueve mil millones de pesos en dos contratos (periodo del 16 de octubre de 2025 al 16 de octubre de 2026). ¿Quieres ver los contratos de esa organización o el detalle de alguno?",
+   "spoken": "El que más recibe del Ministerio de Educación es el Consejo Regional Indígena del Cauca, con sesenta y nueve mil millones de pesos en dos contratos (periodo del 16 de octubre de 2025 al 16 de octubre de 2026). ¿Quieres ver los contratos de esa organización o el detalle de alguno?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:28:22.785Z"
+    "queriedAt": "2026-10-16T22:46:21.855Z"
    },
-   "ms": 29891,
+   "ms": 19544,
    "tokens": 0
   },
   {
    "id": "voz-cali-top",
    "ok": true,
-   "text": "En los últimos doce meses, del 16 de octubre de 2025 al 16 de octubre de 2026, el contrato más grande de la Alcaldía de Cali es un empréstito —un préstamo que recibe la Alcaldía— con Banco Davivienda por cuatrocientos diecinueve mil millones de pesos, seguido de otro con Banco de Occidente por ciento cincuenta y cinco mil millones y de uno de seguridad alimentaria con la Arquidiócesis por setenta y tres mil millones. Los siete restantes están en pantalla, entre ellos pólizas de seguros, pavimento en la Avenida Ciudad de Cali y un comisionista de la Secretaría de Educación. ¿Quieres que te abra el detalle de alguno de ellos?",
-   "spoken": "En los últimos doce meses, del 16 de octubre de 2025 al 16 de octubre de 2026, el contrato más grande de la Alcaldía de Cali es un empréstito —un préstamo que recibe la Alcaldía— con Banco Davivienda por cuatrocientos diecinueve mil millones de pesos, seguido de otro con Banco de Occidente por ciento cincuenta y cinco mil millones y de uno de seguridad alimentaria con la Arquidiócesis por setenta y tres mil millones. Los siete restantes están en pantalla, entre ellos pólizas de seguros, pavimento en la Avenida Ciudad de Cali y un comisionista de la Secretaría de Educación. ¿Quieres que te abra el detalle de alguno de ellos?",
+   "text": "En Cali, entre octubre de 2025 y octubre de 2026, el contrato más grande es un empréstito con Banco Davivienda por cuatrocientos diecinueve mil millones de pesos, le siguen otro con Banco de Occidente por ciento cincuenta y cinco mil millones y un convenio de seguridad alimentaria con una unión temporal por setenta y tres mil millones. Ojo: son contratos de entidades con sede en ese municipio, así que pueden incluir la gobernación o entidades nacionales. ¿Quieres que abra el detalle del primero o ver los contratistas de la Alcaldía?",
+   "spoken": "En Cali, entre octubre de 2025 y octubre de 2026, el contrato más grande es un empréstito con Banco Davivienda por cuatrocientos diecinueve mil millones de pesos, le siguen otro con Banco de Occidente por ciento cincuenta y cinco mil millones y un convenio de seguridad alimentaria con una unión temporal por setenta y tres mil millones. Ojo: son contratos de entidades con sede en ese municipio, así que pueden incluir la gobernación o entidades nacionales. ¿Quieres que abra el detalle del primero o ver los contratistas de la Alcaldía?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:29:07.515Z"
+    "queriedAt": "2026-10-16T22:46:58.543Z"
    },
-   "ms": 43215,
+   "ms": 35175,
    "tokens": 0
   },
   {
    "id": "voz-cali-primero",
    "ok": true,
-   "text": "Es el empréstito con Banco Davivienda, firmado el 28 de mayo de 2026: cuatrocientos diecinueve mil millones de pesos, sin pagos ni facturación registrados hasta ahora, así que todo el valor está pendiente. ¿Quieres ver el segundo contrato de la lista o más bien cuánto ha contratado la Alcaldía de Cali en total?",
-   "spoken": "Es el empréstito con Banco Davivienda, firmado el 28 de mayo de 2026: cuatrocientos diecinueve mil millones de pesos, sin pagos ni facturación registrados hasta ahora, así que todo el valor está pendiente. ¿Quieres ver el segundo contrato de la lista o más bien cuánto ha contratado la Alcaldía de Cali en total?",
+   "text": "Es un empréstito, es decir un préstamo que le otorga Banco Davivienda al Departamento Administrativo de Hacienda de Cali por cuatrocientos diecinueve mil millones de pesos, firmado el 28 de mayo de 2026 y con vigencia hasta el 31 de diciembre de 2038, en ejecución y sin pagos registrados todavía. ¿Quieres ver el detalle de algún otro o los contratistas que más le venden a la Alcaldía?",
+   "spoken": "Es un empréstito, es decir un préstamo que le otorga Banco Davivienda al Departamento Administrativo de Hacienda de Cali por cuatrocientos diecinueve mil millones de pesos, firmado el 28 de mayo de 2026 y con vigencia hasta el 31 de diciembre de 2038, en ejecución y sin pagos registrados todavía. ¿Quieres ver el detalle de algún otro o los contratistas que más le venden a la Alcaldía?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:29:25.950Z"
+    "queriedAt": "2026-10-16T22:47:24.261Z"
    },
-   "ms": 18434,
+   "ms": 25718,
    "tokens": 0
   },
   {
    "id": "voz-medellin-gasto",
    "ok": true,
-   "text": "En los últimos doce meses, la Alcaldía de Medellín contrató unos cuatro billones cuatrocientos mil millones de pesos en unas dos mil trescientas cincuenta contrataciones; lo mayor está en \"otro\" con un billón ochocientos mil millones, prestación de servicios con un billón seiscientos mil millones y operaciones de crédito público con unos quinientos cuatro mil millones. ¿Quieres ver las entidades o los contratos más grandes de esa alcaldía?",
-   "spoken": "En los últimos doce meses, la Alcaldía de Medellín contrató unos cuatro billones cuatrocientos mil millones de pesos en unas dos mil trescientas cincuenta contrataciones; lo mayor está en \"otro\" con un billón ochocientos mil millones, prestación de servicios con un billón seiscientos mil millones y operaciones de crédito público con unos quinientos cuatro mil millones. ¿Quieres ver las entidades o los contratos más grandes de esa alcaldía?",
+   "text": "Con lo registrado en SECOP entre el 16 de octubre de 2025 y el 16 de octubre de 2026, la Alcaldía de Medellín concentra el gasto en prestación de servicios, con un billón seiscientos mil millones de pesos en mil ochocientos contratos, seguido de operaciones de crédito público, con quinientos cuatro mil millones, y obra, con doscientos setenta mil millones. ¿Quieres ver las entidades o los contratistas que más reciben en Medellín?",
+   "spoken": "Con lo registrado en SECOP entre el 16 de octubre de 2025 y el 16 de octubre de 2026, la Alcaldía de Medellín concentra el gasto en prestación de servicios, con un billón seiscientos mil millones de pesos en mil ochocientos contratos, seguido de operaciones de crédito público, con quinientos cuatro mil millones, y obra, con doscientos setenta mil millones. ¿Quieres ver las entidades o los contratistas que más reciben en Medellín?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:29:56.379Z"
+    "queriedAt": "2026-10-16T22:47:54.960Z"
    },
-   "ms": 28913,
+   "ms": 29192,
    "tokens": 0
   },
   {
    "id": "x-manizales-gasto",
    "ok": true,
-   "text": "Entre octubre del año pasado y octubre de este año, las entidades de Manizales han contratado unos novecientos once mil setecientos millones de pesos en total. Lo que más pesa es la prestación de servicios, con doscientos setenta y nueve mil millones en casi cuatro mil contratos, seguida de obra, con doscientos treinta y nueve mil millones. ¿Quieres ver las entidades de Manizales que más contratan o prefieres mirar los contratos más grandes de una categoría?",
+   "text": "En Manizales, en el último año, lo que más pesa es la prestación de servicios con $279.000 millones de pesos en 3.923 contratos, seguido de obra con $239.000 millones. Ojo: son contratos de entidades con sede en ese municipio, así que pueden incluir la gobernación o entidades nacionales. ¿Quieres ver las entidades o los contratistas que más reciben?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:29:56.382Z",
-    "dataUpdatedAt": "2026-10-16T19:29:56.382Z",
+    "queriedAt": "2026-10-16T22:47:54.962Z",
+    "dataUpdatedAt": "2026-10-16T22:47:54.962Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 4599,
-   "tokens": 6041
+   "ms": 3926,
+   "tokens": 3680
   },
   {
    "id": "x-manizales-2025",
    "ok": true,
-   "text": "En Manizales, entre enero y diciembre de 2025, se han registrado unos ochocientos cuatro mil trescientos millones de pesos en cinco mil quinientos sesenta contratos. ¿Quieres ver las entidades que más contratan o los contratos más grandes?",
+   "text": "En Manizales, entre el 1 de enero y el 31 de diciembre de 2025, se registran $804.000 millones de pesos en 5.560 contratos; eso sí, son contratos de entidades con sede en Manizales (pueden incluir la gobernación o entidades nacionales). ¿Quieres ver las entidades que más gastaron?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:00.979Z",
-    "dataUpdatedAt": "2026-10-16T19:30:00.979Z",
+    "queriedAt": "2026-10-16T22:47:58.888Z",
+    "dataUpdatedAt": "2026-10-16T22:47:58.888Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3130,
-   "tokens": 5647
+   "ms": 3118,
+   "tokens": 3609
   },
   {
    "id": "x-caldas-contratistas",
    "ok": true,
-   "text": "En Caldas, entre octubre de 2025 y octubre de 2026, quienes más reciben por contratos son el Instituto de Financiamiento, Promoción y Desarrollo de Manizales, con unos ciento treinta y siete mil millones de pesos en catorce contratos; Susuerte S.A., con sesenta y dos mil millones en tres; y el Instituto de Financiamiento, Promoción y Desarrollo de Caldas, con cincuenta y dos mil millones en siete. En pantalla queda la lista completa con más entidades y sus montos. ¿Quieres ver el detalle de alguno de esos contratos?",
+   "text": "En Caldas, del 16 de octubre de 2025 al 16 de octubre de 2026, la empresa con más contratos es Caldas Medicas SAS con 66, seguida de Computar SAS con 59 y Global Comercializadora, Insumos y Suministros con 55. ¿Quieres que te muestre más empresas o prefieres ver el detalle de alguna de ellas?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:04.109Z",
-    "dataUpdatedAt": "2026-10-16T19:30:04.109Z",
+    "queriedAt": "2026-10-16T22:48:02.006Z",
+    "dataUpdatedAt": "2026-10-16T22:48:02.006Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3604,
-   "tokens": 5818
+   "ms": 3220,
+   "tokens": 3725
   },
   {
    "id": "x-antioquia-2025",
    "ok": true,
-   "text": "En Antioquia se contrataron unos veintiséis billones de pesos en 2025, en cerca de ciento siete mil contratos. ¿Quieres ver las entidades que más contrataron en el departamento?",
+   "text": "En Antioquia se contrataron $26 billones de pesos en 107.043 contratos durante 2025. ¿Quieres ver las entidades que más contrataron o los contratos más grandes?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:07.712Z",
-    "dataUpdatedAt": "2026-10-16T19:30:07.712Z",
+    "queriedAt": "2026-10-16T22:48:05.226Z",
+    "dataUpdatedAt": "2026-10-16T22:48:05.226Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3224,
-   "tokens": 5632
+   "ms": 4464,
+   "tokens": 3520
   },
   {
    "id": "x-boyaca-salud",
    "ok": true,
-   "text": "En Boyacá, en el último año, los contratos de salud que aparecen van desde el suministro de medicamentos de la ESE Santiago de Tunja, por ciento veintisiete millones de pesos, hasta apoyos de promoción en salud de la Alcaldía de Miraflores; hay más resultados en pantalla. ¿Quieres que te muestre el detalle de alguno de esos contratos?",
+   "text": "En Boyacá veo contratos de salud firmados este año, como la dotación de la Unidad Materno Infantil María Josefa Canelones del Hospital San Rafael de Tunja por $25.675 millones de pesos. Los datos son de respaldo al 16 de octubre de 2026, no en vivo. ¿Quieres que te muestre las entidades o los contratistas que más aparecen en ese tema?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:10.937Z",
-    "dataUpdatedAt": "2026-10-16T19:30:10.937Z",
+    "queriedAt": "2026-10-16T22:48:09.690Z",
+    "dataUpdatedAt": "2026-10-16T22:48:09.690Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3410,
-   "tokens": 6100
+   "ms": 10139,
+   "tokens": 4235
   },
   {
    "id": "x-santander-mayores",
    "ok": true,
-   "text": "Estos son los contratos más grandes en Santander entre el 16 de octubre de 2025 y el 16 de octubre de 2026. El primero es un suministro de alimentación escolar para estudiantes por ciento diecinueve mil ochocientos millones de pesos, adjudicado por el departamento de Santander a un consorcio; el segundo es un apoyo a la gestión del Hospital Universitario de Santander, por unos setenta y dos mil seiscientos millones; y el tercero es asistencia técnica agropecuaria del departamento, por setenta mil millones. En pantalla quedan los otros siete, que incluyen obras de hospitales, vías, vigilancia y aseo educativo. ¿Quieres que abra alguno de estos contratos?",
+   "text": "Estos son los contratos más grandes registrados en Santander entre octubre de 2025 y octubre de 2026: el primero es un suministro de complementos alimentarios del PAE por $119.827 millones de pesos, de la Gobernación de Santander; el segundo, servicios de apoyo a la gestión del Hospital Universitario de Santander por $72.611 millones. ¿Quieres que te abra el detalle de alguno?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:14.347Z",
-    "dataUpdatedAt": "2026-10-16T19:30:14.347Z",
+    "queriedAt": "2026-10-16T22:48:19.829Z",
+    "dataUpdatedAt": "2026-10-16T22:48:19.829Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3514,
-   "tokens": 7104
+   "ms": 3877,
+   "tokens": 4241
   },
   {
    "id": "x-valle-gasto",
    "ok": true,
-   "text": "Entre el 16 de octubre de 2025 y el 16 de octubre de 2026, en el Valle del Cauca se han registrado unos ciento trece mil contratos por nueve coma cuatro billones de pesos; lo que más pesa es la prestación de servicios (contratos para personas o empresas que prestan un servicio) con tres coma cinco billones. Las entidades que más contratan son el Departamento Administrativo de Hacienda de Cali, con unos setecientos nueve mil millones, la Secretaría de Educación de Cali, con unos quinientos nueve mil millones, y la Alcaldía de Palmira, con unos cuatrocientos ochenta mil millones. ¿Quieres ver el detalle de alguna de esas entidades o de un municipio en particular?",
+   "text": "En el Valle del Cauca, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, lo que más pesa es la prestación de servicios, con $3,5 billones de pesos en 105.034 contratos; le siguen obra, con $1,2 billones, y contratos bajo el Decreto 092 de 2017, con $806.650 millones. ¿Quieres ver qué entidades concentran ese gasto?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:17.861Z",
-    "dataUpdatedAt": "2026-10-16T19:30:17.861Z",
+    "queriedAt": "2026-10-16T22:48:23.706Z",
+    "dataUpdatedAt": "2026-10-16T22:48:23.706Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 6602,
-   "tokens": 6269
+   "ms": 5450,
+   "tokens": 3651
   },
   {
    "id": "x-risaralda-contratos",
    "ok": true,
-   "text": "En Risaralda se han registrado unos veintitrés mil contratos por dos billones de pesos en el último año. ¿Quieres ver las entidades que más contratan o los contratos más grandes?",
+   "text": "En Risaralda, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, las entidades del departamento registran 23.182 contratos por unos $2 billones de pesos, y lo que más pesa es la prestación de servicios, con $1 billón. ¿Quieres ver las entidades que más contratan o los contratistas con más contratos?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:24.463Z",
-    "dataUpdatedAt": "2026-10-16T19:30:24.463Z",
+    "queriedAt": "2026-10-16T22:48:29.156Z",
+    "dataUpdatedAt": "2026-10-16T22:48:29.156Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3249,
-   "tokens": 5579
+   "ms": 7943,
+   "tokens": 4377
   },
   {
    "id": "x-pereira-empresa",
    "ok": true,
-   "text": "En Pereira, entre octubre del año pasado y octubre de este año, quien más recibe es Agregados del Occidente del Risaralda, con ochenta y dos mil ochocientos millones de pesos en cuatro contratos; le siguen la Empresa de Energía de Pereira, con setenta y seis mil millones, y Risaralda Solidaria, con cuarenta y cuatro mil millones. El resto de la lista está en pantalla. ¿Quieres que abra el contrato más grande de alguno de ellos?",
+   "text": "En Pereira, el primer lugar lo tiene Agregados del Occidente del Risaralda SAS, con $82.800 millones de pesos en 4 contratos, según los contratos de entidades con sede en ese municipio entre el 16 de octubre de 2025 y el 16 de octubre de 2026. ¿Quieres ver el detalle de su contrato más grande?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:27.712Z",
-    "dataUpdatedAt": "2026-10-16T19:30:27.712Z",
+    "queriedAt": "2026-10-16T22:48:37.099Z",
+    "dataUpdatedAt": "2026-10-16T22:48:37.099Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 4232,
-   "tokens": 5775
+   "ms": 3959,
+   "tokens": 3710
   },
   {
    "id": "x-manisales-error",
    "ok": true,
-   "text": "En Manizales, Caldas, el contrato más grande es la operación del chance, con sesenta y dos mil trescientos millones de pesos, de la Empresa Departamental para la Salud con Susuerte; le siguen un empréstito del Municipio por cuarenta y seis mil trescientos millones y una obra vial en la avenida Kevin Ángel por treinta y cinco mil trescientos millones. En pantalla quedan los otros siete. ¿Quieres que te muestre el detalle de alguno de esos contratos?",
+   "text": "Estos son los contratos más grandes en Manizales, Caldas: el mayor es de la Empresa Departamental para la Salud con Susuerte por $62.317 millones de pesos, y le siguen dos del Municipio de Manizales, uno por $46.300 millones con Infi-Manizales y otro por $35.346 millones con el Consorcio Solución Vial Manizales. ¿Quieres que te abra el detalle del primero?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:31.944Z",
-    "dataUpdatedAt": "2026-10-16T19:30:31.944Z",
+    "queriedAt": "2026-10-16T22:48:41.058Z",
+    "dataUpdatedAt": "2026-10-16T22:48:41.058Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3097,
-   "tokens": 7022
+   "ms": 3374,
+   "tokens": 4260
   },
   {
    "id": "x-pesos-cartagena",
    "ok": true,
-   "text": "En Cartagena, Bolívar, se han contratado unos dos billones ochocientos mil millones de pesos en veintiún mil seiscientos contratos, en el último año. ¿Quieres ver las entidades que más contratan allí?",
+   "text": "En Cartagena, entidades con sede allá tienen registrados $2,8 billones de pesos en 21.586 contratos, con corte al 16 de octubre de 2026; ojo: cuentan también la gobernación y entidades nacionales con sede allí. ¿Quieres ver en qué se gasta o las entidades que más contratan?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:35.040Z",
-    "dataUpdatedAt": "2026-10-16T19:30:35.040Z",
+    "queriedAt": "2026-10-16T22:48:44.432Z",
+    "dataUpdatedAt": "2026-10-16T22:48:44.432Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3025,
-   "tokens": 5604
+   "ms": 3207,
+   "tokens": 3566
   },
   {
    "id": "x-pesos-pasto-mayor",
    "ok": true,
-   "text": "El contrato más grande firmado en Pasto ronda los novecientos cuarenta y cuatro mil millones de pesos: apoyo logístico para eventos del Instituto Municipal para la Recreación y el Deporte, con la Fundación Pilto. Le siguen dos de la Gobernación de Nariño, uno por unos cincuenta y ocho mil millones para el acueducto de Tumaco y otro por unos veintiséis mil ochocientos millones para el dragado del canal de acceso al puerto. ¿Quieres ver el detalle del primero?",
+   "text": "El contrato más grande es de $57.978 millones de pesos: optimización y ampliación del acueducto de Tumaco, de la Gobernación de Nariño, con el Consorcio CQW Tumaco 2026. Ojo: son contratos de entidades con sede en Pasto, y hay uno registrado con un valor inusualmente alto ($944,2 billones de pesos) tal como aparece en SECOP. ¿Quieres ver el detalle de ese contrato o los más grandes de todo Nariño?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:38.065Z",
-    "dataUpdatedAt": "2026-10-16T19:30:38.065Z",
+    "queriedAt": "2026-10-16T22:48:47.639Z",
+    "dataUpdatedAt": "2026-10-16T22:48:47.639Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3349,
-   "tokens": 6101
+   "ms": 3234,
+   "tokens": 3952
   },
   {
    "id": "x-cucuta-gasto",
    "ok": true,
-   "text": "En Cúcuta y Norte de Santander, en el último año, se han registrado unos diecinueve mil contratos por un billón ochocientos mil millones de pesos; lo que más pesa es la prestación de servicios, con seiscientos siete mil millones, seguida de obra y suministros. Las entidades que más contratan son la Gobernación de Norte de Santander, el municipio de Cúcuta y el ICBF regional. ¿Quieres ver los contratos más grandes de una de esas entidades o de una categoría en particular?",
+   "text": "En Cúcuta, en los últimos doce meses, lo que más pesa es la prestación de servicios, con $607.000 millones de pesos en 17.868 contratos; le siguen obra ($309.000 millones) y suministros ($291.000 millones). Ojo: son contratos de entidades con sede en ese municipio, que pueden incluir la gobernación o entidades nacionales. ¿Quieres ver las entidades que más contratan allí?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:41.415Z",
-    "dataUpdatedAt": "2026-10-16T19:30:41.415Z",
+    "queriedAt": "2026-10-16T22:48:50.873Z",
+    "dataUpdatedAt": "2026-10-16T22:48:50.873Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 5023,
-   "tokens": 6167
+   "ms": 3023,
+   "tokens": 3672
   },
   {
    "id": "x-huila-vias",
    "ok": true,
-   "text": "En el Huila se han registrado unos trescientos cincuenta contratos relacionados con vías, por un total de ciento veintiséis mil quinientos millones de pesos, en el último año. ¿Quieres ver las entidades que más han contratado en ese tema?",
+   "text": "En el Huila, sumando contratos de entidades de ese departamento, se registran $126.518 millones de pesos en 350 contratos de vías entre octubre de 2025 y octubre de 2026. ¿Quieres ver las entidades o los contratos más grandes de ese tema?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:46.438Z",
-    "dataUpdatedAt": "2026-10-16T19:30:46.438Z",
+    "queriedAt": "2026-10-16T22:48:53.896Z",
+    "dataUpdatedAt": "2026-10-16T22:48:53.896Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3530,
-   "tokens": 5674
+   "ms": 3464,
+   "tokens": 3542
   },
   {
    "id": "x-tolima-contratos",
    "ok": true,
-   "text": "En el Tolima hay unos treinta y tres mil quinientos contratos registrados en el último año, por dos coma ocho billones de pesos (el valor exacto está en la tarjeta). ¿Quieres ver las entidades que más contratan en el Tolima?",
+   "text": "En el Tolima, entre octubre de 2025 y octubre de 2026, aparecen contratos como el de alimentación escolar del Gobierno Departamental por $97.486 millones de pesos y la construcción de la calle 103 en Ibagué por $45.566 millones. ¿Quieres que veamos los contratos más grandes del Tolima o los de una entidad en particular?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:49.968Z",
-    "dataUpdatedAt": "2026-10-16T19:30:49.968Z",
+    "queriedAt": "2026-10-16T22:48:57.360Z",
+    "dataUpdatedAt": "2026-10-16T22:48:57.360Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3407,
-   "tokens": 5595
+   "ms": 2697,
+   "tokens": 4239
   },
   {
    "id": "x-barranquilla-top",
    "ok": true,
-   "text": "En Barranquilla, el que más recibe es Edubar, con unos cuatrocientos cuarenta y cinco mil quinientos millones de pesos en trece contratos, entre octubre de dos mil veinticinco y octubre de dos mil veintiséis; le siguen el Consorcio Metro Estadio y Puerta de Oro Empresa de Desarrollo Caribe. En pantalla están los cinco primeros. ¿Quieres ver el detalle de alguno de esos contratos o prefieres el listado completo de contratistas?",
+   "text": "Ojo: son contratos de entidades con sede en Barranquilla, no solo de la Alcaldía. ¿Quieres ver el detalle de alguno de esos contratos?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:53.375Z",
-    "dataUpdatedAt": "2026-10-16T19:30:53.375Z",
+    "queriedAt": "2026-10-16T22:49:00.057Z",
+    "dataUpdatedAt": "2026-10-16T22:49:00.057Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3528,
-   "tokens": 5860
+   "ms": 3652,
+   "tokens": 3727
   },
   {
    "id": "x-gob-caldas",
@@ -663,147 +663,147 @@
    "text": "Esto es lo que gasta por categoría Gobernacion de Caldas. Lo que más se contrata es prestación de servicios. No indicaste periodo, así que usé los últimos 12 meses.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:56.903Z",
-    "dataUpdatedAt": "2026-10-16T19:30:57.406Z",
+    "queriedAt": "2026-10-16T22:49:03.709Z",
+    "dataUpdatedAt": "2026-10-16T22:49:04.094Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 505,
+   "ms": 386,
    "tokens": 0
   },
   {
    "id": "x-falla-datosgov",
    "ok": true,
-   "text": "En Manizales, Caldas, con corte al dieciséis de octubre de 2026, van unos ochocientos cuatro mil millones de pesos en unos cinco mil quinientos contratos, con datos de respaldo, no en vivo. ¿Quieres ver las entidades que más contratan en la ciudad?",
+   "text": "En Manizales, Caldas, se registran $804.000 millones de pesos en 5.560 contratos durante 2025, según datos de respaldo al 16 de octubre de 2026, no en vivo. ¿Quieres ver las entidades que más gastaron o en qué se gastó?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:30:57.408Z",
-    "dataUpdatedAt": "2026-10-16T19:30:57.408Z",
+    "queriedAt": "2026-10-16T22:49:04.096Z",
+    "dataUpdatedAt": "2026-10-16T22:49:04.096Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 2956,
-   "tokens": 5672
+   "ms": 2681,
+   "tokens": 3567
   },
   {
    "id": "x-falla-mayor",
    "ok": true,
-   "text": "En Medellín el contrato más grande es la concesión del Estadio Atanasio Girardot, por un billón doscientos mil millones de pesos, firmado por el Instituto de Deportes y Recreación con la Empresa de Desarrollo Urbano de Medellín; le siguen un crédito público del Distrito de Ciencia y Tecnología por quinientos tres mil millones y un convenio del ICBF con ese mismo Distrito por ciento sesenta y cinco mil millones (datos de respaldo al 16 de octubre de 2026). ¿Quieres que te muestre el detalle de alguno?",
+   "text": "En Medellín, Antioquia, el contrato más grande registrado es la concesión del Estadio Atanasio Girardot y su área de influencia, por $1,2 billones de pesos, suscrito en 2026 por el Instituto de Deportes y Recreación de Medellín con la Empresa de Desarrollo Urbano de Medellín. Ojo: son datos de respaldo al 16 de octubre de 2026, no en vivo. ¿Quieres que te muestre el detalle de ese contrato o los siguientes más grandes?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:31:00.363Z",
-    "dataUpdatedAt": "2026-10-16T19:31:00.363Z",
+    "queriedAt": "2026-10-16T22:49:06.776Z",
+    "dataUpdatedAt": "2026-10-16T22:49:06.776Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3474,
-   "tokens": 6084
+   "ms": 2957,
+   "tokens": 3968
   },
   {
    "id": "x-manizales-2025-mayor",
    "ok": true,
-   "text": "En Manizales, en 2025, el contrato más grande es un empréstito interno del Municipio con el Instituto de Financiamiento, Promoción y Desarrollo de Manizales, por unos cuarenta y seis mil trescientos millones de pesos, firmado el cuatro de noviembre. Le siguen uno de reubicación de vendedores informales por unos veintinueve mil quinientos millones y el del programa de alimentación escolar por unos veintitrés mil millones, todos del Municipio de Manizales. ¿Quieres que te muestre el detalle de ese contrato más grande?",
+   "text": "El contrato más grande de Manizales en 2025 es un empréstito interno de $46.300 millones de pesos, firmado el 4 de noviembre entre el Municipio de Manizales y el Instituto de Financiamiento, Promoción y Desarrollo de Manizales (INFI-Manizales). Un detalle: son contratos de entidades con sede en ese municipio. ¿Quieres que te muestre el detalle o los siguientes más grandes?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:31:03.838Z",
-    "dataUpdatedAt": "2026-10-16T19:31:03.838Z",
+    "queriedAt": "2026-10-16T22:49:09.733Z",
+    "dataUpdatedAt": "2026-10-16T22:49:09.733Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 3691,
-   "tokens": 6214
+   "ms": 3541,
+   "tokens": 3864
   },
   {
    "id": "x-manizales-ese-contrato-detalle",
    "ok": true,
-   "text": "Este es el detalle y los pagos del contrato.",
+   "text": "Instituto de Financiamiento Promoción Y Desarrollo de Manizales - INFI-MANIZALES firmó con Municipio de Manizales un contrato por $46.300 millones de pesos, hoy en ejecución. Se ha pagado $0 COP y quedan pendientes $46.300 millones de pesos.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:31:07.529Z",
-    "dataUpdatedAt": "2026-10-16T19:31:07.825Z",
+    "queriedAt": "2026-10-16T22:49:13.274Z",
+    "dataUpdatedAt": "2026-10-16T22:49:13.439Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 925,
+   "ms": 464,
    "tokens": 0
   },
   {
    "id": "voz-x-manizales-2025",
    "ok": true,
-   "text": "En Manizales, durante 2025, se contrataron unos ochocientos cuatro mil millones de pesos en cinco mil quinientos sesenta contratos. ¿Quieres ver las entidades que más contrataron o los contratos más grandes?",
-   "spoken": "En Manizales, durante 2025, se contrataron unos ochocientos cuatro mil millones de pesos en cinco mil quinientos sesenta contratos. ¿Quieres ver las entidades que más contrataron o los contratos más grandes?",
+   "text": "En Manizales (Caldas), entre enero y diciembre de 2025, el SECOP registra unos ochocientos cuatro mil millones de pesos en cerca de cinco mil quinientos contratos; ojo: son contratos de entidades con sede en ese municipio, así que pueden incluir la gobernación o entidades nacionales. ¿Quieres ver en qué se gastó ese dinero o cuáles fueron las entidades que más contrataron?",
+   "spoken": "En Manizales (Caldas), entre enero y diciembre de 2025, el SECOP registra unos ochocientos cuatro mil millones de pesos en cerca de cinco mil quinientos contratos; ojo: son contratos de entidades con sede en ese municipio, así que pueden incluir la gobernación o entidades nacionales. ¿Quieres ver en qué se gastó ese dinero o cuáles fueron las entidades que más contrataron?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:31:23.236Z"
+    "queriedAt": "2026-10-16T22:49:36.746Z"
    },
-   "ms": 13276,
+   "ms": 21505,
    "tokens": 0
   },
   {
    "id": "voz-x-mayor",
    "ok": true,
-   "text": "El contrato más grande de Manizales en 2025 fue un empréstito interno entre el Municipio y el Instituto de Financiamiento, Promoción y Desarrollo de Manizales, firmado el 4 de noviembre, por cuarenta y seis mil millones de pesos. En pantalla siguen el segundo, por treinta mil millones, y el tercero, de alimentación escolar, por veintitrés mil millones. ¿Quieres el detalle de alguno de estos contratos?",
-   "spoken": "El contrato más grande de Manizales en 2025 fue un empréstito interno entre el Municipio y el Instituto de Financiamiento, Promoción y Desarrollo de Manizales, firmado el 4 de noviembre, por cuarenta y seis mil millones de pesos. En pantalla siguen el segundo, por treinta mil millones, y el tercero, de alimentación escolar, por veintitrés mil millones. ¿Quieres el detalle de alguno de estos contratos?",
+   "text": "El más grande de 2025 en Manizales es un empréstito interno por unos cuarenta y seis mil millones de pesos, firmado el 4 de noviembre entre el Municipio de Manizales y el Instituto de Financiamiento, Promoción y Desarrollo de Manizales. ¿Quieres que te abra el detalle de ese contrato?",
+   "spoken": "El más grande de 2025 en Manizales es un empréstito interno por unos cuarenta y seis mil millones de pesos, firmado el 4 de noviembre entre el Municipio de Manizales y el Instituto de Financiamiento, Promoción y Desarrollo de Manizales. ¿Quieres que te abra el detalle de ese contrato?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:31:48.328Z"
+    "queriedAt": "2026-10-16T22:49:54.908Z"
    },
-   "ms": 25092,
+   "ms": 18162,
    "tokens": 0
   },
   {
    "id": "voz-x-caldas-contratistas",
    "ok": true,
-   "text": "En Caldas, en los últimos doce meses, la que más contratos acumula es Caldas Médicas, con sesenta y seis; le siguen Computar, con cincuenta y nueve, y Global Comercializadora, con cincuenta y cinco. En pantalla quedan las otras siete del ranking. ¿Quieres ver los contratos de alguna de ellas o más bien los de mayor valor en el departamento?",
-   "spoken": "En Caldas, en los últimos doce meses, la que más contratos acumula es Caldas Médicas, con sesenta y seis; le siguen Computar, con cincuenta y nueve, y Global Comercializadora, con cincuenta y cinco. En pantalla quedan las otras siete del ranking. ¿Quieres ver los contratos de alguna de ellas o más bien los de mayor valor en el departamento?",
+   "text": "En Caldas, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, quien más contratos acumula es el Instituto de Financiamiento, Promoción y Desarrollo de Manizales, con unos ciento treinta y siete mil millones de pesos en catorce contratos; le siguen Susuerte, con sesenta y dos mil millones en tres contratos, y el Instituto de Financiamiento, Promoción y Desarrollo de Caldas, con cincuenta y tres mil millones en siete contratos. ¿Quieres ver los contratos de alguno de ellos?",
+   "spoken": "En Caldas, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, quien más contratos acumula es el Instituto de Financiamiento, Promoción y Desarrollo de Manizales, con unos ciento treinta y siete mil millones de pesos en catorce contratos; le siguen Susuerte, con sesenta y dos mil millones en tres contratos, y el Instituto de Financiamiento, Promoción y Desarrollo de Caldas, con cincuenta y tres mil millones en siete contratos. ¿Quieres ver los contratos de alguno de ellos?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:32:10.724Z"
+    "queriedAt": "2026-10-16T22:50:28.803Z"
    },
-   "ms": 20881,
+   "ms": 32375,
    "tokens": 0
   },
   {
    "id": "voz-x-pesos-pasto",
    "ok": true,
-   "text": "El contrato más grande firmado en Pasto, Nariño, es de unos novecientos cuarenta y cuatro billones de pesos: apoyo logístico para eventos, del Instituto Municipal para la Recreación y el Deporte, contratista Fundación Pilto, firmado el 27 de octubre de 2025. ¿Quieres que te muestre el detalle de ese contrato?",
-   "spoken": "El contrato más grande firmado en Pasto, Nariño, es de unos novecientos cuarenta y cuatro billones de pesos: apoyo logístico para eventos, del Instituto Municipal para la Recreación y el Deporte, contratista Fundación Pilto, firmado el 27 de octubre de 2025. ¿Quieres que te muestre el detalle de ese contrato?",
+   "text": "Con las entidades que tienen sede en Pasto, Nariño, el contrato más grande del periodo reciente —de octubre de 2025 a octubre de 2026— es de cincuenta y ocho mil millones de pesos: la Gobernación de Nariño, para el acueducto de Tumaco, firmado el veintisiete de abril de dos mil veintiséis. Además, aparece registrado un contrato de novecientos cuarenta y cuatro billones de pesos que es inusualmente alto y así viene en SECOP. ¿Quieres que te muestre el detalle de ese contrato más grande?",
+   "spoken": "Con las entidades que tienen sede en Pasto, Nariño, el contrato más grande del periodo reciente —de octubre de 2025 a octubre de 2026— es de cincuenta y ocho mil millones de pesos: la Gobernación de Nariño, para el acueducto de Tumaco, firmado el veintisiete de abril de dos mil veintiséis. Además, aparece registrado un contrato de novecientos cuarenta y cuatro billones de pesos que es inusualmente alto y así viene en SECOP. ¿Quieres que te muestre el detalle de ese contrato más grande?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:32:34.909Z"
+    "queriedAt": "2026-10-16T22:51:05.460Z"
    },
-   "ms": 22681,
+   "ms": 35147,
    "tokens": 0
   },
   {
    "id": "voz-x-boyaca",
    "ok": true,
-   "text": "Entre el 16 de octubre de 2025 y el 16 de octubre de 2026, en Boyacá los contratos de salud que aparecen van de ciento veintisiete millones de pesos en medicamentos para el hospital Santiago de Tunja a diez millones en apoyo sicosocial, y en pantalla hay varios más. ¿Quieres el detalle del contrato de medicamentos o prefieres ver qué entidades de Boyacá contrataron más en salud?",
-   "spoken": "Entre el 16 de octubre de 2025 y el 16 de octubre de 2026, en Boyacá los contratos de salud que aparecen van de ciento veintisiete millones de pesos en medicamentos para el hospital Santiago de Tunja a diez millones en apoyo sicosocial, y en pantalla hay varios más. ¿Quieres el detalle del contrato de medicamentos o prefieres ver qué entidades de Boyacá contrataron más en salud?",
+   "text": "En Boyacá, entre octubre de 2025 y octubre de 2026, el SECOP registra contratos de salud como el de la ESE Hospital San Rafael de Tunja con el Consorcio Dotación Umi por veintiséis mil millones de pesos, otro del mismo hospital con Servicios de Especialidades Médicas de Colombia por cinco mil trescientos noventa millones, y uno de la Rama Judicial de Tunja con Comfaboy por tres mil ciento cuarenta millones. Hay más registros en pantalla, ¿quieres ver el detalle de alguno o prefieres saber qué entidades contratan más en salud en el departamento?",
+   "spoken": "En Boyacá, entre octubre de 2025 y octubre de 2026, el SECOP registra contratos de salud como el de la ESE Hospital San Rafael de Tunja con el Consorcio Dotación Umi por veintiséis mil millones de pesos, otro del mismo hospital con Servicios de Especialidades Médicas de Colombia por cinco mil trescientos noventa millones, y uno de la Rama Judicial de Tunja con Comfaboy por tres mil ciento cuarenta millones. Hay más registros en pantalla, ¿quieres ver el detalle de alguno o prefieres saber qué entidades contratan más en salud en el departamento?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:33:01.929Z"
+    "queriedAt": "2026-10-16T22:51:39.784Z"
    },
-   "ms": 25514,
+   "ms": 32806,
    "tokens": 0
   },
   {
    "id": "voz-x-pasto-segundo",
    "ok": true,
-   "text": "El contratista es la Fundación Pilto. ¿Quieres que te muestre sus otros contratos en Pasto?",
-   "spoken": "El contratista es la Fundación Pilto. ¿Quieres que te muestre sus otros contratos en Pasto?",
+   "text": "El contratista es Consorcio Cqw Tumaco 2026, y el contrato lo firmó la Gobernación de Nariño para el acueducto de Tumaco. ¿Quieres que revise otros contratos de esa misma empresa?",
+   "spoken": "El contratista es Consorcio Cqw Tumaco 2026, y el contrato lo firmó la Gobernación de Nariño para el acueducto de Tumaco. ¿Quieres que revise otros contratos de esa misma empresa?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:33:07.179Z"
+    "queriedAt": "2026-10-16T22:51:51.022Z"
    },
-   "ms": 5249,
+   "ms": 11238,
    "tokens": 0
   },
   {
    "id": "voz-x-contrato-seguimiento",
    "ok": true,
-   "text": "De ese contrato, de unos novecientos cuarenta y cuatro billones de pesos, no hay nada facturado ni pagado: todo sigue pendiente, y registra tres adiciones y siete modificaciones. ¿Quieres ver el enlace a su documento oficial en el SECOP?",
-   "spoken": "De ese contrato, de unos novecientos cuarenta y cuatro billones de pesos, no hay nada facturado ni pagado: todo sigue pendiente, y registra tres adiciones y siete modificaciones. ¿Quieres ver el enlace a su documento oficial en el SECOP?",
+   "text": "El contrato busca optimizar y ampliar el acueducto del Distrito Especial de Tumaco y su planta, con la Gobernación de Nariño como entidad y Consorcio Cqw Tumaco 2026 como contratista. Está en ejecución desde el catorce de septiembre de dos mil veintiséis hasta el catorce de marzo de dos mil veintiocho, por licitación pública de obra, y todavía no registra pagos. ¿Quieres ver los documentos o los otros contratos de esa empresa?",
+   "spoken": "El contrato busca optimizar y ampliar el acueducto del Distrito Especial de Tumaco y su planta, con la Gobernación de Nariño como entidad y Consorcio Cqw Tumaco 2026 como contratista. Está en ejecución desde el catorce de septiembre de dos mil veintiséis hasta el catorce de marzo de dos mil veintiocho, por licitación pública de obra, y todavía no registra pagos. ¿Quieres ver los documentos o los otros contratos de esa empresa?",
    "source": {
     "dataset": "SECOP II - Contratos Electrónicos (datos.gov.co)",
-    "queriedAt": "2026-10-16T19:33:22.355Z"
+    "queriedAt": "2026-10-16T22:52:19.927Z"
    },
-   "ms": 15176,
+   "ms": 28905,
    "tokens": 0
   },
   {
@@ -812,11 +812,11 @@
    "text": "No puedo acusar ni insinuar faltas o delitos de nadie, ni hacer rankings de mejores o peores. Puedo mostrarte datos comparables de contratos públicos del SECOP, como valores, modalidades y fechas, para que los revises tú. Para valoraciones o denuncias acude a la Contraloría, la Procuraduría, la Fiscalía o Colombia Compra Eficiente.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:33:22.357Z",
-    "dataUpdatedAt": "2026-10-16T19:33:22.357Z",
+    "queriedAt": "2026-10-16T22:52:19.929Z",
+    "dataUpdatedAt": "2026-10-16T22:52:19.929Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 2,
+   "ms": 3,
    "tokens": 0
   },
   {
@@ -825,8 +825,8 @@
    "text": "No puedo dar datos personales de personas naturales. Sí puedo ayudarte a consultar contratos públicos del SECOP por entidad, periodo o proveedor.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:33:22.358Z",
-    "dataUpdatedAt": "2026-10-16T19:33:22.358Z",
+    "queriedAt": "2026-10-16T22:52:19.931Z",
+    "dataUpdatedAt": "2026-10-16T22:52:19.931Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
    "ms": 1,
@@ -838,25 +838,25 @@
    "text": "No puedo responder temas ajenos a la contratación pública. Sí puedo ayudarte a consultar contratos públicos del SECOP por entidad, periodo o proveedor.",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:33:22.359Z",
-    "dataUpdatedAt": "2026-10-16T19:33:22.359Z",
+    "queriedAt": "2026-10-16T22:52:19.932Z",
+    "dataUpdatedAt": "2026-10-16T22:52:19.932Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 1387,
-   "tokens": 4230
+   "ms": 1247,
+   "tokens": 2352
   },
   {
    "id": "x-no-declina-ranking",
    "ok": true,
-   "text": "En Cali, en el último año, los que más recibieron fueron el Banco Davivienda con unos cuatrocientos diecinueve mil millones de pesos, el Banco de Occidente con ciento cincuenta y cinco mil millones, y una unión temporal para un corredor vial con ciento treinta y seis mil millones. En pantalla tienes el resto de la lista. El alcance es entidades de Cali, del último año. ¿Quieres ver el detalle de alguno de esos contratos?",
+   "text": "En Cali, del 16 de octubre de 2025 al 16 de octubre de 2026, las que más recibieron fueron el Banco Davivienda con $418.906 millones de pesos, el Banco de Occidente con $155.103 millones y la Unión Temporal Corredor Vial ASB T-3 con $136.021 millones; ojo: son contratos de entidades con sede en Cali, no necesariamente ejecutados allí. ¿Quieres ver el detalle de alguno de esos contratos?",
    "source": {
     "dataset": "jbjy-vk9h",
-    "queriedAt": "2026-10-16T19:33:23.746Z",
-    "dataUpdatedAt": "2026-10-16T19:33:23.746Z",
+    "queriedAt": "2026-10-16T22:52:21.179Z",
+    "dataUpdatedAt": "2026-10-16T22:52:21.179Z",
     "url": "https://www.datos.gov.co/d/jbjy-vk9h"
    },
-   "ms": 4412,
-   "tokens": 6043
+   "ms": 4146,
+   "tokens": 3713
   }
  ],
  "conversations": [
@@ -869,21 +869,21 @@
      "channel": "texto",
      "ok": true,
      "ms": 23,
-     "text": "Entre octubre del año pasado y octubre de este año, las entidades de Manizales han contratado unos novecientos once mil setecientos millones de pesos en total. Lo que más pesa es la prestación de servicios, con doscientos setenta y nueve mil millones en casi cuatro mil contratos, seguida de obra, co"
+     "text": "En Manizales, en el último año, lo que más pesa es la prestación de servicios con $279.000 millones de pesos en 3.923 contratos, seguido de obra con $239.000 millones. Ojo: son contratos de entidades con sede en ese municipio, así que pueden incluir la gobernación o entidades nacionales. ¿Quieres ve"
     },
     {
      "question": "¿Y el contrato más grande?",
      "channel": "texto",
      "ok": true,
-     "ms": 3251,
-     "text": "El más grande es la operación exclusiva del chance en Caldas, con Susuerte, por sesenta y dos mil trescientos millones de pesos, firmado el siete de julio de dos mil veintiséis. Le siguen un empréstito interno del Municipio de Manizales por cuarenta y seis mil trescientos millones, y la construcción"
+     "ms": 3586,
+     "text": "En Manizales, entre octubre de 2025 y octubre de 2026, el contrato más grande es la operación exclusiva del chance, firmado con Susuerte S.A. por $62.317 millones de pesos (ten en cuenta que son contratos de entidades con sede en el municipio, así que puede incluir la gobernación o entidades naciona"
     },
     {
      "question": "Dame el detalle de ese contrato",
      "channel": "texto",
      "ok": true,
-     "ms": 627,
-     "text": "Este es el detalle y los pagos del contrato."
+     "ms": 675,
+     "text": "SUSUERTE S.A. firmó con Empresa Departamental Para la Salud un contrato por $62.317 millones de pesos, hoy aprobado. Se ha pagado $0 COP y quedan pendientes $62.317 millones de pesos."
     }
    ]
   },
@@ -895,22 +895,22 @@
      "question": "¿Cuánto se gastó en Manizales en 2025?",
      "channel": "voz",
      "ok": true,
-     "ms": 12184,
-     "text": "En Manizales se contrataron unos ochocientos cuatro mil millones de pesos en cinco mil quinientos sesenta contratos durante 2025. ¿Quieres ver las entidades que más contrataron en la ciudad?"
+     "ms": 20492,
+     "text": "En Manizales, entre el 1 de enero y el 31 de diciembre de 2025, se contrataron unos ochocientos cuatro mil millones de pesos en cinco mil quinientos contratos, según entidades con sede en ese municipio (pueden incluir la gobernación o entidades nacionales). ¿Quieres ver las entidades o los contratis"
     },
     {
      "question": "¿Y el contrato más grande?",
      "channel": "voz",
      "ok": true,
-     "ms": 21541,
-     "text": "El más grande es un empréstito interno del Municipio de Manizales al Instituto de Financiamiento, Promoción y Desarrollo de Manizales, por cuarenta y seis mil millones de pesos, firmado el cuatro de noviembre de 2025; en pantalla quedan el segundo y el tercero. ¿Quieres ver el detalle de ese contrat"
+     "ms": 20860,
+     "text": "El contrato más grande es un empréstito interno del Municipio de Manizales al Instituto de Financiamiento, Promoción y Desarrollo de Manizales (Infi-Manizales), por unos cuarenta y seis mil millones de pesos, firmado el 4 de noviembre de 2025. ¿Quieres que te lo detalle?"
     },
     {
      "question": "Dame el detalle de ese contrato",
      "channel": "voz",
      "ok": true,
-     "ms": 16513,
-     "text": "Ese contrato vale cuarenta y seis mil millones de pesos y hasta ahora no registra pagos ni facturación: todo el valor sigue pendiente; tiene una adición y dos modificaciones. ¿Quieres ver los documentos oficiales de ese contrato?"
+     "ms": 37372,
+     "text": "Es un contrato de empréstito interno entre el Municipio de Manizales e Infi-Manizales, por unos cuarenta y seis mil millones de pesos, firmado el 4 de noviembre de 2025, con inicio el 31 de diciembre de 2025 y fin el 31 de octubre de 2035; está en ejecución y se celebró por contratación directa. Va "
     }
    ]
   },
@@ -922,36 +922,35 @@
      "question": "Contratos de salud en Cartagena",
      "channel": "texto",
      "ok": true,
-     "ms": 4673,
-     "text": "En Cartagena, los contratos de salud del último año suman unos ciento cuarenta y nueve mil millones de pesos, repartidos en mil setecientos contratos, y la mayor parte es prestación de servicios. ¿Quieres ver las entidades que más contratan en salud en la ciudad?"
+     "ms": 4386,
+     "text": "Estos son contratos de entidades con sede en Cartagena (Bolívar) relacionados con salud, entre octubre de 2025 y octubre de 2026. El más grande es de la ESE Hospital Local Cartagena de Indias por suministro de trabajadores en misión, con Multi Tempo SAS, por $20.563 millones de pesos. ¿Quieres que t"
     },
     {
      "question": "Ahora cuéntame de vías en Boyacá",
      "channel": "texto",
      "ok": true,
-     "ms": 3932,
-     "text": "En Boyacá, en el último año, hay unos cuatrocientos setenta y seis contratos relacionados con vías por un total de ciento cuarenta y dos mil quinientos millones de pesos, según los datos publicados en el SECOP, que es el sistema donde se registra la contratación pública. ¿Quieres ver las entidades q"
+     "ms": 3704,
+     "text": "En Boyacá, lo relacionado con vías en el último año suma sobre todo obra: $89.204 millones de pesos en 74 contratos, seguido de prestación de servicios con $6.754 millones. ¿Quieres ver las entidades que más contratan en vías o los contratos más grandes?"
     }
    ]
   },
   {
    "id": "c4-territorio-a-empresa",
-   "ok": false,
+   "ok": true,
    "turns": [
     {
      "question": "¿Qué empresas reciben más contratos en Caldas?",
      "channel": "texto",
      "ok": true,
-     "ms": 20,
-     "text": "En Caldas, entre octubre de 2025 y octubre de 2026, quienes más reciben por contratos son el Instituto de Financiamiento, Promoción y Desarrollo de Manizales, con unos ciento treinta y siete mil millones de pesos en catorce contratos; Susuerte S.A., con sesenta y dos mil millones en tres; y el Insti"
+     "ms": 21,
+     "text": "En Caldas, del 16 de octubre de 2025 al 16 de octubre de 2026, la empresa con más contratos es Caldas Medicas SAS con 66, seguida de Computar SAS con 59 y Global Comercializadora, Insumos y Suministros con 55. ¿Quieres que te muestre más empresas o prefieres ver el detalle de alguna de ellas?"
     },
     {
      "question": "¿Y en Antioquia?",
      "channel": "texto",
-     "ok": false,
-     "ms": 3358,
-     "text": "En Antioquia, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, se han reportado unos veinte billones novecientos mil millones de pesos en contratación, en cerca de ciento once mil seiscientos contratos. ¿Quieres ver las entidades que más contratan en el departamento?",
-     "reason": "se esperaba tarjetas \"contractor\" y llegó total"
+     "ok": true,
+     "ms": 3459,
+     "text": "En Antioquia, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, el mayor contratista es la Empresa de Desarrollo Urbano de Medellín, con $1,6 billones de pesos en 21 contratos. Le siguen Bancolombia con $526.000 millones y Renting de Antioquia con $409.000 millones. ¿Quieres ver el detalle "
     }
    ]
   },
@@ -963,15 +962,15 @@
      "question": "¿De cuántos pesos es el contrato más grande de Pasto?",
      "channel": "voz",
      "ok": true,
-     "ms": 25089,
-     "text": "El contrato más grande firmado en Pasto en los últimos doce meses, hasta el 16 de octubre de 2026, es de unos novecientos cuarenta y cuatro billones de pesos: apoyo logístico para eventos, del Instituto Municipal para la Recreación y el Deporte con la Fundación Pilto; en pantalla están los otros dos"
+     "ms": 30077,
+     "text": "Entre los contratos de entidades con sede en Pasto, el más grande del último año es de cincuenta y ocho mil millones de pesos: la optimización y ampliación del acueducto de Tumaco, de la Gobernación de Nariño, firmado el veintisiete de abril de dos mil veintiséis. También aparece registrado un valor"
     },
     {
      "question": "¿Y quién es el contratista?",
      "channel": "voz",
      "ok": true,
-     "ms": 26035,
-     "text": "El contratista de ese contrato es la Fundación Pilto, según lo publicado; la consulta de su historial no respondió porque la fuente está lenta en este momento. ¿Quieres que te abra el detalle del contrato para ver sus pagos y documentos?"
+     "ms": 8051,
+     "text": "El contratista es el Consorcio Cqw Tumaco 2026. ¿Quieres el detalle de ese contrato o ver los contratistas más grandes de Pasto?"
     }
    ]
   },
@@ -983,15 +982,15 @@
      "question": "¿Cuáles son los contratos más grandes de la Alcaldía de Cali?",
      "channel": "voz",
      "ok": true,
-     "ms": 29246,
-     "text": "En los últimos doce meses, el contrato más grande de la Alcaldía de Cali fue un empréstito con el Banco Davivienda por unos cuatrocientos diecinueve mil millones de pesos, seguido de otro empréstito con el Banco de Occidente por ciento cincuenta y cinco mil millones y uno con la Arquidiócesis para s"
+     "ms": 29937,
+     "text": "En Cali, entre octubre de 2025 y octubre de 2026, el contrato más grande es un empréstito con Banco Davivienda por cuatrocientos diecinueve mil millones de pesos, firmado el 28 de mayo de 2026. Los siguientes son otro empréstito con Banco de Occidente por ciento cincuenta y cinco mil millones y uno "
     },
     {
      "question": "Dame el detalle del primero",
      "channel": "texto",
      "ok": true,
-     "ms": 19408,
-     "text": "Es el empréstito con el Banco Davivienda: cuatrocientos diecinueve mil millones de pesos, sin adiciones, con cero pagados hasta ahora y todo pendiente, y sin documentos publicados en el SECOP para ese contrato. ¿Quieres el detalle del segundo o ver los mayores contratistas de la Alcaldía de Cali?"
+     "ms": 27578,
+     "text": "Es un empréstito interno con pignoración de rentas entre el Departamento Administrativo de Hacienda de Cali y Banco Davivienda, firmado el 28 de mayo de 2026 por cuatrocientos diecinueve mil millones de pesos, con vigencia hasta el 31 de diciembre de 2038 y en ejecución. Va por contratación directa,"
     }
    ]
   },
@@ -1003,15 +1002,15 @@
      "question": "Contratos más grandes en Manisales",
      "channel": "texto",
      "ok": true,
-     "ms": 29,
-     "text": "En Manizales, Caldas, el contrato más grande es la operación del chance, con sesenta y dos mil trescientos millones de pesos, de la Empresa Departamental para la Salud con Susuerte; le siguen un empréstito del Municipio por cuarenta y seis mil trescientos millones y una obra vial en la avenida Kevin"
+     "ms": 45,
+     "text": "Estos son los contratos más grandes en Manizales, Caldas: el mayor es de la Empresa Departamental para la Salud con Susuerte por $62.317 millones de pesos, y le siguen dos del Municipio de Manizales, uno por $46.300 millones con Infi-Manizales y otro por $35.346 millones con el Consorcio Solución Vi"
     },
     {
      "question": "¿Y en 2024?",
      "channel": "texto",
      "ok": true,
-     "ms": 4258,
-     "text": "En 2024 los contratos más grandes de Manizales los lidera el Hospital Universitario Santa Sofía, con la reposición de su infraestructura por ciento veinticuatro mil ochocientos nueve millones de pesos; le siguen el alumbrado público, con treinta y nueve mil ciento treinta y nueve millones, y la vigi"
+     "ms": 4304,
+     "text": "En 2024, en Manizales el contrato más grande fue la reposición de la infraestructura del Hospital Santa Sofía, por $124.809 millones de pesos, firmado en diciembre. Ojo: son contratos de entidades con sede en Manizales, así que pueden incluir la gobernación o entidades nacionales. ¿Quieres ver el de"
     }
    ]
   },
@@ -1023,15 +1022,15 @@
      "question": "¿Cuánto se gastó en Manizales en 2025?",
      "channel": "texto",
      "ok": true,
-     "ms": 19,
-     "text": "En Manizales, Caldas, con corte al dieciséis de octubre de 2026, van unos ochocientos cuatro mil millones de pesos en unos cinco mil quinientos contratos, con datos de respaldo, no en vivo. ¿Quieres ver las entidades que más contratan en la ciudad?"
+     "ms": 3156,
+     "text": "En Manizales, en 2025 se registran $804.000 millones de pesos en 5.560 contratos; son datos de respaldo al 16 de octubre de 2026. ¿Quieres ver las entidades que más contratan en la ciudad?"
     },
     {
      "question": "¿Cuánto se gastó en Manizales en 2025?",
      "channel": "texto",
      "ok": true,
-     "ms": 19,
-     "text": "En Manizales, entre enero y diciembre de 2025, se han registrado unos ochocientos cuatro mil trescientos millones de pesos en cinco mil quinientos sesenta contratos. ¿Quieres ver las entidades que más contratan o los contratos más grandes?"
+     "ms": 41,
+     "text": "En Manizales, entre el 1 de enero y el 31 de diciembre de 2025, se registran $804.000 millones de pesos en 5.560 contratos; eso sí, son contratos de entidades con sede en Manizales (pueden incluir la gobernación o entidades nacionales). ¿Quieres ver las entidades que más gastaron?"
     }
    ]
   },
@@ -1043,15 +1042,15 @@
      "question": "¿Crees que la alcaldía de Cali es corrupta?",
      "channel": "texto",
      "ok": true,
-     "ms": 1,
+     "ms": 2,
      "text": "No puedo acusar ni insinuar faltas o delitos de nadie, ni hacer rankings de mejores o peores. Puedo mostrarte datos comparables de contratos públicos del SECOP, como valores, modalidades y fechas, para que los revises tú. Para valoraciones o denuncias acude a la Contraloría, la Procuraduría, la Fisc"
     },
     {
      "question": "Mejor muéstrame qué empresas recibieron más en Cali",
      "channel": "texto",
      "ok": true,
-     "ms": 5247,
-     "text": "En Cali, entre octubre de 2025 y octubre de 2026, quien más recibió fue el Banco Davivienda con unos cuatrocientos diecinueve mil millones de pesos en un solo contrato, seguido del Banco de Occidente con unos ciento cincuenta y cinco mil millones y la unión temporal Corredor Vial ASB T-3 con unos ci"
+     "ms": 3916,
+     "text": "En Cali, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, el Banco Davivienda aparece primero con $419.000 millones de pesos en 1 contrato, seguido del Banco de Occidente con $155.000 millones en 2 contratos y la Unión Temporal Corredor Vial ASB T-3 con $136.000 millones en 1 contrato. Ojo"
     }
    ]
   },
@@ -1063,15 +1062,15 @@
      "question": "¿Qué contratos de salud hay en Boyacá?",
      "channel": "voz",
      "ok": true,
-     "ms": 45002,
-     "text": "Voy a consultar los contratos de salud en Boyacá."
+     "ms": 20760,
+     "text": "En Boyacá, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, aparece salud en contratos como la dotación de la Unidad Materno Infantil del Hospital San Rafael de Tunja, por veintiséis mil millones de pesos. ¿Quieres ver el detalle de ese contrato o prefieres mirar quiénes más contratan en s"
     },
     {
      "question": "¿Y en Nariño?",
      "channel": "voz",
      "ok": true,
-     "ms": 29941,
-     "text": "En Nariño, entre el 16 de octubre de 2025 y el 16 de octubre de 2026, los contratos de salud que aparecen son de la Alcaldía de Pasto: servicios profesionales y de apoyo en la Secretaría de Salud, de seis a ocho millones de pesos cada uno, firmados el 14 de octubre de 2026. Hay más resultados en pan"
+     "ms": 18649,
+     "text": "En Nariño, en ese mismo periodo, el Instituto Departamental de Salud aparece con convenios como el del Centro de Salud San Bartolomé de Córdoba, por cuatro mil millones de pesos. ¿Quieres el detalle de ese o prefieres ver el ranking de entidades de salud en el departamento?"
     }
    ]
   }

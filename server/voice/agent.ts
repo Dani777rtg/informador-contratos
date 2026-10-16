@@ -3,9 +3,10 @@ import { MISSION_PROMPT } from "../agent/mission.js";
 import { TOOL_DEFS, runTool } from "../agent/tools.js";
 import { decline, DECLINE_TOOL } from "../agent/decline.js";
 import { PLACE_KEYTERMS } from "../data/places.js";
+import { guessCall } from "./prefetch.js";
 import { emptyContext, type Ctx } from "../session.js";
 import { MAX_TOOLS_PER_TURN, posNum } from "../guards/validate.js";
-import { normalNames, spokenAmount, toSpoken } from "../speech/spoken.js";
+import { normalNames, toSpoken, wordsAmount, wordsMoney } from "../speech/spoken.js";
 
 type Env = Record<string, string | undefined>;
 type Json = Record<string, unknown>;
@@ -29,7 +30,7 @@ export function buildSettings(env: Env, history: Turn[] = []): Json {
     agent: {
       listen: { provider: { type: "deepgram", model: "nova-3", language: "es", keyterms: KEYTERMS } },
       think: {
-        provider: { type: "open_ai", model: env.DEEPSEEK_MODEL ?? "deepseek-flash", temperature: 0.2 },
+        provider: { type: "open_ai", model: env.DEEPSEEK_VOICE_MODEL ?? env.DEEPSEEK_MODEL ?? "deepseek-flash", temperature: 0.2 },
         endpoint: { url: `${base}/chat/completions`, headers: { authorization: `Bearer ${key}` } },
         prompt: MISSION_PROMPT,
         functions: [...TOOL_DEFS, DECLINE_TOOL.function], // decline debe existir: si no, el modelo la llama y el agente queda mudo (NON_EXISTENT_FUNCTION_CALLED)
@@ -40,21 +41,34 @@ export function buildSettings(env: Env, history: Turn[] = []): Json {
   };
 }
 
+const SIGLAS = new Set(["SECOP", "NIT", "CDP", "PAE", "ICBF", "DNP", "ESE", "DIAN", "SENA", "INVIAS", "ANI", "PGN"]);
 const isMoney = /^\$\s?\d/;
 const isoDate = /^\d{4}-\d{2}-\d{2}/;
 const MONEY_KEY = /valor|total|monto|value|suma|gasto/i;
 /** Resultado de herramienta -> modelo: montos en palabras, textos de SECOP cortos, sin saltos ni etiquetas, sin enlaces. */
 export function forAgent(v: unknown, key = ""): unknown {
-  if (typeof v === "number") return MONEY_KEY.test(key) && Math.abs(v) >= 1000 ? spokenAmount(v) : v;
+  if (typeof v === "number") return MONEY_KEY.test(key) && Math.abs(v) >= 1000 ? wordsAmount(v) : v;
   if (typeof v === "string") {
     const s = v.replace(/[\u0000-\u001f\u007f<>«»]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 140);
-    if (isMoney.test(s) || isoDate.test(s)) return toSpoken(s);
+    if (/^[A-Z0-9]{2,}(\.[A-Za-z0-9]+)+$/.test(s)) return s; // ids de contrato (CO1.PCCNTR.123): tal cual, el modelo los devuelve a detalle_contrato
+    if (isMoney.test(s)) return toSpoken(wordsMoney(s));
+    if (isoDate.test(s)) return toSpoken(s);
     // Nombres en mayúsculas de SECOP en formato normal para que el modelo no los lea letra a letra.
-    return /^\p{Lu}{4,}$/u.test(s) ? s[0] + s.slice(1).toLowerCase() : normalNames(s);
+    // Siglas conocidas se dejan; el resto en mayúsculas (también unidas por guion: «INFI-MANIZALES») pasa a formato normal.
+    return normalNames(s).replace(/\p{Lu}{3,}(?:-\p{Lu}{3,})*/gu, (w) => (SIGLAS.has(w) ? w : w.split("-").map((p) => (SIGLAS.has(p) ? p : p[0] + p.slice(1).toLowerCase())).join("-")));
   }
   if (Array.isArray(v)) return v.slice(0, 10).map((x) => forAgent(x, key));
   if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).filter(([k]) => k !== "kind" && !/url/i.test(k)).map(([k, x]) => [k, forAgent(x, k)]));
   return v;
+}
+
+/** Para el modelo de voz: 5 filas (cada fila extra son segundos de razonamiento) y sin lugar, que ya va en `filtros`. `ids` conserva el orden. */
+export function slim(v: unknown): unknown {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return v;
+  const d = v as Json;
+  const cut = (x: unknown) => (Array.isArray(x) ? x.slice(0, 5) : x);
+  const rows = Array.isArray(d.resultado) ? d.resultado.map((r) => (r && typeof r === "object" ? Object.fromEntries(Object.entries(r).filter(([k]) => !/^(city|department)$/.test(k))) : r)) : d.resultado;
+  return { ...d, ...(rows ? { resultado: cut(rows) } : {}), ...(d.ids ? { ids: cut(d.ids) } : {}) };
 }
 
 /** Cerca el resultado como datos para el modelo (el texto interior ya no puede traer «, » ni < >). */
@@ -94,11 +108,14 @@ export function runAgentSession(client: WebSocket, url: string, env: Env, hooks:
   const queued: string[] = [];
   const all: string[] = [];
   let turnTools: string[] = [], turnT0 = 0, declineCode: string | undefined, placeMatched: "si" | "no" | "confirmar" | undefined, resultCode = "ok";
+  const trace = env.VOICE_TRACE === "1"; // desglose de latencia por turno (sin contenido): VOICE_TRACE=1
+  let marks: [string, number][] = [];
+  const mark = (e: string) => { if (trace && turnT0) marks.push([e, Date.now() - turnT0]); };
   let lastFrame = Date.now(), winStart = Date.now(), frames = 0, asks = 0;
 
   const send = (o: Json) => { if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify(o)); };
   const toUp = (o: Json) => { if (up?.readyState === WebSocket.OPEN) up.send(JSON.stringify(o)); };
-  const inject = (content: string) => { turnT0 = Date.now(); turnTools = []; declineCode = undefined; placeMatched = undefined; resultCode = "ok"; toUp({ type: "InjectUserMessage", content }); };
+  const inject = (content: string) => { turnT0 = Date.now(); marks = []; turnTools = []; declineCode = undefined; placeMatched = undefined; resultCode = "ok"; toUp({ type: "InjectUserMessage", content }); };
 
   const end = (code: number, reason: string) => {
     if (ended) return;
@@ -136,8 +153,10 @@ export function runAgentSession(client: WebSocket, url: string, env: Env, hooks:
         if (typeof err === "string") resultCode = err.slice(0, 40);
         if (args.municipio || args.departamento || args.ciudad) placeMatched = err === "lugar_desconocido" ? ((r.data as { confirmar?: unknown }).confirmar ? "confirmar" : "no") : "si";
         if (r.cards?.length) send({ type: "ToolResult", cards: r.cards });
-        content = fence(forAgent(r.data)) + (r.note ? `\n${r.note}` : "");
+        content = fence(slim(forAgent(r.data))) + (r.note ? `\n${r.note}` : "");
       }
+      mark(`resp:${f.name}:${content.length}B`);
+      if (trace) console.log(JSON.stringify({ evt: "voice_tool", name: f.name, args, head: content.slice(0, 400) }));
       toUp({ type: "FunctionCallResponse", id: f.id, name: f.name, content });
     }
   }
@@ -147,18 +166,22 @@ export function runAgentSession(client: WebSocket, url: string, env: Env, hooks:
     let m: Json & { functions?: never };
     try { m = JSON.parse(data.toString()) as Json; } catch { return; }
     const type = m.type;
+    if (trace) console.log(JSON.stringify({ evt: "voice_msg", type, t: Date.now() - turnT0, role: m.role, ...(type === "LatencyReport" || type === "Warning" || type === "Error" ? m : {}) }));
+    if (typeof type === "string" && type !== "FunctionCallRequest" && type !== "AgentStartedSpeaking" && type !== "AgentAudioDone") mark(type === "ConversationText" ? `text:${String(m.role)}` : type);
     if (type === "SettingsApplied") { ready = true; for (const t of queued.splice(0)) inject(t); }
     else if (type === "ConversationText" && (m.role === "user" || m.role === "assistant") && typeof m.content === "string") {
       // Si el agente refleja la configuración (clave o prompt), el texto no sale ni se guarda (TM-15).
       if (secrets.some((s) => (m.content as string).includes(s))) return;
       history.push({ type: "History", role: m.role, content: m.content.slice(0, 2000) });
       if (history.length > 40) history.shift();
+      if (m.role === "user") { const g = guessCall(m.content); if (g) void withDeadline(run(g.name, g.args, undefined, ctx), 12_000).catch(() => undefined); } // calienta la caché mientras el modelo decide
       if (m.role === "user" && !turnT0) { turnT0 = Date.now(); turnTools = []; declineCode = undefined; placeMatched = undefined; resultCode = "ok"; }
       send({ type, role: m.role, content: m.content });
     } else if (typeof type === "string" && FORWARD.has(type)) {
+      if (type === "AgentStartedSpeaking") { mark(type); if (trace && turnT0) console.log(JSON.stringify({ evt: "voice_trace", marks })); }
       if (type === "AgentStartedSpeaking" && turnT0) { hooks.turn?.({ latencyMs: Date.now() - turnT0, tools: turnTools, declineCode, intent: declineCode ? "declinar" : turnTools.length ? "consulta" : "conversacion", placeMatched, resultCode }); turnT0 = 0; }
       send({ type });
-    } else if (type === "FunctionCallRequest") void functions(m as never);
+    } else if (type === "FunctionCallRequest") { mark("req"); void functions(m as never); }
     else if (type === "Error") { errorType = String(m.code ?? "error").slice(0, 60); console.warn(JSON.stringify({ evt: "agent_error", code: errorType })); }
   }
 

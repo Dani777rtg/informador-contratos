@@ -1,4 +1,4 @@
-import { displayName, query, type Column, type Cond } from "../data/socrata.js";
+import { displayName, normalize, query, type Column, type Cond } from "../data/socrata.js";
 import { withCache } from "../cache.js";
 import { aggregate, money, num } from "../soql.js";
 import { isOutlier, withoutOutliers } from "../data/outliers.js";
@@ -6,6 +6,21 @@ import { atipicoCard, contractCard, key, type Ctx } from "./search.js";
 
 type Raw = Record<string, string | undefined>;
 
+const canon = (s: string) => normalize(s).replace(/\b(s a s|sas|ltda|s a|s en c|e s p)\b/g, "").replace(/[^a-z0-9]+/g, "");
+/** El mismo nombre escrito de dos formas («X S.A.S.» / «X SAS») suma una sola fila; ordena por valor o por número de contratos. */
+function mergeNames(rows: Raw[], col: "proveedor_adjudicado" | "nombre_entidad", by: "sum" | "count"): Raw[] {
+  const merged = new Map<string, Raw>();
+  for (const r of rows) {
+    const name = r[col];
+    if (!name) continue;
+    const k = canon(name), m = merged.get(k);
+    if (!m) { merged.set(k, { ...r }); continue; }
+    m.s_valor_del_contrato = String(num(m.s_valor_del_contrato) + num(r.s_valor_del_contrato));
+    m.n = String(num(m.n) + num(r.n));
+  }
+  const key = by === "count" ? "n" : "s_valor_del_contrato";
+  return [...merged.values()].sort((a, b) => num(b[key]) - num(a[key]));
+}
 // Todo total y ranking excluye los contratos atípicos (> 10 billones) en el servidor. ponytail: una sola llamada a datos (AC-05.6), así que las sumas no listan los atípicos; los rankings de contratos sí (`atipicos`).
 const agg = async (ctx: Ctx, kind: string, where: Cond[], a: Parameters<typeof aggregate>[1]) => ({
   r: await withCache(ctx.cache, key(kind, where), () => aggregate(ctx.client, { ...a, where: withoutOutliers(where) })),
@@ -50,8 +65,8 @@ export const topContracts = async (ctx: Ctx, where: Cond[]) => {
 
 /** Ranking de contratistas por valor total adjudicado (nombre completo; el documento nunca se selecciona). */
 export const topContractors = async (ctx: Ctx, where: Cond[], by: "sum" | "count" = "sum") => {
-  const { r, atipicos } = await agg(ctx, `contractors-${by}`, where, { group: "proveedor_adjudicado", sums: ["valor_del_contrato"], limit: 10, by });
-  const cards = (r.value as Raw[]).filter((x) => x.proveedor_adjudicado).map((x, i) => ({
+  const { r, atipicos } = await agg(ctx, `contractors-${by}`, where, { group: "proveedor_adjudicado", sums: ["valor_del_contrato"], limit: 15, by });
+  const cards = mergeNames(r.value as Raw[], "proveedor_adjudicado", by).slice(0, 10).map((x, i) => ({
     kind: "contractor", rank: i + 1, name: x.proveedor_adjudicado, total: money(num(x.s_valor_del_contrato)), count: num(x.n),
   }));
   return { cards, atipicos, at: r.at, cached: r.cached };
@@ -67,8 +82,8 @@ export const totalSpend = async (ctx: Ctx, where: Cond[]) => {
 
 /** Ranking de entidades compradoras por valor contratado. */
 export const topEntities = async (ctx: Ctx, where: Cond[]) => {
-  const { r, atipicos } = await agg(ctx, "entities", where, { group: "nombre_entidad", sums: ["valor_del_contrato"], limit: 10 });
-  const cards = (r.value as Raw[]).filter((x) => x.nombre_entidad).map((x, i) => ({
+  const { r, atipicos } = await agg(ctx, "entities", where, { group: "nombre_entidad", sums: ["valor_del_contrato"], limit: 15 });
+  const cards = mergeNames(r.value as Raw[], "nombre_entidad", "sum").slice(0, 10).map((x, i) => ({
     kind: "entity", rank: i + 1, name: displayName(x.nombre_entidad!), total: money(num(x.s_valor_del_contrato)), count: num(x.n),
   }));
   return { cards, atipicos, at: r.at, cached: r.cached };

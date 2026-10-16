@@ -22,6 +22,7 @@
     "warm:demo": "tsx scripts/warm-demo.ts",
     "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
     "typecheck": "tsc --noEmit",
+    "build:server": "tsc -p tsconfig.build.json",
     "build:web": "vite build --config web/vite.config.ts",
     "dev:web": "vite --config web/vite.config.ts"
   },

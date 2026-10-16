@@ -16,6 +16,7 @@ import demoAnswers from "./fallback/demo-answers.json" with { type: "json" };
 import { demoKey, type DemoEntry, type DemoKind } from "./fallback/demo.js";
 import { Lru } from "./cache.js";
 import { createPlaces, findPlace } from "./data/places.js";
+import { loadSnapshot } from "./fallback/snapshot.js";
 import { OUTLIER_NOTE } from "./data/outliers.js";
 import { TOPICS, topicTerms } from "./tools/filters.js";
 import { roundAmounts, roundedPesos, normalNames, toSpoken } from "./speech/spoken.js";
@@ -67,7 +68,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
   const entities = loadEntities(mock);
   let attach: ((s: Server) => void) | undefined;
   let mockAttach: ((s: Server) => void) | undefined;
-  let client: Client = { base: env.SOCRATA_BASE ?? "https://www.datos.gov.co", token: env.DATOSGOV_APP_TOKEN };
+  let client: Client = { base: env.SOCRATA_BASE ?? "https://www.datos.gov.co", token: env.DATOSGOV_APP_TOKEN, reuseMs: 8000 };
   if (mock) {
     const socrata = createSocrataMock();
     app.route("/", socrata);
@@ -127,7 +128,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
     return voice.originAllowed(c.req.header("origin")) ? c.json({ token: voice.newToken() }) : c.json({ error: "origin" }, 403);
   });
 
-  app.get("/health", (c) => c.json({ ok: true }));
+  app.get("/health", (c) => { void places(); return c.json({ ok: true }); }); // precalienta la lista de municipios sin esperarla
 
   // WhatsApp: resumen y enlace salen del estado de la conversación (solo ids validados), nunca de texto libre del cliente.
   const wabaId = env.WHATSAPP_BUSINESS_ACCOUNT_ID ?? env.WHATSAPP_WABA_ID ?? "", templateName = env.WHATSAPP_TEMPLATE ?? "resumen_secop", token = env.WHATSAPP_ACCESS_TOKEN ?? env.WHATSAPP_TOKEN ?? "";
@@ -297,7 +298,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
         if (!r.cards.length) return reply({ text: `No encontré datos para ${label} ${noData}. Prueba ampliando el periodo o revisando el nombre.` });
         if ("ids" in r) cur = applyTurn(cur, { results: r.ids as string[] });
         // Cifra clave en lenguaje llano; el valor exacto queda en la tarjeta.
-        const first = r.cards[0] as Record<string, unknown>;
+        const first = ((r.cards as Record<string, unknown>[]).find((c) => !/^(otro|no definido|no aplica)/i.test(String(c.category ?? ""))) ?? r.cards[0]) as Record<string, unknown>;
         const key = kind === "top" ? `El mayor es de ${roundedPesos(Number(String(first.value).replace(/\D/g, "")))}${first.contractor ? `, con ${normalNames(String(first.contractor)).replace(/\.$/, "")}` : ""}.`
           : kind === "spend" ? `Lo que más se contrata es ${String(first.category).toLowerCase()}.`
           : `La fuente principal es ${String(first.source).toLowerCase()}.`;
@@ -332,11 +333,12 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
   app.use("*", serveStatic({ root: "web/dist" }));
   // `chat`: mismo flujo que /api/chat, en proceso (evaluación con datos reales).
   const chat = (message: string, state: string | undefined, channel: "texto" | "voz") => answer(message, codec.verify(state) ?? emptyContext(), channel);
-  return { app, attach, chat, warm: () => void places() };
+  return { app, attach, chat, warm: () => { void places(); loadSnapshot(); } }; // el respaldo (gunzip + JSON) se carga al arrancar, no en la primera pregunta
 }
 
 export async function startServer({ port, env }: { port: number; env: Env }): Promise<{ port: number; close(): Promise<void> }> {
-  const { app, attach } = createApp(env);
+  const { app, attach, warm } = createApp(env);
+  warm();
   const server = await new Promise<Server>((ok) => { const s = serve({ fetch: app.fetch, port, hostname: "0.0.0.0" }, () => ok(s as Server)); });
   attach?.(server);
   return {

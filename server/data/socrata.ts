@@ -25,6 +25,8 @@ export interface Client {
   base: string; token?: string; fetchFn?: typeof fetch; timeoutMs?: number;
   /** Presupuesto total de la herramienta (ver data/budget.ts): corta consultas y reintentos. */
   signal?: AbortSignal;
+  /** Si >0, la misma consulta (en vuelo o terminada hace menos de estos ms) se reutiliza: la voz la calienta mientras el modelo decide. */
+  reuseMs?: number;
 }
 
 /** valor_del_contrato llega como texto en Socrata: comparar y ordenar siempre como número. */
@@ -62,7 +64,19 @@ export function buildParams(q: Query): URLSearchParams {
 
 export const query = (c: Client, q: Query, dataset = DATASET): Promise<Row[]> => fetchRows(c, buildParams(q), dataset);
 
-export async function fetchRows(c: Client, params: URLSearchParams, dataset = DATASET): Promise<Row[]> {
+const reuse = new Map<string, { at: number; p: Promise<Row[]> }>();
+export function fetchRows(c: Client, params: URLSearchParams, dataset = DATASET): Promise<Row[]> {
+  if (!c.reuseMs) return fetchRowsNow(c, params, dataset);
+  const k = `${c.base}|${dataset}|${params}`, hit = reuse.get(k);
+  if (hit && Date.now() - hit.at < c.reuseMs) return hit.p.catch(() => fetchRowsNow(c, params, dataset)); // el calentamiento falló: consulta propia
+  if (reuse.size > 100) reuse.clear();
+  const p = fetchRowsNow(c, params, dataset);
+  reuse.set(k, { at: Date.now(), p });
+  p.catch(() => reuse.delete(k));
+  return p;
+}
+
+async function fetchRowsNow(c: Client, params: URLSearchParams, dataset: string): Promise<Row[]> {
   const f = c.fetchFn ?? fetch;
   const headers: Record<string, string> = c.token ? { "X-App-Token": c.token } : {};
   const rows = await withRetry(async (p) => {

@@ -8,7 +8,7 @@ import { spendByCategory, topContractors, topContracts, topEntities, totalSpend 
 import { buildWhere, matching, type Filters } from "../tools/filters.js";
 import { contractDetail } from "../tools/detail.js";
 import { listDocuments } from "../tools/documents.js";
-import { fromSnapshot, loadSnapshot, snapshotPlaces, type Scope } from "../fallback/snapshot.js";
+import { fromSnapshot, loadSnapshot, snapshotPlaces, topicLabel, type Scope } from "../fallback/snapshot.js";
 import { isOutlier, OUTLIER_NOTE } from "../data/outliers.js";
 import { roundedPesos } from "../speech/spoken.js";
 import type { Ctx, Tool, ToolRegistry, ToolResult } from "./loop.js";
@@ -16,34 +16,25 @@ import type { Ctx, Tool, ToolRegistry, ToolResult } from "./loop.js";
 const day = (d: Date) => d.toISOString().slice(0, 10);
 const ID = /^[\w.-]{1,60}$/;
 const str = (v: unknown, max = 80): string => (typeof v === "string" ? v.trim().slice(0, max) : "");
-const PLACES_WAIT_MS = 2500;
 const MAX_LIMIT = 10, DEFAULT_LIMIT = 5;
 
 const FILTER_PROPS = {
-  municipio: { type: "string", description: "Municipio donde está la entidad (ej. Manizales, Cartagena, Medellín); tolera errores de transcripción" },
-  departamento: { type: "string", description: "Departamento (ej. Antioquia)" },
-  entidad: { type: "string", description: "Entidad compradora: nombre (ej. Ministerio de Educación, Alcaldía de Pasto) o NIT" },
-  tema: { type: "string", description: "Tema u objeto del contrato, con tildes (ej. vías, salud, alimentación escolar)" },
-  proveedor: { type: "string", description: "Nombre (o parte) del contratista" },
-  anio: { type: "integer", minimum: 2000, maximum: 2100, description: "Año de firma; sin él ni desde/hasta, últimos 12 meses" },
-  desde: { type: "string", description: "Inicio del periodo: año (2024) o fecha AAAA-MM-DD" },
-  hasta: { type: "string", description: "Fin del periodo: año (2025) o fecha AAAA-MM-DD" },
-  limite: { type: "integer", minimum: 1, maximum: MAX_LIMIT, description: "Cuántos resultados (máximo 10; por voz 3)" },
-};
-const def = (name: string, description: string, extra: Record<string, unknown> = {}) =>
+  municipio: { type: "string" }, departamento: { type: "string" }, entidad: { type: "string" }, tema: { type: "string" },
+  proveedor: { type: "string" }, anio: { type: "integer" }, limite: { type: "integer" },
+};const def = (name: string, description: string, extra: Record<string, unknown> = {}) =>
   ({ name, description, parameters: { type: "object", properties: { ...FILTER_PROPS, ...extra }, required: [] as string[] } });
 
 /** Definiciones para el LLM (texto) y para el Voice Agent: parámetros cerrados, nunca SoQL. */
 export const TOOL_DEFS = [
-  def("gasto_total", "Cuánto se contrató en total (valor y número de contratos). Sin entidad ni NIT: sirve por municipio, departamento, tema o periodo."),
-  def("gasto_por_categoria", "Cuánto se contrató por tipo de contrato (categoría), con total y número de contratos."),
-  def("top_entidades", "Ranking de entidades compradoras: cuáles contrataron más (valor y número de contratos)."),
-  def("top_contratistas", "Ranking de contratistas (empresas o personas): quién recibió más. orden: valor (defecto) o cantidad.", { orden: { type: "string", enum: ["valor", "cantidad"] } }),
-  def("contratos_mayores", "Los contratos de mayor valor del filtro, del más grande al más pequeño."),
-  def("buscar_contratos", "Contratos recientes que cumplen los filtros (municipio, departamento, entidad, tema, contratista, periodo)."),
+  def("gasto_total", "Total contratado."),
+  def("gasto_por_categoria", "Gasto por tipo de contrato."),
+  def("top_entidades", "Ranking de entidades compradoras."),
+  def("top_contratistas", "Ranking de contratistas.", { orden: { type: "string", enum: ["valor", "cantidad"] } }),
+  def("contratos_mayores", "Contratos de mayor valor."),
+  def("buscar_contratos", "Contratos recientes con los filtros."),
   {
     name: "detalle_contrato",
-    description: "Detalle y pagos de un contrato mostrado antes; con documentos=true también sus documentos oficiales de SECOP.",
+    description: "Detalle de un contrato mostrado.",
     parameters: { type: "object", properties: { id_contrato: { type: "string" }, documentos: { type: "boolean" } }, required: ["id_contrato"] },
   },
 ];
@@ -92,13 +83,13 @@ async function resolveFilters(args: Record<string, unknown>, ctx: Ctx, d: Deps, 
   }
   const municipio = str(args.municipio) || str(args.ciudad), dep = str(args.departamento);
   if (municipio || dep) {
-    // La lista de municipios en frío tarda ~12 s: no se espera más de 2,5 s (sigue cargando en segundo plano) y se usa la del respaldo.
-    const known = await Promise.race([(d.places ?? placesFor(client))(), new Promise<Place[]>((ok) => setTimeout(() => ok([]), PLACES_WAIT_MS).unref())]);
+    // createPlaces responde al instante con la lista del respaldo mientras la viva carga en segundo plano.
+    const known = await (d.places ?? placesFor(client))();
     const places = known.length ? known : snapshotPlaces();
     const m = matchPlace(municipio || dep, places, municipio ? dep : undefined, !municipio);
     if ("sugerencias" in m) return fail({ error: "lugar_desconocido", sugerencias: m.sugerencias, ...(m.confirmar ? { confirmar: m.confirmar } : {}), nota: `Pregunta al usuario${m.confirmar ? ` «${m.confirmar}»` : " por el lugar y ofrece las sugerencias"}; no digas que no hay datos.` });
     f.departamento = m.departamento;
-    if (m.alcance === "municipio") { f.ciudad = m.municipio; label.push(`entidades de ${m.municipio}, ${m.departamento}`); } else label.push(`entidades de ${m.departamento}`);
+    if (m.alcance === "municipio") { f.ciudad = m.municipio; label.push(`entidades con sede en ${m.municipio}, ${m.departamento}`); } else label.push(`entidades de ${m.departamento}`);
   }
   f.tema = str(args.tema, 60) || undefined;
   if (f.tema && /[;'"\\]|--/.test(f.tema)) return fail({ error: "sin_resultados", nota: "tema inválido" });
@@ -115,8 +106,8 @@ async function resolveFilters(args: Record<string, unknown>, ctx: Ctx, d: Deps, 
     : desde || hasta ? { from: desde ?? "2000-01-01", to: hasta ?? day(now) }
     : ctx.period ?? { from: day(from), to: day(now) };
   const y1 = Number(f.period.from.slice(0, 4)), y2 = Number(f.period.to.slice(0, 4));
-  const scope: Scope = { departamento: f.departamento, municipio: f.ciudad, ...(y1 === y2 ? { anio: y1 } : { desde: y1, hasta: y2 }) };
-  return { f, label: label.join("; ") || "todo el país", scope, textual: Boolean(f.nit || f.tema || f.proveedor), explicitPeriod };
+  const scope: Scope = { departamento: f.departamento, municipio: f.ciudad, tema: topicLabel(f.tema), recent: !explicitPeriod, ...(y1 === y2 ? { anio: y1 } : { desde: y1, hasta: y2 }) };
+  return { f, label: label.join("; ") || "todo el país", scope, textual: Boolean(f.nit || f.proveedor || (f.tema && !topicLabel(f.tema))), explicitPeriod };
 }
 
 const placeLists = new Map<string, () => Promise<Place[]>>();
@@ -138,7 +129,11 @@ async function live(name: string, f: Filters, args: Record<string, unknown>, lim
   };
   switch (name) {
     case "gasto_total": return split(await totalSpend(dctx, where));
-    case "gasto_por_categoria": return split(cut(await spendByCategory(dctx, where)));
+    case "gasto_por_categoria": {
+      // «Otro» / «No definido» no dicen en qué se gasta: van al final para que la categoría principal tenga nombre.
+      const r = await spendByCategory(dctx, where), vague = (c: unknown) => /^(otro|no definido|no aplica)/i.test(String((c as { category?: unknown }).category ?? ""));
+      return split(cut({ ...r, cards: [...r.cards.filter((c) => !vague(c)), ...r.cards.filter(vague)] }));
+    }
     case "top_entidades": return split(cut(await topEntities(dctx, where)));
     case "top_contratistas": return split(cut(await topContractors(dctx, where, str(args.orden, 10) === "cantidad" ? "count" : "sum")));
     case "contratos_mayores": { const t = split(await topContracts(dctx, where)); return { ...cut(t), ids: t.ids.slice(0, limit) }; }
@@ -206,6 +201,19 @@ export async function runTool(name: string, args: Record<string, unknown>, data:
     ...(ids ? { results: ids } : {}),
   });
   let note: string | undefined;
+  // Respuesta del respaldo precalculado (mismas tarjetas que en vivo). Solo dice lo que puede decir con verdad.
+  const backup = (): ToolResult | null => {
+    const snap = loadSnapshot();
+    const fb = snap && !r.textual ? fromSnapshot(snap, name, r.explicitPeriod || name.startsWith("gasto") ? r.scope : { ...r.scope, anio: undefined, desde: undefined, hasta: undefined }, limit) : null;
+    if (!snap || !fb) return null;
+    const nota = `Datos de respaldo al ${snap.generatedAt.slice(0, 10)}, no en vivo. Dilo con esa fecha.${fb.widened ? ` No hay respaldo de ${f.ciudad}: son del departamento ${f.departamento}; dilo.` : ""}`;
+    return { data: { resultado: say(fb.cards), filtros: label, respaldo: snap.generatedAt.slice(0, 10), nota }, cards: fb.cards as ToolResult["cards"], context: ctxOut(f), note: nota };
+  };
+  // Un tema frecuente sin territorio (LIKE sobre todo el país: 15 s en datos.gov.co, más que el presupuesto de 6,5 s) sale directo del respaldo.
+  if (!r.explicitPeriod && r.scope.tema && !f.ciudad && !f.departamento && !f.nit && !f.proveedor && ["gasto_total", "contratos_mayores", "buscar_contratos"].includes(name)) {
+    const b = backup();
+    if (b) return b;
+  }
   try {
     let res = await live(name, f, args, limit, dctx);
     if (!res.cards.length && f.ciudad) {
@@ -214,7 +222,7 @@ export async function runTool(name: string, args: Record<string, unknown>, data:
       const alt = await live(name, wide, args, limit, dctx);
       if (alt.cards.length) {
         note = `No hay contratos de ${f.ciudad}; se amplió al departamento ${f.departamento}. Dilo.`;
-        label = label.replace(/entidades de [^;]+/, `entidades de ${f.departamento}`);
+        label = label.replace(/entidades con sede en [^;]+/, `entidades de ${f.departamento}`);
         res = alt; f = wide;
       }
     }
@@ -224,19 +232,11 @@ export async function runTool(name: string, args: Record<string, unknown>, data:
     // `ids` va en el mismo orden que `resultado`: con ellos el modelo (voz incluida) abre el detalle de «ese contrato».
     const atipicos = res.atipicos ?? [];
     if (atipicos.length) note = `${note ? `${note} ` : ""}Hay ${atipicos.length === 1 ? "un contrato" : `${atipicos.length} contratos`} fuera de los totales y rankings; di de forma neutral que ${OUTLIER_NOTE}.`;
-    const data = { resultado: say(res.cards), ...(res.ids?.length ? { ids: res.ids } : {}), filtros: label, periodo: f.period, ...(res.hayMas ? { hayMas: true } : {}), ...(atipicos.length ? { atipicos: say(atipicos) } : {}), ...(note ? { nota: note } : {}) };
+    const data = { resultado: say(res.cards), ...(res.ids?.length ? { ids: res.ids } : {}), filtros: label, periodo: f.period, ...(res.hayMas ? { hayMas: true } : {}), ...(f.ciudad ? { alcance: "Son contratos de entidades con sede en ese municipio (pueden incluir la gobernación o entidades nacionales); dilo así, sin decir que todos son del municipio." } : {}), ...(atipicos.length ? { atipicos: say(atipicos) } : {}), ...(note ? { nota: note } : {}) };
     return remember(d.base.cache, memoKey, { data, cards: [...res.cards, ...atipicos] as ToolResult["cards"], context: ctxOut(f, res.ids), note });
   } catch (e) {
     if (!(e instanceof SocrataUnavailable)) throw e;
-    const snap = loadSnapshot();
-    // El respaldo solo responde lo que puede decir con verdad: agregados por territorio/año y rankings recientes por departamento.
-    const fb = snap && !r.textual ? fromSnapshot(snap, name, r.explicitPeriod || name.startsWith("gasto") ? r.scope : { ...r.scope, anio: undefined, desde: undefined, hasta: undefined }, limit) : null;
-    if (!snap || !fb) return unavailable();
-    note = `Datos de respaldo al ${snap.generatedAt.slice(0, 10)}, no en vivo. Dilo con esa fecha.`;
-    return {
-      data: { resultado: say(fb.cards), filtros: label, respaldo: snap.generatedAt.slice(0, 10), nota: note },
-      cards: fb.cards as ToolResult["cards"], context: ctxOut(f), note,
-    };
+    return backup() ?? unavailable();
   }
 }
 

@@ -38,7 +38,7 @@
   "question": "¿Qué contratos se han firmado en Pasto?",
   "expect": {
    "ciudad": "Pasto",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
@@ -55,7 +55,7 @@
   "expect": {
    "ciudad": "Bogotá",
    "tema": "salud",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
@@ -84,20 +84,20 @@
  },
  {
   "id": "narino-pae",
-  "question": "Contratos de alimentación escolar en el departamento de Nariño",
+  "question": "Contratos de alimentación escolar en Nariño",
   "expect": {
    "departamento": "Nariño",
    "tema": "alimentaci",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
   "id": "caldas-vias",
-  "question": "¿Qué contratos de vías hay en el departamento de Caldas?",
+  "question": "¿Qué contratos de vías hay en Caldas?",
   "expect": {
    "departamento": "Caldas",
    "tema": "v[ií]as|carreter|paviment",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
@@ -106,7 +106,7 @@
   "expect": {
    "ciudad": "Manizales",
    "tema": "educaci",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
@@ -165,7 +165,7 @@
   "question": "Contratos de la Gobernación de Antioquia",
   "expect": {
    "entity": "antioquia",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
@@ -173,7 +173,7 @@
   "question": "Contratos de alumbrado público",
   "expect": {
    "tema": "alumbrado",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
@@ -181,7 +181,7 @@
   "question": "¿Qué contratos tiene la Alcaldía de Bucaramanga?",
   "expect": {
    "entity": "bucaramanga",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
@@ -199,7 +199,7 @@
   "after": "pasto-contratos",
   "expect": {
    "ciudad": "Pasto",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
@@ -339,7 +339,7 @@
   "expect": {
    "departamento": "Boyacá",
    "tema": "salud",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
@@ -363,7 +363,7 @@
   "question": "Contratos en Risaralda",
   "expect": {
    "departamento": "Risaralda",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {
@@ -420,7 +420,7 @@
   "question": "¿Qué contratos hay en el Tolima?",
   "expect": {
    "departamento": "Tolima",
-   "kind": "contract|top|total|entity|spend"
+   "kind": "contract|top"
   }
  },
  {

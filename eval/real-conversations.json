@@ -64,7 +64,7 @@
     "expect": {
      "ciudad": "Cartagena",
      "tema": "salud",
-     "kind": "contract|top|total|entity|spend"
+     "kind": "contract|top"
     }
    },
    {

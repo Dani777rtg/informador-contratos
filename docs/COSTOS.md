@@ -5,6 +5,13 @@ Presupuesto: alerta de USD 10/mes (50, 90, 100 %) creada por `scripts/gcp-setup.
 ## Costo en reposo
 Cloud Run con `min-instances=0` no cobra CPU ni memoria sin trafico: **USD 0** en reposo; tras un periodo sin uso GCP muestra 0 instancias activas. Firestore (solo contadores) y Secret Manager (4 secretos, 1 version cada uno) caben en capas gratuitas o centavos. Artifact Registry cobra almacenamiento de imagenes (unos centavos al mes). **Estimado en reposo: menos de USD 1/mes.**
 
+## Demo con `min-instances=1` (cambio 007, AC-09.2)
+Decisión explícita del dueño para evitar el arranque en frío durante el demo. Con una instancia siempre encendida (facturación por solicitud, 1 vCPU y 512 MiB) Cloud Run cobra la tarifa de instancia inactiva: ~USD 0,0000025 por vCPU-s y por GiB-s (nivel 1, cifras de https://cloud.google.com/run/pricing de memoria, no verificadas hoy) = (1 + 0,5) x 0,0000025 x 86.400 s = **~USD 0,32 al día (~USD 10 al mes)** más el uso normal. La capa gratuita lo absorbe en parte.
+
+- Encender: `pwsh scripts/deploy.ps1 -MinInstances 1` (el script avisa del costo al terminar).
+- **Volver a 0 al terminar el demo:** `pwsh scripts/deploy.ps1 -MinInstances 0`, o sin reconstruir la imagen: `gcloud run services update informador --project informador-contratos-1016 --region us-east1 --min-instances 0`.
+- Con 0 el arranque en frío ya no espera a datos.gov.co: la lista de municipios sale del respaldo al instante y `/health` precalienta.
+
 ## Costo por 1.000 preguntas
 Supuesto (mio, no medido): una pregunta = 1 conexion de ~20 s de Cloud Run con 1 vCPU y 512 MiB, ~10 lecturas/escrituras de Firestore.
 - Cloud Run: 1.000 x 20 s = 20.000 vCPU-s y 10.000 GiB-s, dentro de la capa gratuita mensual (180.000 vCPU-s, 360.000 GiB-s; cifras de memoria de https://cloud.google.com/run/pricing, NO verificadas hoy). Costo marginal: ~USD 0.

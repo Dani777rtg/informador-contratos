@@ -2,24 +2,25 @@ FROM node:22-slim AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-COPY tsconfig.json ./
+COPY tsconfig.json tsconfig.build.json ./
 COPY web ./web
-RUN npm run build:web
+COPY server ./server
+RUN npm run build:web && npm run build:server && cp server/fallback/snapshot.json.gz dist/server/fallback/
 
 FROM node:22-slim AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=dev && npm install --no-save tsx@4
+RUN npm ci --omit=dev
 
 FROM node:22-slim
 ENV NODE_ENV=production PORT=8080
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY package.json tsconfig.json ./
-COPY server ./server
+COPY package.json ./
+COPY --from=build /app/dist ./dist
 COPY data ./data
 COPY --from=build /app/web/dist ./web/dist
 USER node
 EXPOSE 8080
-# ponytail: se ejecuta con tsx; compilar a JS (tsc) bajaría el arranque en frío, pendiente.
-CMD ["node_modules/.bin/tsx", "server/index.ts"]
+# JS ya compilado (tsc): arranca sin transpilar en frío.
+CMD ["node", "dist/server/index.js"]

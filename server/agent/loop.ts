@@ -1,9 +1,9 @@
-import { SYSTEM_PROMPT, wrapData } from "./system-prompt";
-import { decline, DECLINE_TOOL } from "./decline";
-import { dropForbidden, prefilter } from "./guardrails";
-import { allowedNumbers, verifyNumbers, yearNumbers } from "./verify-numbers";
-import { MAX_TOOLS_PER_TURN } from "../guards/validate";
-import { SLOW_NOTICE, SocrataUnavailable } from "../data/retry";
+import { SYSTEM_PROMPT, wrapData } from "./system-prompt.js";
+import { decline, DECLINE_TOOL } from "./decline.js";
+import { dropForbidden, prefilter } from "./guardrails.js";
+import { allowedNumbers, verifyNumbers, yearNumbers } from "./verify-numbers.js";
+import { MAX_TOOLS_PER_TURN } from "../guards/validate.js";
+import { SLOW_NOTICE, SocrataUnavailable } from "../data/retry.js";
 
 export { MAX_TOOLS_PER_TURN };
 const LLM_TIMEOUT_MS = 30_000;
@@ -20,7 +20,7 @@ export function compact(v: unknown): unknown {
   return v;
 }
 
-import type { Ctx } from "../session";
+import type { Ctx } from "../session.js";
 export type { Ctx };
 export type Card = { kind: string } & Record<string, unknown>;
 
@@ -157,6 +157,14 @@ function makeGate(onToken: ((t: string) => void) | undefined, allowed: () => num
   };
 }
 
+const TOOL_OF_TIPO: Record<string, string> = { mayores: "contratos_mayores", lista: "buscar_contratos" };
+/** «¿Y en Antioquia?» / «¿Y en 2024?»: la misma herramienta del turno anterior, solo con lo nuevo (si no, el modelo cae en un total). */
+function followHint(message: string, ctx: Ctx): string {
+  const tipo = ctx.filtros?.tipo;
+  if (!tipo || !/^\s*[¿]?\s*y\s+(en|de|del|para|con)\b/i.test(message)) return "";
+  return `\nSeguimiento: llama otra vez la herramienta ${TOOL_OF_TIPO[tipo] ?? tipo} con los mismos filtros del contexto, cambiando solo lo que pide el mensaje.`;
+}
+
 export async function runAgent(a: {
   message: string;
   context: Ctx;
@@ -177,7 +185,7 @@ export async function runAgent(a: {
   let used = 0;// herramientas ya ejecutadas en este turno (todas las rondas)
   const messages: LlmMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
-    { role: "system", content: `Contexto actual: ${JSON.stringify(context)}` },
+    { role: "system", content: `Contexto actual: ${JSON.stringify(context)}${followHint(a.message, context)}` },
     { role: "user", content: a.message },
   ];
 

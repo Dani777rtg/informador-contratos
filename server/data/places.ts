@@ -18,15 +18,24 @@ export const PLACE_KEYTERMS: string[] = [...new Set([...DEPARTAMENTOS.map(([, d]
 
 const has = (text: string, term: string) => ` ${text} `.includes(` ${term} `);
 
-/** Valores distintos de ciudad/departamento (una consulta con $group), en memoria; si falla no se guarda y devuelve []. */
+const PLACES_GRACE_MS = 300;
+
+/**
+ * Municipios: la lista viva de datos.gov.co (una consulta con $group, ~12 s en frío) se carga en segundo plano;
+ * mientras tanto (y si falla) se responde al instante con la del respaldo, sin esperar más de 300 ms a la viva.
+ */
 export function createPlaces(client: Client): () => Promise<Place[]> {
-  let cached: Promise<Place[]> | undefined;
-  return () => {
-    cached ??= fetchRows({ ...client, timeoutMs: 20_000 }, new URLSearchParams({
-      $select: "ciudad,departamento,count(*) as n", $group: "ciudad,departamento", $where: "ciudad IS NOT NULL", $limit: "5000",
-    })).then((rows) => rows.flatMap((r) => r.ciudad && r.departamento ? [{ ciudad: r.ciudad, departamento: r.departamento, norm: normalize(r.ciudad), n: Number((r as Record<string, string>).n) || 0 }] : []))
-      .catch(() => { cached = undefined; return []; });
-    return cached;
+  let live: Place[] | undefined, loading: Promise<void> | undefined;
+  const load = () => (loading ??= fetchRows({ ...client, timeoutMs: 20_000 }, new URLSearchParams({
+    $select: "ciudad,departamento,count(*) as n", $group: "ciudad,departamento", $where: "ciudad IS NOT NULL", $limit: "5000",
+  })).then((rows) => {
+    const p = rows.flatMap((r) => r.ciudad && r.departamento ? [{ ciudad: r.ciudad, departamento: r.departamento, norm: normalize(r.ciudad), n: Number((r as Record<string, string>).n) || 0 }] : []);
+    if (p.length) live = p;
+  }).catch(() => undefined).finally(() => { if (!live) loading = undefined; }));
+  return async () => {
+    if (live) return live;
+    await Promise.race([load(), new Promise((ok) => setTimeout(ok, PLACES_GRACE_MS).unref())]);
+    return live ?? snapshotPlaces();
   };
 }
 
@@ -79,6 +88,9 @@ export function matchPlace(texto: string, places: Place[] = snapshotPlaces(), de
     const d = [...new Set(places.map((p) => p.departamento)), ...DEPARTAMENTOS.map(([, x]) => x)].find((x) => normalize(x) === n);
     if (d) return { departamento: d, alcance: "departamento" };
   }
+  // «Caldas», «Nariño» a secas: el departamento, no el municipio homónimo (el municipio exige departamento explícito).
+  const asDep = !departamento && DEPARTAMENTOS.find(([k]) => k === n);
+  if (asDep) return { departamento: asDep[1], alcance: "departamento" };
   // El modelo a veces pone la ciudad como departamento («Pasto» / «Pasto»): si no es un departamento, se ignora.
   const depRaw = departamento ? normalize(departamento) : "";
   const depN = places.some((p) => normalize(p.departamento).includes(depRaw)) ? depRaw : "";

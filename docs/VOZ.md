@@ -17,7 +17,7 @@ Navegador ──(audio PCM 16 kHz, KeepAlive, AskText)──▶ /voice?token= (s
 
 ## Objetivo de latencia (AC-05.6)
 
-Del fin de turno del usuario a la primera palabra del agente: **p95 < 1 s**, meta **p50 ≈ 500 ms**.
+Del fin de turno del usuario a la primera palabra del agente: objetivo **p95 < 1 s** (AC-05.6); la meta realista con dos llamadas a DeepSeek (cambio 007) es **p50 ~2 s**, con **una sola llamada a datos** por pregunta en los casos comunes y **menos de 1.500 tokens por turno** (prompt de la misión + definiciones de herramientas; medido el 16 oct: misión ~850 + herramientas ~980 = ~1.800 tokens por llamada, aún por encima de 1.500; las herramientas no se pueden fusionar sin romper AC-13.2, ver "Medición real").
 
 ## Desglose por etapa
 
@@ -30,6 +30,24 @@ Del fin de turno del usuario a la primera palabra del agente: **p95 < 1 s**, met
 | 5 | Primer audio (aura-2-celeste-es) | `AgentStartedSpeaking` + primer frame binario | Sin saludo ni acuse de relleno (AC-05.4). |
 
 Latencia percibida = suma hasta el **primer audio**.
+
+## Medición real del desglose (16 oct 2026)
+
+Con `VOICE_TRACE=1` el servidor imprime por mensaje del Voice Agent (tipo y milisegundos desde el inicio del turno, sin contenido), incluidos los `LatencyReport` de Deepgram. Un turno típico antes de este cambio (pregunta de gasto, datos.gov.co en frío):
+
+| Etapa | ms |
+|-------|----|
+| STT (nova-3, fin de voz -> texto del usuario) | 50 a 100 |
+| LLM 1: DeepSeek decide la herramienta (`ttt_tool_latency`) | 1.000 a 1.600 |
+| Herramienta (datos.gov.co) | ~1.400 |
+| LLM 2: DeepSeek redacta (`ttt_text_latency` menos lo anterior) | 1.700 a 3.400 |
+| TTS (`tts_latency`) | 60 |
+
+Conclusiones medidas: el STT y el TTS no son el cuello; el tiempo está en las dos llamadas a DeepSeek (cada una ~1 a 1,5 s por red y, con `deepseek-flash`, razonamiento activo por defecto, que Deepgram no permite apagar: rechaza campos extra en `think.provider`) y en la herramienta. `listen.provider.endpointing` se acepta pero no mejora (el fin de turno ya llega en ~50 ms).
+
+Lo que se hizo: (1) prompt de la misión más corto (menos razonamiento), (2) calentamiento: al llegar la transcripción del usuario se adivina la herramienta y se consulta datos.gov.co mientras el modelo decide (`server/voice/prefetch.ts` + `reuseMs` en el cliente de Socrata), la herramienta pasa de ~1,4 s a 0,2 a 0,5 s, (3) resultados de herramienta de 5 filas y sin lugar repetido, (4) `DEEPSEEK_VOICE_MODEL` para elegir otro modelo solo en voz (con `deepseek-chat`, sin razonamiento, el fin de turno a primer audio bajó ~0,5 s más en pruebas intercaladas con audio sintético, pero el modelo falló una vez al elegir el filtro; no es el valor por defecto).
+
+Piso actual: dos llamadas a DeepSeek ~ 2,5 a 3,5 s. Llegar a p95 < 1 s exige quitar una de ellas (p. ej. un endpoint propio compatible con OpenAI que fije `thinking: disabled` y responda sin segunda llamada), que no es posible dentro de la API del Voice Agent.
 
 ## Cómo medirla
 

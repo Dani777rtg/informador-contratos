@@ -27,18 +27,30 @@ const ROW_KINDS = new Set(["contract", "top"]);
 const DATASET = "SECOP II - Contratos Electrónicos (datos.gov.co)";
 
 /** Motivo de falla o undefined si la respuesta corresponde a la entidad/territorio/tema/intención pedidos. */
+const MOJIBAKE = /[ÃÂ][\u0080-¿]|ã[³¡©­º±]|â€/;
+const FILLER = /\bvoy a (consultar|buscar|revisar|verificar)|d[eé]jame (buscar|consultar)|un momento|perm[ií]teme/i;
+const TEMPLATE_ONLY = /^\s*Estos son los resultados de tu consulta, con datos oficiales de SECOP\.?\s*$/i;
+/** Mayor valor en pesos de las tarjetas ("$944.000.000.000 COP"). */
+const maxValue = (cards: Card[]): number => Math.max(0, ...cards.flatMap((c) => Object.values(c).filter((v): v is string => typeof v === "string" && /^\$[\d.]+( COP)?$/.test(v)).map((v) => Number(v.replace(/\D/g, "")))));
 function check(r: Reply, e: Expect, channel: "voz" | "texto"): string | undefined {
   const raw = JSON.stringify(r);
   if (/DSML|｜/.test(raw)) return "marcado interno DSML en la respuesta";
-  if (e.failure) return /no pude|no respond|no est[aá] disponible|intenta|precalculada|copia|respaldo/i.test(r.text) ? undefined : `falla de datos sin mensaje honesto: ${r.text.slice(0, 120)}`;
+  if (MOJIBAKE.test(raw)) return `texto con codificación rota (mojibake): ${r.text.slice(0, 120)}`;
+  if (TEMPLATE_ONLY.test(r.text)) return "respuesta que es solo la plantilla, sin dato";
+  if (!e.failure && FILLER.test(r.text)) return `respuesta sin dato (solo anuncia que va a consultar): ${r.text.slice(0, 120)}`;
+  if (e.failure) return /no pude|no respond|no est[aá] disponible|precalculada|datos de respaldo|no en vivo/i.test(r.text) ? undefined : `falla de datos sin mensaje honesto: ${r.text.slice(0, 120)}`;
   if (e.decline) {
     const codes = Array.from({ length: 16 }, (_, i) => `NO-${String(i + 1).padStart(2, "0")}`).filter((c) => new RegExp(`^${e.decline}$`).test(c));
     // NO-10 (fuera de tema): también vale una redirección propia del modelo a la contratación pública, sin tarjetas.
     const redirects = codes.includes("NO-10") && !r.cards?.length && /contrataci[oó]n p[uú]blica/i.test(r.text);
-    return channel === "voz" || redirects || codes.some((c) => r.text === decline(c)) ? undefined : `se esperaba declinar (${e.decline}) y llegó: ${r.text.slice(0, 120)}`;
+    return redirects || codes.some((c) => r.text === decline(c) || (channel === "voz" && r.text.includes(decline(c)))) ? undefined : `se esperaba declinar (${e.decline}) y llegó: ${r.text.slice(0, 120)}`;
   }
   // `followup`: se responde con lo ya mostrado en pantalla (sin consulta nueva), así que no hay tarjetas ni fuente nuevas.
-  if (e.followup) return channel === "voz" ? checkSpoken(r.spoken) : undefined;
+  if (e.followup) {
+    if (r.text.trim().length < 15) return "seguimiento sin texto";
+    if (/no pude|no encontr|no tengo|sin resultados|no respond|no est[aá] disponible|no hay datos/i.test(r.text)) return `seguimiento con frase de falla: ${r.text.slice(0, 120)}`;
+    return channel === "voz" ? checkSpoken(r.spoken) : undefined;
+  }
   if (!r.source?.dataset || !r.source.queriedAt) return "sin fuente";
   if (/\$\d{1,3}(\.\d{3}){2,}/.test(r.text)) return `el texto trae un monto exacto en vez de la cifra redondeada: ${r.text.slice(0, 100)}`;
   if (/declin|no puedo (ayudar|atender)|NO-\d\d/i.test(r.text) && !r.cards?.length) return `declinó una consulta válida: ${r.text.slice(0, 120)}`;
@@ -49,7 +61,9 @@ function check(r: Reply, e: Expect, channel: "voz" | "texto"): string | undefine
   const scope = normalize(`${JSON.stringify(r.filters ?? {})} ${r.text}`);
   for (const [i, c] of rows.entries()) {
     // "No Definido": el contrato no declara lugar propio; el filtro es el de la entidad compradora.
-    const undef = (s?: string) => !s || /^no (definido|aplica)/i.test(s);
+    // Solo vale si el alcance declarado (filtros usados; en voz, lo dicho) trae el municipio o la entidad pedidos.
+    const declared = normalize(`${JSON.stringify(r.filters ?? {})} ${channel === "voz" ? r.text : ""}`);
+    const undef = (s?: string) => (!s || /^no (definido|aplica)/i.test(s)) && (!e.ciudad || declared.includes(normalize(e.ciudad)));
     if (e.ciudad && !undef(c.city) && normalize(c.city ?? "") !== normalize(e.ciudad)) return `tarjeta ${i + 1}: ciudad "${c.city}" != ${e.ciudad}`;
     if (e.departamento && !undef(c.department) && normalize(c.department ?? "") !== normalize(e.departamento)) return `tarjeta ${i + 1}: departamento "${c.department}" != ${e.departamento}`;
     if (e.entity && !rx(e.entity).test(normalize(c.entity ?? ""))) return `tarjeta ${i + 1}: entidad "${c.entity}" no coincide con ${e.entity}`;
@@ -59,12 +73,15 @@ function check(r: Reply, e: Expect, channel: "voz" | "texto"): string | undefine
   if (!rows.length) {
     for (const k of ["ciudad", "departamento", "entity", "tema"] as const) if (e[k] && !(k === "ciudad" || k === "departamento" ? scope.includes(normalize(e[k]!)) : rx(e[k]!).test(scope))) return `el alcance declarado no menciona ${k}=${e[k]} (filtros: ${JSON.stringify(r.filters)})`;
   }
-  return channel === "voz" ? checkSpoken(r.spoken) : undefined;
+  return channel === "voz" ? checkSpoken(r.spoken, maxValue(r.cards)) : undefined;
 }
 
 /** Texto hablado: sin "$", sin cifras agrupadas ni decimales, sin muletillas, sin mayúsculas crudas, máximo 2 frases. */
-function checkSpoken(s?: string): string | undefined {
+function checkSpoken(s?: string, maxCard = 0): string | undefined {
   if (!s) return "sin texto hablado";
+  if (FILLER.test(s)) return `spoken con anuncio en vez de dato: ${s.slice(0, 120)}`;
+  // Magnitud coherente con la tarjeta: «billones» solo desde 10^12; «mil millones» solo desde 10^9 (error x1000 del modelo).
+  if (maxCard && (/bill[oó]n(es)?/i.test(s) && maxCard < 1e12 || /mil millones/i.test(s) && maxCard < 1e9)) return `spoken con monto incoherente con la tarjeta (${maxCard}): ${s.slice(0, 120)}`;
   if (/\$|\d{1,3}([.,]\d{3})+|\d[.,]\d/.test(s)) return `spoken con cifras sin palabras: ${s.slice(0, 120)}`;
   if (/d[eé]jame buscar|claro,|un momento|no la puedo atender|no puedo atender/i.test(s)) return `spoken con muletilla o rechazo: ${s.slice(0, 120)}`;
   // Siglas que se leen como palabra o que el TTS dice bien: se admiten.
@@ -100,6 +117,8 @@ async function openVoice(port: number): Promise<Voice> {
   });
   await new Promise<void>((ok, no) => { ws.once("open", () => ok()); ws.once("error", no); ws.once("unexpected-response", () => no(new Error("voz rechazada"))); });
   await new Promise((r) => setTimeout(r, 1500)); // SettingsApplied
+  const keep = setInterval(() => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "KeepAlive" })); }, 5000); // el servidor cierra a los 60 s sin tramas del cliente (las sesiones encadenadas esperan a otras preguntas)
+  keep.unref();
   return {
     ask: (text) => new Promise((ok, no) => {
       const t = { text: [] as string[], cards: [] as Card[], t0: Date.now(), first: 0, done: undefined as undefined | (() => void) };
@@ -109,7 +128,7 @@ async function openVoice(port: number): Promise<Voice> {
       t.done = finish;
       ws.send(JSON.stringify({ type: "AskText", text }));
     }),
-    close: () => ws.close(),
+    close: () => { clearInterval(keep); ws.close(); },
   };
 }
 
@@ -171,4 +190,4 @@ if (!only) writeFileSync(new URL("./real-results.json", import.meta.url), JSON.s
 const ok = results.filter((x) => x.ok).length, cok = convResults.filter((x) => x.ok).length, ms = results.map((x) => x.ms);
 console.log(`\neval:real preguntas ${ok}/${results.length} ok (${Math.round((100 * ok) / results.length)} %) | conversaciones ${cok}/${convResults.length} | p50 ${pct(ms, 0.5)} ms, p95 ${pct(ms, 0.95)} ms | voz fin de turno -> primer audio p50 ${pct(voiceMs, 0.5)} ms, p95 ${pct(voiceMs, 0.95)} ms (n=${voiceMs.length})`);
 await main.close(); await broken.close();
-process.exit(ok / results.length >= 0.9 && cok / convResults.length >= 0.9 ? 0 : 1);
+process.exit(!only && ok / results.length >= 0.9 && cok / convResults.length >= 0.9 ? 0 : 1);

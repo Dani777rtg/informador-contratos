@@ -33,6 +33,20 @@ export function spokenAmount(n: number): string {
   return `${v} pesos`;
 }
 
+/** Monto para el modelo de voz, todo en palabras: «novecientos cuarenta y cuatro mil millones de pesos». Con cifras el modelo confunde «mil millones» con «billones». */
+export function wordsAmount(n: number): string {
+  const v = Math.abs(Math.round(n));
+  if (v < 1e10) return spokenAmount(v);
+  let b = Math.floor(v / 1e12), r = Math.round((v - b * 1e12) / 1e11) * 100; // r: miles de millones, a la centena
+  if (r >= 1000) { b++; r = 0; }
+  if (b >= 1000) return spokenAmount(v);
+  const head = b ? `${b === 1 ? "un" : words(b)} ${b === 1 ? "billón" : "billones"}` : "";
+  const tail = b ? (r ? `${words(r)} mil millones` : "") : `${words(Math.round(v / 1e9))} mil millones`;
+  return `${[head, tail].filter(Boolean).join(" ")} de pesos`.replace(/veintiuno (?=mil)/, "veintiún ").replace(/uno (?=mil)/, "un ");
+}
+const wordsMoney = (text: string): string => text.replace(MONEY, (_, num: string, scale?: string) => wordsAmount(parseNum(num.replace(/[.,]$/, "")) * (scale ? SCALE[scale.toLowerCase()] : 1)));
+export { wordsMoney };
+
 /** Monto escrito para chat: cifra clave redondeada («$27.000 millones de pesos»); el valor exacto queda en la tarjeta. */
 export function roundedPesos(n: number): string {
   const v = Math.abs(Math.round(n));

@@ -1,8 +1,8 @@
-﻿# Despliegue: Cloud Build -> Cloud Run (un solo servicio sirve front y API).
+# Despliegue: Cloud Build -> Cloud Run (un solo servicio sirve front y API).
 #   pwsh scripts/deploy.ps1 -Staging     servicio informador-staging + sin aprobación; público (sin auth) como producción, es un prototipo
 #   pwsh scripts/deploy.ps1              producción: revisión sin tráfico -> aprobación del dueño -> tráfico
 # No modifica el proyecto activo global de gcloud: cada comando fija --project.
-param([switch]$Approve, [switch]$Staging)
+#   pwsh scripts/deploy.ps1 -MinInstances 1   demo: una instancia siempre encendida (sin arranque en frío, con costo diario: docs/COSTOS.md); luego volver a 0 con -MinInstances 0\n#   (staging siempre usa 0)\nparam([switch]$Approve, [switch]$Staging, [ValidateSet(0, 1)][int]$MinInstances = 0)
 $ErrorActionPreference = 'Continue' # el progreso va por stderr; los fallos se detectan con $LASTEXITCODE
 $Project = 'informador-contratos-1016'
 $Region = 'us-east1'
@@ -50,7 +50,7 @@ $NoTraffic = if (-not $Staging -and $prev) { @('--no-traffic') } else { @() }
 if ($Staging) {
 gcloud run deploy $Service --project $Project --region $Region --image $Image --service-account $Sa --min-instances 0 --max-instances 2 --cpu-boost --session-affinity --timeout 3600 --allow-unauthenticated --set-secrets $SecretMap --set-env-vars $EnvVars @NoTraffic
 } else {
-gcloud run deploy $Service --project $Project --region $Region --image $Image --service-account $Sa --min-instances 0 --max-instances 5 --cpu-boost --session-affinity --timeout 3600 --allow-unauthenticated --set-secrets $SecretMap --set-env-vars $EnvVars @NoTraffic
+gcloud run deploy $Service --project $Project --region $Region --image $Image --service-account $Sa --min-instances $MinInstances --max-instances 5 --cpu-boost --session-affinity --timeout 3600 --allow-unauthenticated --set-secrets $SecretMap --set-env-vars $EnvVars @NoTraffic
 }
 if ($LASTEXITCODE) { throw 'deploy falló' }
 
@@ -72,3 +72,4 @@ if ($api -ne $Origins) {
   if ($LASTEXITCODE) { throw 'update ALLOWED_ORIGINS falló' }
 }
 Write-Host "App (front + API): $api"
+if (-not $Staging -and $MinInstances -gt 0) { Write-Host "AVISO: min-instances=$MinInstances cuesta mientras esté encendido. Al terminar el demo: pwsh scripts/deploy.ps1 -MinInstances 0 (ver docs/COSTOS.md)." }
