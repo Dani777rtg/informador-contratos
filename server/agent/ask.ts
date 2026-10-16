@@ -29,7 +29,7 @@ export function createAsker(d: AskDeps) {
     const context = d.topicGuard ? d.topicGuard(message, prev) : prev; // el mensaje manda sobre el contexto
     const t0 = Date.now();
     let firstTokenMs: number | undefined;
-    const ctxKey = JSON.stringify([context.entity?.nit, context.period, context.contract, context.results]);
+    const ctxKey = JSON.stringify([context.entity?.nit, context.period, context.contract, context.results, context.filtros]);
     const k = cacheKey(message, ctxKey);
     jobs.set(k, () => runAgent({ message, context, tools: d.tools, llm: d.llm, onToken: (t) => { firstTokenMs ??= Date.now() - t0; onToken?.(t); } }));
     try {

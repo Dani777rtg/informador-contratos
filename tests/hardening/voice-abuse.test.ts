@@ -4,15 +4,12 @@ import type { AddressInfo } from "node:net";
 import { WebSocket } from "ws";
 import { createVoice } from "../../server/voice/index";
 import { createRateLimiter } from "../../server/guards/rate-limit";
-import { createSessionCodec } from "../../server/session";
 import { createApp } from "../../server/index";
 
 const env = { ALLOWED_ORIGINS: "http://o.test", SESSION_SECRET: "s".repeat(32) };
-const codec = createSessionCodec({ keys: { 1: "k".repeat(32) }, currentKeyVersion: 1 });
-const ask = (async () => ({ text: "", cards: [], context: {} })) as never;
 
-async function boot(guards: Parameters<typeof createVoice>[3]) {
-  const v = createVoice(env, ask, codec, guards);
+async function boot(guards: Parameters<typeof createVoice>[1]) {
+  const v = createVoice({ ...env, DEEPGRAM_AGENT_URL: "ws://127.0.0.1:1" }, guards);
   const srv = createServer();
   v.attach(srv);
   await new Promise<void>((ok) => srv.listen(0, ok));

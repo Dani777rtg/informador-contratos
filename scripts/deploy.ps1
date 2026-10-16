@@ -48,9 +48,9 @@ $EnvVars = "^|^NODE_ENV=production|ALLOWED_ORIGINS=$Origins|GOOGLE_CLOUD_PROJECT
 # --no-traffic solo es válido si el servicio ya existe (el primer despliegue recibe tráfico por fuerza).
 $NoTraffic = if (-not $Staging -and $prev) { @('--no-traffic') } else { @() }
 if ($Staging) {
-gcloud run deploy $Service --project $Project --region $Region --image $Image --service-account $Sa --min-instances 0 --max-instances 2 --cpu-boost --timeout 3600 --allow-unauthenticated --set-secrets $SecretMap --set-env-vars $EnvVars @NoTraffic
+gcloud run deploy $Service --project $Project --region $Region --image $Image --service-account $Sa --min-instances 0 --max-instances 2 --cpu-boost --session-affinity --timeout 3600 --allow-unauthenticated --set-secrets $SecretMap --set-env-vars $EnvVars @NoTraffic
 } else {
-gcloud run deploy $Service --project $Project --region $Region --image $Image --service-account $Sa --min-instances 0 --max-instances 5 --cpu-boost --timeout 3600 --allow-unauthenticated --set-secrets $SecretMap --set-env-vars $EnvVars @NoTraffic
+gcloud run deploy $Service --project $Project --region $Region --image $Image --service-account $Sa --min-instances 0 --max-instances 5 --cpu-boost --session-affinity --timeout 3600 --allow-unauthenticated --set-secrets $SecretMap --set-env-vars $EnvVars @NoTraffic
 }
 if ($LASTEXITCODE) { throw 'deploy falló' }
 

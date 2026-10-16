@@ -25,6 +25,7 @@ let state = loadState();
 async function send(message: string): Promise<void> {
   const text = message.trim();
   if (!text) return;
+  if (voice.sendText(text)) return; // voz activa: misma conversación del Voice Agent
   status.className = "status";
   status.textContent = "Buscando en SECOP…";
   answer.replaceChildren();
@@ -67,8 +68,6 @@ const voice = initVoice({
   },
   onLevel: (l) => { level.value = Math.min(1, l * 4); },
   onNotice: (t) => { status.className = "status error"; status.textContent = t; },
-  getSession: () => state,
-  setSession: (s) => { state = s; saveState(s); },
 });
 mic.addEventListener("click", () => {
   const on = mic.getAttribute("aria-pressed") !== "true";

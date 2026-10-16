@@ -37,7 +37,7 @@ it("se niega a arrancar con MOCK_EXTERNALS=1 en producción", () => {
 it("el mock de Deepgram sobrevive a frames no-JSON y a rutas desconocidas", async () => {
   const s = await startServer({ port: 0, env });
   try {
-    const ws = new WebSocket(`ws://127.0.0.1:${s.port}/__mock/deepgram/stt`);
+    const ws = new WebSocket(`ws://127.0.0.1:${s.port}/__mock/deepgram/agent`);
     await new Promise((ok) => ws.once("open", ok));
     const closed = new Promise<number>((ok) => ws.once("close", ok));
     ws.send("esto no es json");

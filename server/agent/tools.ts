@@ -94,7 +94,7 @@ async function resolveFilters(args: Record<string, unknown>, ctx: Ctx, d: Deps, 
     // La lista de municipios en frío tarda ~12 s: no se espera más de 2,5 s (sigue cargando en segundo plano) y se usa la del respaldo.
     const known = await Promise.race([(d.places ?? placesFor(client))(), new Promise<Place[]>((ok) => setTimeout(() => ok([]), PLACES_WAIT_MS).unref())]);
     const places = known.length ? known : snapshotPlaces();
-    const m = matchPlace(municipio || dep, places, municipio ? dep : undefined);
+    const m = matchPlace(municipio || dep, places, municipio ? dep : undefined, !municipio);
     if ("sugerencias" in m) return fail({ error: "lugar_desconocido", sugerencias: m.sugerencias, nota: "Dilo y ofrece las sugerencias." });
     f.departamento = m.departamento;
     if (m.alcance === "municipio") { f.ciudad = m.municipio; label.push(`entidades de ${m.municipio}, ${m.departamento}`); } else label.push(`entidades de ${m.departamento}`);
@@ -205,7 +205,8 @@ export async function runTool(name: string, args: Record<string, unknown>, data:
     if (!res.cards.length) {
       return { data: { sinResultados: `No hay contratos de ${label} entre ${f.period.from} y ${f.period.to}. Dilo así; no muestres datos de otra entidad o territorio.`, periodo: f.period, error: "sin_resultados" }, context: ctxOut(f) };
     }
-    const data = { resultado: say(res.cards), filtros: label, periodo: f.period, ...(res.hayMas ? { hayMas: true } : {}), ...(note ? { nota: note } : {}) };
+    // `ids` va en el mismo orden que `resultado`: con ellos el modelo (voz incluida) abre el detalle de «ese contrato».
+    const data = { resultado: say(res.cards), ...(res.ids?.length ? { ids: res.ids } : {}), filtros: label, periodo: f.period, ...(res.hayMas ? { hayMas: true } : {}), ...(note ? { nota: note } : {}) };
     return remember(d.base.cache, memoKey, { data, cards: res.cards as ToolResult["cards"], context: ctxOut(f, res.ids), note });
   } catch (e) {
     if (!(e instanceof SocrataUnavailable)) throw e;

@@ -105,11 +105,17 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
     baseUrl: env.DEEPSEEK_BASE_URL ?? (mock ? "http://mock.local/__mock/deepseek/v1" : undefined), apiKey: env.DEEPSEEK_API_KEY,
     ...(mock && !env.DEEPSEEK_BASE_URL ? { fetch: ((u: string, i?: RequestInit) => app.request(u.replace("http://mock.local", ""), i)) as typeof fetch } : {}),
   });
-  const ask = createAsker({ tools: createTools(ctx, entities, places), llm, metrics, log: logQuestion, demand, topicGuard: createTopicGuard(entities) });
+  const tools = createTools(ctx, entities, places);
+  const ask = createAsker({ tools, llm, metrics, log: logQuestion, demand, topicGuard: createTopicGuard(entities) });
   // HMAC_SECRET viene de Secret Manager en producción; sin él (local) la clave es efímera y las sesiones no sobreviven a un reinicio.
   const codec = createSessionCodec({ keys: { 1: env.HMAC_SECRET || randomBytes(32).toString("hex") }, currentKeyVersion: 1 });
 
-  const voice = createVoice(env, ask, codec, { limiter, demand }, (m, c) => answer(m, c, "voz"));
+  const voice = createVoice(env, { limiter, demand }, {
+    // Las herramientas de ESTE servidor (cliente, entidades, municipios), no el último configurado en el proceso.
+    run: async (name, args, _data, sctx) => (tools[name] ? tools[name].run(args, sctx ?? {}) : { data: { error: "sin_resultados" } }),
+    turn: (t) => { metrics.record({ channel: "voz", tokens: 0, latencyMs: t.latencyMs }); logQuestion({ tokens: 0, latencyMs: t.latencyMs, channel: "voz", route: "voz", tools: t.tools, declineCode: t.declineCode }); },
+    close: (c) => logQuestion({ tokens: 0, latencyMs: c.ms, channel: "voz", route: "voz", tools: c.tools, closeReason: c.closeReason, errorType: c.errorType }),
+  });
   attach = (s) => { voice.attach(s); mockAttach?.(s); };
 
   app.get("/api/metrics", (c) => env.METRICS_TOKEN && c.req.header("x-metrics-token") === env.METRICS_TOKEN ? c.json(metrics.report()) : c.json({ error: "forbidden" }, 403));

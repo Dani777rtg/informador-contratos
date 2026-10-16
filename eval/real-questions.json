@@ -1,37 +1,568 @@
 [
- {"id":"manizales-mayor","question":"¿Cuál es el contrato más grande que se ha firmado en Manizales?","expect":{"ciudad":"Manizales","kind":"top"}},
- {"id":"antioquia-vias-empresa","question":"¿Qué empresa tiene más contratos de vías en Antioquia este año?","expect":{"departamento":"Antioquia","tema":"v[ií]as|carreter|paviment","kind":"contractor"}},
- {"id":"cartagena-salud-gasto","question":"¿Cuánto se ha gastado en salud en Cartagena?","expect":{"ciudad":"Cartagena","tema":"salud","kind":"spend"}},
- {"id":"men-contratista","question":"¿Quién es el contratista que más recibe del Ministerio de Educación?","expect":{"entity":"educaci","kind":"contractor"}},
- {"id":"pasto-contratos","question":"¿Qué contratos se han firmado en Pasto?","expect":{"ciudad":"Pasto","kind":"contract"}},
- {"id":"medellin-mayor","question":"¿Cuál es el contrato más grande en Medellín?","expect":{"ciudad":"Medellín","kind":"top"}},
- {"id":"bogota-salud","question":"Muéstrame contratos de salud en Bogotá","expect":{"ciudad":"Bogotá","tema":"salud","kind":"contract"}},
- {"id":"medellin-gasto","question":"¿En qué gasta la Alcaldía de Medellín?","expect":{"entity":"medell","kind":"spend"}},
- {"id":"cali-top","question":"¿Cuáles son los contratos más grandes de la Alcaldía de Cali?","expect":{"entity":"cali","kind":"top"}},
- {"id":"antioquia-fuentes","question":"¿De dónde sale el dinero de la Gobernación de Antioquia?","expect":{"entity":"antioquia","kind":"funding"}},
- {"id":"narino-pae","question":"Contratos de alimentación escolar en Nariño","expect":{"departamento":"Nariño","tema":"alimentaci","kind":"contract"}},
- {"id":"caldas-vias","question":"¿Qué contratos de vías hay en Caldas?","expect":{"departamento":"Caldas","tema":"v[ií]as|carreter|paviment","kind":"contract"}},
- {"id":"manizales-educacion","question":"Contratos de educación en Manizales","expect":{"ciudad":"Manizales","tema":"educaci","kind":"contract"}},
- {"id":"minsalud-gasto","question":"¿En qué gasta el Ministerio de Salud?","expect":{"entity":"salud","kind":"spend"}},
- {"id":"mindefensa-top","question":"¿Cuáles son los contratos más grandes del Ministerio de Defensa?","expect":{"entity":"defensa","kind":"top"}},
- {"id":"bogota-pae-empresa","question":"¿Qué empresa recibe más por alimentación escolar en Bogotá?","expect":{"ciudad":"Bogotá","tema":"alimentaci","kind":"contractor"}},
- {"id":"cartagena-contratista","question":"¿Quién es el contratista que más recibe en Cartagena?","expect":{"ciudad":"Cartagena","kind":"contractor"}},
- {"id":"boyaca-vias-gasto","question":"¿Cuánto se ha gastado en vías en Boyacá?","expect":{"departamento":"Boyacá","tema":"v[ií]as|carreter|paviment","kind":"spend"}},
- {"id":"pasto-salud-gasto","question":"¿Cuánto se ha gastado en salud en Pasto?","expect":{"ciudad":"Pasto","tema":"salud","kind":"spend"}},
- {"id":"antioquia-gob","question":"Contratos de la Gobernación de Antioquia","expect":{"entity":"antioquia","kind":"contract"}},
- {"id":"alumbrado","question":"Contratos de alumbrado público","expect":{"tema":"alumbrado","kind":"contract"}},
- {"id":"bucaramanga","question":"¿Qué contratos tiene la Alcaldía de Bucaramanga?","expect":{"entity":"bucaramanga","kind":"contract"}},
- {"id":"manizales-2024","question":"¿Y en 2024?","after":"manizales-mayor","expect":{"ciudad":"Manizales","kind":"top"}},
- {"id":"pasto-2024","question":"¿Y en 2024?","after":"pasto-contratos","expect":{"ciudad":"Pasto","kind":"contract"}},
- {"id":"medellin-gasto-2024","question":"¿Y en 2024?","after":"medellin-gasto","expect":{"entity":"medell","kind":"spend"}},
- {"id":"men-2024","question":"¿Y en 2024?","after":"men-contratista","expect":{"entity":"educaci","kind":"contractor"}},
- {"id":"cartagena-a-pasto","question":"¿Y en Pasto?","after":"cartagena-salud-gasto","expect":{"ciudad":"Pasto","kind":"spend"}},
- {"id":"manizales-ese-contrato","question":"Dame ese contrato","after":"manizales-mayor","expect":{"kind":"detail"}},
- {"id":"voz-manizales-mayor","channel":"voz","question":"¿Cuál es el contrato más grande en Manizales?","expect":{"ciudad":"Manizales","kind":"top"}},
- {"id":"voz-manizales-detalle","channel":"voz","question":"Dame el detalle de ese contrato","after":"voz-manizales-mayor","expect":{"kind":"detail"}},
- {"id":"voz-cartagena-gasto","channel":"voz","question":"¿Cuánto se ha gastado en salud en Cartagena?","expect":{"ciudad":"Cartagena","tema":"salud","kind":"spend"}},
- {"id":"voz-men-contratista","channel":"voz","question":"¿Quién es el contratista que más recibe del Ministerio de Educación?","expect":{"entity":"educaci","kind":"contractor"}},
- {"id":"voz-cali-top","channel":"voz","question":"¿Cuáles son los contratos más grandes de la Alcaldía de Cali?","expect":{"entity":"cali","kind":"top"}},
- {"id":"voz-cali-primero","channel":"voz","question":"Abre el primero","after":"voz-cali-top","expect":{"kind":"detail"}},
- {"id":"voz-medellin-gasto","channel":"voz","question":"¿En qué gasta la Alcaldía de Medellín?","expect":{"entity":"medell","kind":"spend"}}
+ {
+  "id": "manizales-mayor",
+  "question": "¿Cuál es el contrato más grande que se ha firmado en Manizales?",
+  "expect": {
+   "ciudad": "Manizales",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "antioquia-vias-empresa",
+  "question": "¿Qué empresa tiene más contratos de vías en Antioquia este año?",
+  "expect": {
+   "departamento": "Antioquia",
+   "tema": "v[ií]as|carreter|paviment",
+   "kind": "contractor"
+  }
+ },
+ {
+  "id": "cartagena-salud-gasto",
+  "question": "¿Cuánto se ha gastado en salud en Cartagena?",
+  "expect": {
+   "ciudad": "Cartagena",
+   "tema": "salud",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "men-contratista",
+  "question": "¿Quién es el contratista que más recibe del Ministerio de Educación?",
+  "expect": {
+   "entity": "educaci",
+   "kind": "contractor"
+  }
+ },
+ {
+  "id": "pasto-contratos",
+  "question": "¿Qué contratos se han firmado en Pasto?",
+  "expect": {
+   "ciudad": "Pasto",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "medellin-mayor",
+  "question": "¿Cuál es el contrato más grande en Medellín?",
+  "expect": {
+   "ciudad": "Medellín",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "bogota-salud",
+  "question": "Muéstrame contratos de salud en Bogotá",
+  "expect": {
+   "ciudad": "Bogotá",
+   "tema": "salud",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "medellin-gasto",
+  "question": "¿En qué gasta la Alcaldía de Medellín?",
+  "expect": {
+   "entity": "medell",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "cali-top",
+  "question": "¿Cuáles son los contratos más grandes de la Alcaldía de Cali?",
+  "expect": {
+   "entity": "cali",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "antioquia-fuentes",
+  "question": "¿De dónde sale el dinero de la Gobernación de Antioquia?",
+  "expect": {
+   "entity": "antioquia",
+   "kind": "funding"
+  }
+ },
+ {
+  "id": "narino-pae",
+  "question": "Contratos de alimentación escolar en el departamento de Nariño",
+  "expect": {
+   "departamento": "Nariño",
+   "tema": "alimentaci",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "caldas-vias",
+  "question": "¿Qué contratos de vías hay en el departamento de Caldas?",
+  "expect": {
+   "departamento": "Caldas",
+   "tema": "v[ií]as|carreter|paviment",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "manizales-educacion",
+  "question": "Contratos de educación en Manizales",
+  "expect": {
+   "ciudad": "Manizales",
+   "tema": "educaci",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "minsalud-gasto",
+  "question": "¿En qué gasta el Ministerio de Salud?",
+  "expect": {
+   "entity": "salud",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "mindefensa-top",
+  "question": "¿Cuáles son los contratos más grandes del Ministerio de Defensa?",
+  "expect": {
+   "entity": "defensa",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "bogota-pae-empresa",
+  "question": "¿Qué empresa recibe más por alimentación escolar en Bogotá?",
+  "expect": {
+   "ciudad": "Bogotá",
+   "tema": "alimentaci",
+   "kind": "contractor"
+  }
+ },
+ {
+  "id": "cartagena-contratista",
+  "question": "¿Quién es el contratista que más recibe en Cartagena?",
+  "expect": {
+   "ciudad": "Cartagena",
+   "kind": "contractor"
+  }
+ },
+ {
+  "id": "boyaca-vias-gasto",
+  "question": "¿Cuánto se ha gastado en vías en Boyacá?",
+  "expect": {
+   "departamento": "Boyacá",
+   "tema": "v[ií]as|carreter|paviment",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "pasto-salud-gasto",
+  "question": "¿Cuánto se ha gastado en salud en Pasto?",
+  "expect": {
+   "ciudad": "Pasto",
+   "tema": "salud",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "antioquia-gob",
+  "question": "Contratos de la Gobernación de Antioquia",
+  "expect": {
+   "entity": "antioquia",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "alumbrado",
+  "question": "Contratos de alumbrado público",
+  "expect": {
+   "tema": "alumbrado",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "bucaramanga",
+  "question": "¿Qué contratos tiene la Alcaldía de Bucaramanga?",
+  "expect": {
+   "entity": "bucaramanga",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "manizales-2024",
+  "question": "¿Y en 2024?",
+  "after": "manizales-mayor",
+  "expect": {
+   "ciudad": "Manizales",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "pasto-2024",
+  "question": "¿Y en 2024?",
+  "after": "pasto-contratos",
+  "expect": {
+   "ciudad": "Pasto",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "medellin-gasto-2024",
+  "question": "¿Y en 2024?",
+  "after": "medellin-gasto",
+  "expect": {
+   "entity": "medell",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "men-2024",
+  "question": "¿Y en 2024?",
+  "after": "men-contratista",
+  "expect": {
+   "entity": "educaci",
+   "kind": "contractor"
+  }
+ },
+ {
+  "id": "cartagena-a-pasto",
+  "question": "¿Y en Pasto?",
+  "after": "cartagena-salud-gasto",
+  "expect": {
+   "ciudad": "Pasto",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "manizales-ese-contrato",
+  "question": "Dame ese contrato",
+  "after": "manizales-mayor",
+  "expect": {
+   "kind": "detail"
+  }
+ },
+ {
+  "id": "voz-manizales-mayor",
+  "channel": "voz",
+  "question": "¿Cuál es el contrato más grande en Manizales?",
+  "expect": {
+   "ciudad": "Manizales",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "voz-manizales-detalle",
+  "channel": "voz",
+  "question": "Dame el detalle de ese contrato",
+  "after": "voz-manizales-mayor",
+  "expect": {
+   "kind": "detail"
+  }
+ },
+ {
+  "id": "voz-cartagena-gasto",
+  "channel": "voz",
+  "question": "¿Cuánto se ha gastado en salud en Cartagena?",
+  "expect": {
+   "ciudad": "Cartagena",
+   "tema": "salud",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "voz-men-contratista",
+  "channel": "voz",
+  "question": "¿Quién es el contratista que más recibe del Ministerio de Educación?",
+  "expect": {
+   "entity": "educaci",
+   "kind": "contractor"
+  }
+ },
+ {
+  "id": "voz-cali-top",
+  "channel": "voz",
+  "question": "¿Cuáles son los contratos más grandes de la Alcaldía de Cali?",
+  "expect": {
+   "entity": "cali",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "voz-cali-primero",
+  "channel": "voz",
+  "question": "Abre el primero",
+  "after": "voz-cali-top",
+  "expect": {
+   "kind": "detail"
+  }
+ },
+ {
+  "id": "voz-medellin-gasto",
+  "channel": "voz",
+  "question": "¿En qué gasta la Alcaldía de Medellín?",
+  "expect": {
+   "entity": "medell",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "x-manizales-gasto",
+  "question": "¿En qué se gasta el dinero público en Manizales?",
+  "expect": {
+   "ciudad": "Manizales",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "x-manizales-2025",
+  "question": "¿Cuánto se gastó en Manizales en 2025?",
+  "expect": {
+   "ciudad": "Manizales",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "x-caldas-contratistas",
+  "question": "¿Qué empresas reciben más contratos en Caldas?",
+  "expect": {
+   "departamento": "Caldas",
+   "kind": "contractor"
+  }
+ },
+ {
+  "id": "x-antioquia-2025",
+  "question": "¿Cuánto se contrató en Antioquia en 2025?",
+  "expect": {
+   "departamento": "Antioquia",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "x-boyaca-salud",
+  "question": "¿Qué contratos de salud hay en Boyacá?",
+  "expect": {
+   "departamento": "Boyacá",
+   "tema": "salud",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "x-santander-mayores",
+  "question": "¿Cuáles son los contratos más grandes en Santander?",
+  "expect": {
+   "departamento": "Santander",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "x-valle-gasto",
+  "question": "¿En qué se gasta en el Valle del Cauca?",
+  "expect": {
+   "departamento": "Valle del Cauca",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "x-risaralda-contratos",
+  "question": "Contratos en Risaralda",
+  "expect": {
+   "departamento": "Risaralda",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "x-pereira-empresa",
+  "question": "¿Quién recibe más dinero en Pereira?",
+  "expect": {
+   "ciudad": "Pereira",
+   "kind": "contractor"
+  }
+ },
+ {
+  "id": "x-manisales-error",
+  "question": "Contratos más grandes en Manisales",
+  "expect": {
+   "ciudad": "Manizales",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "x-pesos-cartagena",
+  "question": "¿Cuántos pesos se han contratado en Cartagena?",
+  "expect": {
+   "ciudad": "Cartagena",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "x-pesos-pasto-mayor",
+  "question": "¿De cuántos pesos es el contrato más grande de Pasto?",
+  "expect": {
+   "ciudad": "Pasto",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "x-cucuta-gasto",
+  "question": "¿En qué se gasta en Cúcuta?",
+  "expect": {
+   "ciudad": "Cúcuta",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "x-huila-vias",
+  "question": "¿Cuánto se ha gastado en vías en el Huila?",
+  "expect": {
+   "departamento": "Huila",
+   "tema": "v[ií]as|carreter|paviment",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "x-tolima-contratos",
+  "question": "¿Qué contratos hay en el Tolima?",
+  "expect": {
+   "departamento": "Tolima",
+   "kind": "contract|top|total|entity|spend"
+  }
+ },
+ {
+  "id": "x-barranquilla-top",
+  "question": "¿Quién es el contratista que más recibe en Barranquilla?",
+  "expect": {
+   "ciudad": "Barranquilla",
+   "kind": "contractor"
+  }
+ },
+ {
+  "id": "x-gob-caldas",
+  "question": "¿En qué gasta la Gobernación de Caldas?",
+  "expect": {
+   "entity": "caldas",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "x-falla-datosgov",
+  "question": "¿Cuánto se gastó en Manizales en 2025?",
+  "fail": true,
+  "expect": {
+   "failure": true
+  }
+ },
+ {
+  "id": "x-falla-mayor",
+  "question": "¿Cuál es el contrato más grande de Medellín?",
+  "fail": true,
+  "expect": {
+   "failure": true
+  }
+ },
+ {
+  "id": "x-manizales-2025-mayor",
+  "question": "¿Y el contrato más grande?",
+  "after": "x-manizales-2025",
+  "expect": {
+   "ciudad": "Manizales",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "x-manizales-ese-contrato-detalle",
+  "question": "Dame el detalle de ese contrato",
+  "after": "x-manizales-2025-mayor",
+  "expect": {
+   "kind": "detail"
+  }
+ },
+ {
+  "id": "voz-x-manizales-2025",
+  "channel": "voz",
+  "question": "¿Cuánto se gastó en Manizales en 2025?",
+  "expect": {
+   "ciudad": "Manizales",
+   "kind": "spend|total|entity"
+  }
+ },
+ {
+  "id": "voz-x-mayor",
+  "channel": "voz",
+  "question": "¿Y el contrato más grande?",
+  "after": "voz-x-manizales-2025",
+  "expect": {
+   "ciudad": "Manizales",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "voz-x-caldas-contratistas",
+  "channel": "voz",
+  "question": "¿Qué empresas reciben más contratos en Caldas?",
+  "expect": {
+   "departamento": "Caldas",
+   "kind": "contractor"
+  }
+ },
+ {
+  "id": "voz-x-pesos-pasto",
+  "channel": "voz",
+  "question": "¿De cuántos pesos es el contrato más grande de Pasto?",
+  "expect": {
+   "ciudad": "Pasto",
+   "kind": "top|contract"
+  }
+ },
+ {
+  "id": "voz-x-boyaca",
+  "channel": "voz",
+  "question": "¿Qué contratos de salud hay en Boyacá?",
+  "expect": {
+   "departamento": "Boyacá",
+   "tema": "salud"
+  }
+ },
+ {
+  "id": "voz-x-pasto-segundo",
+  "channel": "voz",
+  "question": "¿Y quién es el contratista de ese contrato?",
+  "after": "voz-x-pesos-pasto",
+  "expect": {
+   "followup": true
+  }
+ },
+ {
+  "id": "voz-x-contrato-seguimiento",
+  "channel": "voz",
+  "question": "Dame el detalle de ese contrato",
+  "after": "voz-x-pasto-segundo",
+  "expect": {
+   "kind": "detail"
+  }
+ },
+ {
+  "id": "x-decline-opinion",
+  "question": "¿Crees que la alcaldía de Cali es corrupta?",
+  "expect": {
+   "decline": "NO-0[12]"
+  }
+ },
+ {
+  "id": "x-decline-persona",
+  "question": "Dame la cédula y el teléfono del contratista que más recibe en Pasto",
+  "expect": {
+   "decline": "NO-0[67]"
+  }
+ },
+ {
+  "id": "x-decline-ajeno",
+  "question": "¿Cuál es la capital de Francia?",
+  "expect": {
+   "decline": "NO-10"
+  }
+ },
+ {
+  "id": "x-no-declina-ranking",
+  "question": "¿Cuáles son las empresas que más recibieron en Cali?",
+  "expect": {
+   "ciudad": "Cali",
+   "kind": "contractor"
+  }
+ }
 ]

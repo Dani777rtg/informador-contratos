@@ -63,8 +63,13 @@ function closest<T>(text: string, items: T[], label: (t: T) => string): { best: 
 export type PlaceResult = { municipio?: string; departamento: string; alcance: "municipio" | "departamento" } | { sugerencias: string[] };
 
 /** Municipio o departamento a partir de un texto (tolera tildes y errores del STT: «Manisales» -> Manizales). Con un municipio en varios departamentos, `departamento` desambigua. */
-export function matchPlace(texto: string, places: Place[] = snapshotPlaces(), departamento?: string): PlaceResult {
+export function matchPlace(texto: string, places: Place[] = snapshotPlaces(), departamento?: string, soloDepartamento = false): PlaceResult {
   const n = normalize(texto);
+  // El modelo lo pasó como `departamento`: «Nariño» o «Caldas» son el departamento, no el municipio homónimo.
+  if (soloDepartamento) {
+    const d = [...new Set(places.map((p) => p.departamento)), ...DEPARTAMENTOS.map(([, x]) => x)].find((x) => normalize(x) === n);
+    if (d) return { departamento: d, alcance: "departamento" };
+  }
   const depN = departamento ? normalize(departamento) : "";
   const inDep = (p: Place) => !depN || normalize(p.departamento) === depN || normalize(p.departamento).includes(depN);
   const exact = places.filter((p) => p.norm === n && inDep(p));

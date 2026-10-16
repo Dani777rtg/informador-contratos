@@ -1,0 +1,223 @@
+[
+ {
+  "id": "c1-curioso-manizales",
+  "turns": [
+   {
+    "channel": "texto",
+    "question": "¿En qué se gasta el dinero público en Manizales?",
+    "expect": {
+     "ciudad": "Manizales",
+     "kind": "spend|total|entity"
+    }
+   },
+   {
+    "channel": "texto",
+    "question": "¿Y el contrato más grande?",
+    "expect": {
+     "ciudad": "Manizales",
+     "kind": "top|contract"
+    }
+   },
+   {
+    "channel": "texto",
+    "question": "Dame el detalle de ese contrato",
+    "expect": {
+     "kind": "detail"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c2-voz-manizales",
+  "turns": [
+   {
+    "channel": "voz",
+    "question": "¿Cuánto se gastó en Manizales en 2025?",
+    "expect": {
+     "ciudad": "Manizales",
+     "kind": "spend|total|entity"
+    }
+   },
+   {
+    "channel": "voz",
+    "question": "¿Y el contrato más grande?",
+    "expect": {
+     "ciudad": "Manizales",
+     "kind": "top|contract"
+    }
+   },
+   {
+    "channel": "voz",
+    "question": "Dame el detalle de ese contrato",
+    "expect": {
+     "kind": "detail"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c3-cambio-de-tema",
+  "turns": [
+   {
+    "channel": "texto",
+    "question": "Contratos de salud en Cartagena",
+    "expect": {
+     "ciudad": "Cartagena",
+     "tema": "salud",
+     "kind": "contract|top|total|entity|spend"
+    }
+   },
+   {
+    "channel": "texto",
+    "question": "Ahora cuéntame de vías en Boyacá",
+    "expect": {
+     "departamento": "Boyacá",
+     "tema": "v[ií]as|carreter|paviment"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c4-territorio-a-empresa",
+  "turns": [
+   {
+    "channel": "texto",
+    "question": "¿Qué empresas reciben más contratos en Caldas?",
+    "expect": {
+     "departamento": "Caldas",
+     "kind": "contractor"
+    }
+   },
+   {
+    "channel": "texto",
+    "question": "¿Y en Antioquia?",
+    "expect": {
+     "departamento": "Antioquia",
+     "kind": "contractor"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c5-voz-pesos",
+  "turns": [
+   {
+    "channel": "voz",
+    "question": "¿De cuántos pesos es el contrato más grande de Pasto?",
+    "expect": {
+     "ciudad": "Pasto",
+     "kind": "top|contract"
+    }
+   },
+   {
+    "channel": "voz",
+    "question": "¿Y quién es el contratista?",
+    "expect": {
+     "followup": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "c6-voz-y-escrito",
+  "turns": [
+   {
+    "channel": "voz",
+    "question": "¿Cuáles son los contratos más grandes de la Alcaldía de Cali?",
+    "expect": {
+     "entity": "cali",
+     "kind": "top|contract"
+    }
+   },
+   {
+    "channel": "texto",
+    "question": "Dame el detalle del primero",
+    "expect": {
+     "kind": "detail"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c7-error-de-nombre",
+  "turns": [
+   {
+    "channel": "texto",
+    "question": "Contratos más grandes en Manisales",
+    "expect": {
+     "ciudad": "Manizales",
+     "kind": "top|contract"
+    }
+   },
+   {
+    "channel": "texto",
+    "question": "¿Y en 2024?",
+    "expect": {
+     "ciudad": "Manizales",
+     "kind": "top|contract"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c8-falla-datosgov",
+  "turns": [
+   {
+    "channel": "texto",
+    "question": "¿Cuánto se gastó en Manizales en 2025?",
+    "fail": true,
+    "expect": {
+     "failure": true
+    }
+   },
+   {
+    "channel": "texto",
+    "question": "¿Cuánto se gastó en Manizales en 2025?",
+    "expect": {
+     "ciudad": "Manizales",
+     "kind": "spend|total|entity"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c9-limite-y-vuelta",
+  "turns": [
+   {
+    "channel": "texto",
+    "question": "¿Crees que la alcaldía de Cali es corrupta?",
+    "expect": {
+     "decline": "NO-0[12]"
+    }
+   },
+   {
+    "channel": "texto",
+    "question": "Mejor muéstrame qué empresas recibieron más en Cali",
+    "expect": {
+     "ciudad": "Cali",
+     "kind": "contractor"
+    }
+   }
+  ]
+ },
+ {
+  "id": "c10-voz-territorio",
+  "turns": [
+   {
+    "channel": "voz",
+    "question": "¿Qué contratos de salud hay en Boyacá?",
+    "expect": {
+     "departamento": "Boyacá",
+     "tema": "salud"
+    }
+   },
+   {
+    "channel": "voz",
+    "question": "¿Y en Nariño?",
+    "expect": {
+     "departamento": "Nariño"
+    }
+   }
+  ]
+ }
+]

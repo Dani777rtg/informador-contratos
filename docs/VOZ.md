@@ -1,4 +1,19 @@
-# Voz manos libres: prácticas, decisiones y latencia
+# Voz manos libres con el Voice Agent de Deepgram (cambio 006)
+
+## Arquitectura
+
+```
+Navegador ──(audio PCM 16 kHz, KeepAlive, AskText)──▶ /voice?token= (servidor) ──▶ wss://agent.deepgram.com/v1/agent/converse
+          ◀──(audio 24 kHz, ConversationText, estado, ToolResult)──                 Deepgram: listen nova-3 es · think DeepSeek · speak aura-2-celeste-es
+                                                          │
+                                                          └─ FunctionCallRequest ─▶ runTool (datos.gov.co) ─▶ FunctionCallResponse
+```
+
+- Una sesión del Voice Agent por usuario; el historial vive en la sesión del agente (si se corta, se reconecta con los últimos turnos en `agent.context.messages`).
+- El navegador nunca habla con Deepgram: `Settings` lleva la clave de DeepSeek (`DEEPSEEK_VOICE_API_KEY`, o `DEEPSEEK_API_KEY` si falta) y solo el servidor la construye (TM-15).
+- `server/voice/agent.ts`: `buildSettings`, lista blanca en ambos sentidos, herramientas, reconexión. `server/agent/mission.ts`: misión compartida con el agente de texto.
+- Lo escrito mientras la voz está activa entra por `AskText` -> `InjectUserMessage` (1 a 500 caracteres, sin control, ráfaga de 5 y 2 por segundo): misma conversación.
+- Los resultados de herramientas llegan al agente con montos en palabras (`toSpoken`), textos de SECOP de máximo 140 caracteres, sin saltos ni etiquetas, cercados como «DATOS SECOP»; las tarjetas completas van al cliente como `ToolResult`.
 
 ## Objetivo de latencia (AC-05.6)
 
@@ -8,38 +23,37 @@ Del fin de turno del usuario a la primera palabra del agente: **p95 < 1 s**, met
 
 | # | Etapa | Dónde se mide | Nota |
 |---|-------|---------------|------|
-| 1 | Detección de fin de turno | Flux (`EndOfTurn`), servidor | Umbral `eot_threshold=0.7`; es la etapa que más pesa. |
-| 2 | STT final | Incluido en Flux: la transcripción llega con el evento de fin de turno | Se transcribe mientras el usuario habla, no después. |
-| 3 | LLM primer token | `timing.firstToken` en el mensaje `message` del servidor | Streaming; no se espera la respuesta completa. |
-| 4 | Datos (consulta SECOP) | Tiempo de la herramienta dentro del turno | Sin acuse ni relleno (AC-05.4): solo estado visual «Buscando en SECOP…». |
-| 5 | TTS primer audio | Primer frame binario tras el primer `Speak`+`Flush` | Una conexión TTS por conversación, sin costo de handshake. |
+| 1 | Fin de turno + transcripción | Voice Agent (nova-3 es), evento `ConversationText` del usuario | El agente decide el fin de turno; no hay botón de enviar. |
+| 2 | LLM (DeepSeek `deepseek-flash`, 0,2) | Entre la transcripción y la llamada a herramienta o el primer texto | Sin razonamiento; prompt estático (prefijo cacheable). |
+| 3 | Herramienta (datos.gov.co) | Servidor: de `FunctionCallRequest` a `FunctionCallResponse` | Tope de 12 s en el servidor (6,5 s de API con respaldo en T023); caché en memoria. |
+| 4 | LLM redacta la respuesta | Segunda llamada con el resultado | Máximo 2 frases. |
+| 5 | Primer audio (aura-2-celeste-es) | `AgentStartedSpeaking` + primer frame binario | Sin saludo ni acuse de relleno (AC-05.4). |
 
-Latencia percibida = suma de las etapas hasta el **primer audio** reproducible.
+Latencia percibida = suma hasta el **primer audio**.
 
 ## Cómo medirla
 
-- Cliente: al recibir `transcript` (fin de turno) se guarda `performance.now()`; al llegar el primer frame de audio se emite el evento DOM `voice-latency` con los ms (`document.addEventListener("voice-latency", e => ...)`). Ese número es el de extremo a extremo percibido, sin incluir el audio ya reproducido.
-- Servidor: `timing.firstToken` (ms desde que empieza el turno hasta el primer token del LLM).
-- Se agregan las muestras de sesiones reales (sin guardar audio ni texto) y se calculan p50 y p95; el objetivo se evalúa sobre p95.
+- Servidor: por turno se registra `latencyMs` (fin de turno -> `AgentStartedSpeaking`), herramientas y código de declinación; por sesión, `closeReason`. Sin texto ni audio. Entra a `/api/metrics` (canal voz) para p50/p95.
+- Cliente: al recibir la transcripción del usuario se guarda `performance.now()`; con el primer frame de audio se emite el evento DOM `voice-latency` (ms).
+- `npm run eval:real` mide texto y voz (voz con texto inyectado por `AskText` si no hay audio) contra el Voice Agent real y reporta p50/p95.
 
 ## Prácticas investigadas (fuentes)
 
-- **Fin de turno con modelo, no con silencio fijo**: Deepgram Flux detecta fin de turno semántico y da `StartOfTurn`/`EndOfTurn`; umbrales ajustables. https://developers.deepgram.com/docs/flux/configuration
-- **EOT anticipado (eager)**: `EagerEndOfTurn` permite empezar el LLM antes de confirmar el fin de turno, a costa de más llamadas si el usuario sigue. https://developers.deepgram.com/docs/flux/voice-agent-eager-eot
-- **TTS por WebSocket**: una conexión persistente, mensajes `Speak`, `Flush` y `Clear`; el primer audio llega antes que con HTTP por petición. https://developers.deepgram.com/docs/streaming-text-to-speech
-- **Streaming LLM → TTS por frases**: se envía al TTS la primera frase completa en cuanto el LLM la termina, sin esperar el resto.
-- **Barge-in**: al detectar voz del usuario (`StartOfTurn`) el servidor envía `Clear` al TTS y `interrupt` al cliente, que vacía su cola de audio.
-- **Eco y ruido**: `getUserMedia` con `echoCancellation`, `noiseSuppression` y `autoGainControl`; evita que el agente se oiga a sí mismo y se interrumpa. https://developer.mozilla.org/docs/Web/API/MediaTrackConstraints
-- **Sin acuses**: no se dicen muletillas; lo primero que se oye es la respuesta. Todo lo que va al TTS pasa por `toSpoken` (`server/speech/spoken.ts`): cifras en palabras («27 mil millones de pesos»), fechas naturales, sin códigos ni mayúsculas crudas, máximo 2 frases. Análisis (mayores, gasto, fuentes) y seguimientos («dame ese contrato», «el primero») salen por atajo sin LLM; las listas de contratos las resume el agente.
-- **Captura**: AudioWorklet (hilo de audio, sin bloquear la UI) https://developer.mozilla.org/docs/Web/API/AudioWorklet
+- **Voice Agent API** (STT + LLM + TTS en una sola conexión, barge-in y funciones): https://developers.deepgram.com/docs/voice-agent
+- **Settings, `agent.context.messages`, `InjectUserMessage`, `KeepAlive`, `FunctionCallRequest/Response`**: https://developers.deepgram.com/reference/voice-agent/voice-agent
+- **Think con endpoint compatible con OpenAI** (DeepSeek): https://developers.deepgram.com/docs/voice-agent-llm-models
+- **Barge-in**: `UserStartedSpeaking` -> el cliente vacía su cola de audio al instante.
+- **Eco y ruido**: `getUserMedia` con `echoCancellation`, `noiseSuppression` y `autoGainControl`. https://developer.mozilla.org/docs/Web/API/MediaTrackConstraints
+- **Captura**: AudioWorklet (hilo de audio). https://developer.mozilla.org/docs/Web/API/AudioWorklet
 
 ## Decisiones
 
-1. Flux `flux-general-multi` con `language_hint=es`; audio linear16 16 kHz mono en bloques de 80 ms (2560 bytes).
-2. El cliente remuestrea a 16 kHz en el AudioWorklet (interpolación lineal; el navegador ya filtra ruido).
-3. Reproducción con Web Audio en cola a 24 kHz; `flush()` detiene todas las fuentes al instante (objetivo < 200 ms, el límite lo fija el `Clear` del servidor más un salto de red).
-4. Sin borrador en `EagerEndOfTurn` por ahora: se añade si el p95 supera 1 s.
-5. Una sola conversación: subtítulos y respuestas por voz van al mismo historial que el chat; todo texto con `textContent`.
-6. Estados visibles y anunciados (aria-live): escuchando, procesando, hablando, en pausa; medidor de nivel; botón Silenciar/Interrumpir.
-7. Si la voz falla, aviso de una frase y el chat de texto sigue funcionando.
+1. Voice Agent de Deepgram en lugar del pipeline propio (STT + TTS por frases): menos piezas, historial en la sesión y barge-in nativo. Se retira el pipeline Flux/TTS propio.
+2. Micrófono continuo (no se cierra entre turnos); el servidor envía `KeepAlive` cada 5 s (el agente cierra a los 10 s sin audio).
+3. Audio linear16 16 kHz en bloques de 80 ms; el AudioWorklet remuestrea; reproducción a 24 kHz en cola con `flush()` en `UserStartedSpeaking`. El cliente guarda hasta 4 s de voz mientras conecta.
+4. Reconexión silenciosa (3 intentos con backoff) y aviso solo si no se recupera; el chat de texto sigue.
+5. Lista blanca: del cliente solo audio (<= 64 KB), `KeepAlive` y `AskText`; al cliente solo audio, `ConversationText`, `UserStartedSpeaking`, `AgentThinking`, `AgentStartedSpeaking`, `AgentAudioDone`, `ToolResult` y `Notice`. Cualquier otro JSON del cliente cierra la conexión (1008).
+6. Límites: tasa por IP (`createRateLimiter`), `VOICE_MAX_PER_IP` (3), `VOICE_MAX_SESSIONS` (30), `VOICE_SESSION_MAX_SECONDS` (600), `VOICE_DAILY_MAX_MINUTES` (120), inactividad 60 s, 100 tramas/s.
+7. Cloud Run con `--session-affinity` para que las reconexiones lleguen a la misma instancia.
 8. Privacidad: ni audio ni transcripciones se guardan en disco ni en logs.
+9. Costo: el Voice Agent se factura por minuto; verificar la tarifa vigente en la consola de Deepgram.
