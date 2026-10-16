@@ -17,3 +17,19 @@
 | 2026-10-16T16:43:41.579Z | verify | end | SHIP |
 | 2026-10-16T16:45:05.698Z | change | start | 003: 2 file(s) |
 | 2026-10-16T16:52:39.810Z | change | end | 003 |
+| 2026-10-16T16:53:08.651Z | ship | gate-approved | dueño aprobó despliegue a producción (en sesión) |
+| 2026-10-16T17:18:39.189Z | change | start |  |
+| 2026-10-16T17:22:37.986Z | change | start | 004: 2 file(s) |
+| 2026-10-16T17:22:52.118Z | verify | start | cambio 004: vuelve a verify por evaluación real |
+| 2026-10-16T17:23:18.710Z | change | end | 004 |
+| 2026-10-16T17:38:07.498Z | change | start | 005: 5 file(s) |
+| 2026-10-16T17:39:45.871Z | change | end | 005 |
+| 2026-10-16T17:49:26.526Z | change | start |  |
+| 2026-10-16T17:56:49.017Z | change | start |  |
+| 2026-10-16T18:01:32.036Z | change | start | 006: 8 file(s) |
+| 2026-10-16T18:09:46.766Z | change | end | 006 |
+| 2026-10-16T21:37:33.599Z | change | start |  |
+| 2026-10-16T21:41:02.334Z | change | start | 007: 8 file(s) |
+| 2026-10-16T21:45:12.906Z | change | end | 007 |
+| 2026-10-16T22:10:58.898Z | change | start | 008: 1 file(s) |
+| 2026-10-16T22:11:08.321Z | change | end | 008 |
