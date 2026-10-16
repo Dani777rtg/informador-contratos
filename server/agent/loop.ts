@@ -1,4 +1,6 @@
 import { SYSTEM_PROMPT, wrapData } from "./system-prompt";
+import { decline, DECLINE_TOOL } from "./decline";
+import { dropForbidden, prefilter } from "./guardrails";
 import { allowedNumbers, verifyNumbers } from "./verify-numbers";
 
 export const MAX_TOOLS_PER_TURN = 3;
@@ -101,7 +103,7 @@ export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?
 function makeGate(onToken: ((t: string) => void) | undefined, allowed: () => number[]) {
   let pending = "";
   const emit = (s: string) => {
-    const { text } = verifyNumbers(s, allowed());
+    const text = dropForbidden(verifyNumbers(s, allowed()).text);
     if (text) onToken?.(text + " ");
   };
   return {
@@ -128,7 +130,7 @@ export async function runAgent(a: {
   const results: unknown[] = [];
   let tokens = 0;
   let text = "";
-  const defs = Object.values(a.tools).map((t) => ({ type: "function" as const, function: { name: t.name, description: t.description, parameters: t.parameters } }));
+  const defs = [...Object.values(a.tools).map((t) => ({ type: "function" as const, function: { name: t.name, description: t.description, parameters: t.parameters } })), DECLINE_TOOL];
   // Cifras permitidas: resultados de herramientas, contexto y lo que el propio usuario dijo.
   const allowed = () => allowedNumbers(results, context, a.message);
   const messages: LlmMessage[] = [
@@ -137,6 +139,13 @@ export async function runAgent(a: {
     { role: "user", content: a.message },
   ];
 
+  const pre = prefilter(a.message);
+  if (pre) {
+    const t = decline(pre);
+    a.onToken?.(t);
+    return { text: t, cards, toolCalls: [{ name: "decline", args: { code: pre } }], tokens, context };
+  }
+
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const gate = makeGate(a.onToken, allowed);
     const last = round === MAX_ROUNDS - 1;
@@ -144,6 +153,12 @@ export async function runAgent(a: {
     gate.flush();
     tokens += r.tokens;
     if (!r.toolCalls.length) { text = r.content; break; }
+    const dc = r.toolCalls.find((c) => c.name === "decline");
+    if (dc) {
+      let code = "";
+      try { code = String((JSON.parse(dc.arguments || "{}") as { code?: unknown }).code ?? ""); } catch { /* código inválido: plantilla genérica */ }
+      return { text: decline(code), cards: [], toolCalls: [{ name: "decline", args: { code } }], tokens, context };
+    }
     const run = r.toolCalls.slice(0, MAX_TOOLS_PER_TURN);
     messages.push({
       role: "assistant", content: r.content || null,
@@ -168,5 +183,5 @@ export async function runAgent(a: {
       messages.push({ role: "tool", tool_call_id: c.id, content: out });
     }
   }
-  return { text: verifyNumbers(text, allowed()).text, cards, toolCalls, tokens, context };
+  return { text: dropForbidden(verifyNumbers(text, allowed()).text), cards, toolCalls, tokens, context };
 }
