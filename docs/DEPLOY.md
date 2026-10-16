@@ -18,3 +18,29 @@ Hosting: `firebase hosting:rollback --project informador-contratos-1016`.
 
 ## Región
 Decisión y mediciones (ms) en `docs/COSTOS.md`: us-east1 vs southamerica-east1.
+
+
+## Staging (fase Verify)
+
+Proyecto `informador-contratos-1016`, región `us-east1`. Producción (`informador`, canal live de Hosting) NO se ha desplegado: es la fase Ship, con aprobación del dueño.
+
+### Hecho
+- Cuenta de servicio de ejecución dedicada `informador-run@informador-contratos-1016.iam.gserviceaccount.com` con `roles/secretmanager.secretAccessor` sobre los 5 secretos y `roles/datastore.user` (nada más). `scripts/deploy.ps1` lo crea/aplica de forma idempotente.
+- Cloud Build de la imagen: OK (47 s). Servicio `informador-staging`: min 0, max 2, cpu-boost, timeout 3600, público, 5 secretos, `NODE_ENV=production`, `DEEPSEEK_MODEL=deepseek-flash`, variables WhatsApp desde `.env`.
+- URL de la API de staging: https://informador-staging-772597157596.us-east1.run.app
+- Despliegue: `pwsh scripts/deploy.ps1 -Staging`.
+
+### Humo contra staging (todo OK)
+- `GET /health` 200 `{"ok":true}`; cabeceras CSP, HSTS, nosniff, referrer-policy, permissions-policy presentes.
+- `POST /api/chat` "¿Qué contratos tiene el NIT 890399011?" 200 con tarjetas de contratos reales (0,6 s).
+- `OPTIONS /api/chat`: origen permitido recibe `access-control-allow-origin`; `https://evil.example` no.
+- `POST /session`: origen permitido 200 con token; origen no permitido 403.
+- Escala a cero: `container/instance_count` activo e inactivo en 0 tras ~7 min sin tráfico.
+- Rollback ensayado: `update-traffic --to-revisions=<anterior>=100` 6,6 s; restaurar `--to-latest` 8,4 s. Sin base propia que restaurar aparte de Firestore (solo caché WhatsApp/estado efímero); no se hizo restauración.
+
+### Pendiente (bloqueado)
+Frontend de staging: Firebase no está añadido al proyecto (`firebase projects:addfirebase` y la API REST devuelven 403 con la sesión de gcloud; la CLI de Firebase no tiene sesión). Requiere que el dueño ejecute una vez `npx firebase-tools login` y `npx firebase-tools projects:addfirebase informador-contratos-1016` (gratis). Después `pwsh scripts/deploy.ps1 -Staging` despliega el canal `staging` y fija `ALLOWED_ORIGINS` a su URL. Mientras tanto `ALLOWED_ORIGINS` = `https://informador-contratos-1016.web.app`.
+
+### Rollback de staging
+    gcloud run services update-traffic informador-staging --project informador-contratos-1016 --region us-east1 --to-revisions=<revisión anterior>=100
+Revisión conocida buena: `informador-staging-00002-4wg`. Hosting: `firebase hosting:rollback --project informador-contratos-1016` (canal live) o borrar el canal con `firebase hosting:channel:delete staging --project informador-contratos-1016`.

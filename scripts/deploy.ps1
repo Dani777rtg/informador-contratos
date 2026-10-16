@@ -3,7 +3,7 @@
 #   pwsh scripts/deploy.ps1              producción: revisión sin tráfico -> aprobación del dueño -> tráfico -> Hosting live
 # No modifica el proyecto activo global de gcloud: cada comando fija --project.
 param([switch]$Approve, [switch]$Staging)
-$ErrorActionPreference = 'Continue' # gcloud escribe progreso en stderr; los fallos se detectan con $LASTEXITCODE
+$ErrorActionPreference = 'Continue' # el progreso va por stderr; los fallos se detectan con $LASTEXITCODE
 $Project = 'informador-contratos-1016'
 $Region = 'us-east1'
 $Service = if ($Staging) { 'informador-staging' } else { 'informador' }
