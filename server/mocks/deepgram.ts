@@ -1,6 +1,8 @@
 import type { Server } from "node:http";
 import { WebSocketServer, type RawData, type WebSocket } from "ws";
 
+const wait = () => new Promise((r) => setTimeout(r, Number(process.env.MOCK_LATENCY_MS_DEEPGRAM ?? 0)));
+
 /**
  * Sustituto de Deepgram: /__mock/deepgram/stt (v2/listen) cuenta audio y emite TurnInfo al recibir
  * {"type":"__EndOfTurn","transcript":...}; /__mock/deepgram/tts (v1/speak) responde audio a Speak/Flush.
@@ -21,10 +23,11 @@ export function attachDeepgramMock(server: Server): void {
     if (!m) return;
     if (m.type === "__EndOfTurn") ws.send(JSON.stringify({ type: "TurnInfo", event: "EndOfTurn", transcript: m.transcript ?? "", end_of_turn_confidence: 0.9 }));
   }));
-  tts.on("connection", (ws) => ws.on("message", (d: RawData, bin) => {
+  tts.on("connection", (ws) => ws.on("message", async (d: RawData, bin) => {
     if (bin) return;
     const m = parse<{ type?: string }>(d, ws);
     if (!m) return;
+    await wait();
     if (m.type === "Speak" || m.type === "Flush") ws.send(Buffer.alloc(3200), { binary: true });
     if (m.type === "Flush") ws.send(JSON.stringify({ type: "Flushed" }));
   }));

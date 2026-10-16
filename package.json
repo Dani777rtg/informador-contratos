@@ -14,7 +14,7 @@
     "test:a11y": "vitest run tests/acceptance/us-04.ui.test.ts",
     "eval": "tsx eval/run.ts",
     "scan:secrets": "tsx scripts/scan-secrets.ts",
-    "loadtest:local": "node -e \"console.error('loadtest:local pendiente');process.exit(1)\"",
+    "loadtest:local": "tsx loadtest/run.ts",
     "wa:template": "tsx scripts/whatsapp-template.ts",
     "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
     "typecheck": "tsc --noEmit",

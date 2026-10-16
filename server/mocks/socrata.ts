@@ -9,6 +9,8 @@ export const MOCK_ENTITIES: Entity[] = [
   toEntity("899999061", "Alcaldía de Bogotá"),
 ];
 
+const wait = () => new Promise((r) => setTimeout(r, Number(process.env.MOCK_LATENCY_MS_SOCRATA ?? 0)));
+
 type Mode = "ok" | "slow" | "fail" | "empty";
 
 function rows(entity: string, nit: string, n: number, object = "Prestación de servicios de apoyo a la gestión"): Row[] {
@@ -47,6 +49,7 @@ export function createSocrataMock() {
   app.delete("/__mock/socrata/requests", (c) => { requests = []; return c.body(null, 204); });
   app.get("/__mock/socrata/resource/:id", async (c) => {
     requests.push({ url: c.req.url });
+    await wait();
     if (mode === "fail") return c.json({ message: "mock failure" }, 500);
     if (mode === "slow") await new Promise((r) => setTimeout(r, 5000));
     if (mode === "empty") return c.json([]);

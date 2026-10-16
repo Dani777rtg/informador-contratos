@@ -1,10 +1,13 @@
 import { Hono } from "hono";
 
+const wait = () => new Promise((r) => setTimeout(r, Number(process.env.MOCK_LATENCY_MS_DEEPSEEK ?? 0)));
+
 /** Sustituto OpenAI-compatible de DeepSeek: chat/completions con tool calls y stream. */
 export function createDeepseekMock(replyText = "Encontré tres contratos de ejemplo. Puedes pedir más detalle.") {
   const app = new Hono();
   app.post("/v1/chat/completions", async (c) => {
     const body = (await c.req.json()) as { stream?: boolean; model?: string; tools?: { function: { name: string } }[]; messages: { role: string }[] };
+    await wait();
     const last = body.messages.at(-1)?.role;
     const tool = body.tools?.[0]?.function.name;
     const message = last === "user" && tool
