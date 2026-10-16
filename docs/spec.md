@@ -19,7 +19,7 @@ status: approved
 - O-1: Cuando un ciudadano pregunta por contratos o gasto público, quiere cifras y documentos verificables para confiar en lo que ve — medida: 100 % de las cifras mostradas coinciden con el resultado de la consulta a datos.gov.co (verificable en log).
 - O-2: Cuando un usuario pide opinión, política o algo fuera de tema, el agente debe declinar y redirigir — medida: 16/16 límites NO-01..16 con al menos una pregunta de prueba que declina correctamente.
 - O-3: Cuando el usuario escribe o habla, quiere respuesta inmediata — medida: primer token de texto < 1 s y primera palabra hablada < 1 s en p95 tras fin de turno (meta p50 ~500 ms), arranque en frío medido aparte.
-- O-4: Como dueño del producto quiero costo mínimo — medida: ≤ 1.500 tokens de LLM por pregunta en promedio, costo en reposo ≈ $0 (0 instancias activas sin tráfico), alerta de presupuesto activa.
+- O-4: Como dueño del producto quiero costo mínimo — medida: tokens de LLM por pregunta registrados y reportados (sin tope fijo por pregunta; cambio 001), pregunta repetida = 0 tokens, costo en reposo ≈ $0 (0 instancias activas sin tráfico), alerta de presupuesto activa.
 - O-5: Cuando un ciudadano sin conocimiento técnico usa el servicio, quiere completar tareas sin instrucciones — medida: 3–5 personas completan "consultar contratos de una entidad" y "abrir un documento", por texto y voz, sin ayuda.
 - O-6: Como candidato a servicio del Estado quiero verme y cumplir como GOV.CO — medida: 0 errores WCAG 2.1 AA en auditoría automática, `DESIGN.md` con fuente por regla, aviso de prototipo visible.
 - O-7: Como dueño del producto quiero la demo en la nube — medida: URL pública HTTPS en proyecto GCP nuevo y dedicado, chat y voz funcionando desde un móvil.
@@ -224,7 +224,7 @@ risk: low — medición y caché local sin datos personales (los logs ya cumplen
   serves: US-11
 - **AC-11.2** THE SYSTEM SHALL emitir el primer token de texto en menos de 1 s en p95 medido en local con datos simulados y reportar cada milisegundo que no se pudo quitar (RNF-02).
   serves: US-11
-- **AC-11.3** THE SYSTEM SHALL gastar en promedio ≤ 1.500 tokens de LLM por pregunta, y una pregunta repetida se responde desde caché con 0 tokens (RNF-03).
+- **AC-11.3** THE SYSTEM SHALL usar los tokens de LLM que necesite cada respuesta (sin tope fijo por pregunta; cambio 001), registrar y reportar el consumo por pregunta, y responder una pregunta repetida desde caché con 0 tokens (RNF-03).
   serves: US-11
 - **AC-11.4** THE SYSTEM SHALL generar el reporte de métricas de la misión (tiempos, tokens, pruebas, linter, vulnerabilidades y resultados de límites) de la sección 7b del cliente.
   serves: US-11

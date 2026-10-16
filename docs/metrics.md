@@ -8,3 +8,6 @@
 | 2026-10-16T15:26:12.394Z | spec | gate-approved | 12 historias, 20 tareas; revisión: 8 hallazgos corregidos |
 | 2026-10-16T15:28:15.717Z | spec | end | 12 archivos de aceptación bloqueados |
 | 2026-10-16T15:28:27.450Z | build | start |  |
+| 2026-10-16T16:08:08.790Z | change | start |  |
+| 2026-10-16T16:12:41.993Z | change | start | 001: 2 file(s) |
+| 2026-10-16T16:13:17.593Z | change | end | 001 |

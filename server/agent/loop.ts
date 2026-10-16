@@ -7,7 +7,6 @@ import { MAX_TOOLS_PER_TURN } from "../guards/validate";
 export { MAX_TOOLS_PER_TURN };
 const LLM_TIMEOUT_MS = 30_000;
 const MAX_ROUNDS = 2; // ronda 1 con herramientas, ronda 2 solo redacta
-const MAX_OUT_TOKENS = 250; // respuesta corta: el detalle va en tarjetas
 const MAX_ROWS = 5;
 const MAX_STR = 60;
 
@@ -76,7 +75,7 @@ export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?
       const res = await doFetch(`${baseUrl}/chat/completions`, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model, messages, tools: tools.length ? tools : undefined, max_tokens: MAX_OUT_TOKENS, stream: true, stream_options: { include_usage: true } }),
+        body: JSON.stringify({ model, messages, tools: tools.length ? tools : undefined, stream: true, stream_options: { include_usage: true } }),
         signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
       });
       if (!res.ok || !res.body) throw new Error(`LLM HTTP ${res.status}`);
