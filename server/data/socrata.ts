@@ -1,4 +1,6 @@
-export const DATASET = "jbjy-vk9h";
+import { SocrataUnavailable, timeoutFor, withRetry } from "./retry.js";
+
+export const DATASET ="jbjy-vk9h";
 export const MAX_LIMIT = 100;
 /** Lista permitida: nunca columnas de banco/cuenta/documento de persona natural. */
 export const COLUMNS = [
@@ -56,13 +58,18 @@ export function buildParams(q: Query): URLSearchParams {
 export const query = (c: Client, q: Query, dataset = DATASET): Promise<Row[]> => fetchRows(c, buildParams(q), dataset);
 
 export async function fetchRows(c: Client, params: URLSearchParams, dataset = DATASET): Promise<Row[]> {
-  const url = `${c.base}/resource/${dataset}.json?${params}`;
   const f = c.fetchFn ?? fetch;
   const headers: Record<string, string> = c.token ? { "X-App-Token": c.token } : {};
-  // La señal cubre también la lectura del cuerpo.
-  const res = await f(url, { headers, signal: AbortSignal.timeout(c.timeoutMs ?? 3000) });
-  if (!res.ok) throw new Error(`socrata ${res.status}`);
-  const rows = (await res.json()) as Row[];
+  const rows = await withRetry(async (p) => {
+    // La señal cubre también la lectura del cuerpo.
+    const res = await f(`${c.base}/resource/${dataset}.json?${p}`, { headers, signal: AbortSignal.timeout(c.timeoutMs ?? timeoutFor(p)) });
+    if (!res.ok) {
+      if (res.status === 429) throw new SocrataUnavailable("429");
+      if (res.status >= 500) throw new SocrataUnavailable("5xx");
+      throw new Error(`socrata ${res.status}`);
+    }
+    return (await res.json()) as Row[];
+  }, params);
   // Contratos sin agregación: solo columnas de la lista permitida (misma regla que privacy.sanitizeRow; no se importa por ciclo).
   if (dataset !== DATASET || params.has("$group") || params.get("$select")?.includes("(") || !Array.isArray(rows)) return rows;
   return rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => (COLUMNS as readonly string[]).includes(k)))) as Row[];

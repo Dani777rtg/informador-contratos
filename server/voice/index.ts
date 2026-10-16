@@ -7,6 +7,7 @@ import { posNum } from "../guards/validate.js";
 import { clientIp, type createRateLimiter } from "../guards/rate-limit.js";
 import type { createDemandGuard } from "../guards/demand.js";
 import { toSpoken } from "../speech/spoken.js";
+import { logClose, openWithRetry, startKeepAlive } from "./keepalive.js";
 import { issueSessionToken, verifyUpgrade } from "../guards/ws-auth.js";
 
 type Env = Record<string, string | undefined>;
@@ -34,6 +35,9 @@ export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec
   const ttsUrl = env.DEEPGRAM_TTS_URL ?? "wss://api.deepgram.com/v1/speak";
   const voice = env.TTS_VOICE ?? "aura-2-celeste-es";
   const auth = { Authorization: `Token ${env.DEEPGRAM_API_KEY ?? ""}` };
+  const keepAliveMs = posNum(env.VOICE_KEEPALIVE_MS, 5000); // Deepgram cierra a los 10 s sin audio ni KeepAlive
+  const backoffMs = posNum(env.VOICE_RECONNECT_MS, 300);
+  const STT_PARAMS = { model: "flux-general-multi", language_hint: "es", encoding: "linear16", sample_rate: "16000", eot_threshold: "0.7", eager_eot_threshold: "0.5" };
   const wss = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
 
   const open = (url: string, params: Record<string, string>) =>
@@ -60,12 +64,15 @@ export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec
     let ended = false;
 
     const voiceDown = () => { if (voiceOn) { voiceOn = false; send({ type: "notice", text: NO_VOICE }); } };
-    const getTts = () => ttsPending ??= open(ttsUrl, { model: voice, encoding: "linear16", sample_rate: "24000" }).then((ws) => {
+    // TTS se reabre bajo demanda (el cierre por inactividad no es un fallo); solo avisa si fallan los 3 intentos.
+    const getTts = () => ttsPending ??= openWithRetry(() => open(ttsUrl, { model: voice, encoding: "linear16", sample_rate: "24000" }), () => !ended, 3, backoffMs).then((ws) => {
+      if (!ws) { ttsPending = null; voiceDown(); return null; }
       ws.on("message", (d: RawData, bin) => { if (bin && !muted && client.readyState === WebSocket.OPEN) client.send(d, { binary: true }); });
-      ws.on("close", () => { tts = null; ttsPending = null; });
+      ws.on("close", (code: number, reason: Buffer) => { logClose("tts", code, reason); tts = null; ttsPending = null; });
       ws.on("error", () => {});
       return (tts = ws);
-    }).catch(() => { voiceDown(); return null; });
+    });
+    const keep = startKeepAlive(() => stt, keepAliveMs);
 
     const speak = async (text: string, flush: boolean) => {
       if (!voiceOn) return;
@@ -109,18 +116,18 @@ export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec
       ended = true;
       if (voiceOn || stt) daily.ms += Date.now() - started;
       voiceOn = false;
-      clearTimeout(limit);
+      clearTimeout(limit); keep.stop();
       stt?.close(); tts?.send(JSON.stringify({ type: "Close" })); tts?.close();
     };
     const limit = setTimeout(() => {
       if (!voiceOn) return;
-      daily.ms += Date.now() - started; voiceOn = false;
+      daily.ms += Date.now() - started; voiceOn = false; keep.stop();
       send({ type: "notice", text: "Llegaste al tiempo máximo de voz de la sesión; seguimos por texto." });
       stt?.close(); tts?.close();
     }, sessionMax);
 
     client.on("message", (d: RawData, bin) => {
-      if (bin) { if (voiceOn && stt?.readyState === WebSocket.OPEN) stt.send(d, { binary: true }); return; }
+      if (bin) { if (voiceOn && stt?.readyState === WebSocket.OPEN) { stt.send(d, { binary: true }); keep.audio(); } return; }
       try {
         const m = JSON.parse(d.toString()) as { type?: string; text?: unknown; state?: unknown };
         // Estado firmado del chat: voz y texto comparten una sola conversación; inválido -> conversación nueva.
@@ -131,29 +138,38 @@ export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec
     client.on("close", stop);
     client.on("error", stop);
 
-    // Arranque de voz: tope diario, luego STT.
+    // Arranque de voz: tope diario, luego STT. Si Deepgram cierra solo (p. ej. 1011 por inactividad), se reconecta sin avisar.
     if (used() >= dailyMax) { send({ type: "notice", text: "Alcanzaste el tope diario de voz; seguimos por texto." }); return; }
-    void open(sttUrl, { model: "flux-general-multi", language_hint: "es", encoding: "linear16", sample_rate: "16000", eot_threshold: "0.7", eager_eot_threshold: "0.5" })
-      .then((ws) => {
-        if (ended) return ws.close();
-        stt = ws; voiceOn = true;
-        ws.on("message", (d: RawData, bin) => {
-          if (bin) return;
-          try {
-            const m = JSON.parse(d.toString()) as { type?: string; event?: string; transcript?: string };
-            if (m.type !== "TurnInfo") return;
-            if (m.event === "StartOfTurn") interrupt();
-            // ponytail: sin borrador en EagerEndOfTurn; añadirlo si p95 > 1 s.
-            else if (m.event === "EndOfTurn" && m.transcript?.trim()) {
-              send({ type: "transcript", text: m.transcript });
-              void turn(m.transcript, true);
-            }
-          } catch { /* ignorar */ }
-        });
-        ws.on("error", () => {});
-        ws.on("close", () => { stt = null; voiceDown(); });
-      })
-      .catch(() => send({ type: "notice", text: NO_VOICE }));
+    let quickCloses = 0;
+    const connectStt = async (first: boolean) => {
+      const ws = await openWithRetry(() => open(sttUrl, STT_PARAMS), () => !ended, 3, backoffMs);
+      if (ended) { ws?.close(); return; }
+      if (!ws) { if (first) send({ type: "notice", text: NO_VOICE }); else voiceDown(); return; }
+      stt = ws; voiceOn = true;
+      const openedAt = Date.now();
+      ws.on("message", (d: RawData, bin) => {
+        if (bin) return;
+        try {
+          const m = JSON.parse(d.toString()) as { type?: string; event?: string; transcript?: string };
+          if (m.type !== "TurnInfo") return;
+          if (m.event === "StartOfTurn") interrupt();
+          // ponytail: sin borrador en EagerEndOfTurn; añadirlo si p95 > 1 s.
+          else if (m.event === "EndOfTurn" && m.transcript?.trim()) {
+            send({ type: "transcript", text: m.transcript });
+            void turn(m.transcript, true);
+          }
+        } catch { /* ignorar */ }
+      });
+      ws.on("error", () => {});
+      ws.on("close", (code: number, reason: Buffer) => {
+        logClose("stt", code, reason);
+        if (stt === ws) stt = null;
+        if (ended || !voiceOn) return;
+        quickCloses = Date.now() - openedAt < 2000 ? quickCloses + 1 : 0;
+        if (quickCloses >= 3) voiceDown(); else void connectStt(false);
+      });
+    };
+    void connectStt(true);
   }
 
   return {

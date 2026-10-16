@@ -35,6 +35,7 @@ import { createVoice } from "./voice/index.js";
 import { createDeepseekLlm } from "./agent/loop.js";
 import { createTools } from "./agent/tools.js";
 import { createAsker } from "./agent/ask.js";
+import { createTopicGuard } from "./session-topic.js";
 import { createMetrics } from "./metrics.js";
 import { createQuestionLogger } from "./log.js";
 import { createWhatsApp } from "./whatsapp/index.js";
@@ -104,7 +105,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
     baseUrl: env.DEEPSEEK_BASE_URL ?? (mock ? "http://mock.local/__mock/deepseek/v1" : undefined), apiKey: env.DEEPSEEK_API_KEY,
     ...(mock && !env.DEEPSEEK_BASE_URL ? { fetch: ((u: string, i?: RequestInit) => app.request(u.replace("http://mock.local", ""), i)) as typeof fetch } : {}),
   });
-  const ask = createAsker({ tools: createTools(ctx, entities, places), llm, metrics, log: logQuestion, demand });
+  const ask = createAsker({ tools: createTools(ctx, entities, places), llm, metrics, log: logQuestion, demand, topicGuard: createTopicGuard(entities) });
   // HMAC_SECRET viene de Secret Manager en producción; sin él (local) la clave es efímera y las sesiones no sobreviven a un reinicio.
   const codec = createSessionCodec({ keys: { 1: env.HMAC_SECRET || randomBytes(32).toString("hex") }, currentKeyVersion: 1 });
 

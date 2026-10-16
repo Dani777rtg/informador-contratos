@@ -3,6 +3,7 @@ import { decline, DECLINE_TOOL } from "./decline";
 import { dropForbidden, prefilter } from "./guardrails";
 import { allowedNumbers, verifyNumbers, yearNumbers } from "./verify-numbers";
 import { MAX_TOOLS_PER_TURN } from "../guards/validate";
+import { SLOW_NOTICE, SocrataUnavailable } from "../data/retry";
 
 export { MAX_TOOLS_PER_TURN };
 const LLM_TIMEOUT_MS = 30_000;
@@ -223,8 +224,8 @@ export async function runAgent(a: {
         cards.push(...(res.cards ?? []));
         context = { ...context, ...res.context };
         out = wrapData(slim);
-      } catch {
-        out = wrapData({ error: "tool_error" });
+      } catch (e) {
+        out = wrapData(e instanceof SocrataUnavailable ? SLOW_NOTICE : { error: "tool_error" });
       }
       messages.push({ role: "tool", tool_call_id: c.id, content: out });
     }

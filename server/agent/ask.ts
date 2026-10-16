@@ -10,6 +10,8 @@ export interface AskDeps {
   metrics: ReturnType<typeof createMetrics>;
   log: (q: QuestionLog) => void;
   demand: { record(tokens: number): void };
+  /** Descarta el contexto cuando el mensaje cambia de tema (ver session-topic.ts). */
+  topicGuard?: (message: string, ctx: Ctx) => Ctx;
 }
 export type Asked = AgentResult & { cached: boolean };
 
@@ -23,7 +25,8 @@ export function createAsker(d: AskDeps) {
     full.set(k, r);
     return { text: r.text, tokens: r.tokens, cache: !r.degraded };
   });
-  return async function ask(message: string, context: Ctx, channel: "texto" | "voz", onToken?: (t: string) => void): Promise<Asked> {
+  return async function ask(message: string, prev: Ctx, channel: "texto" | "voz", onToken?: (t: string) => void): Promise<Asked> {
+    const context = d.topicGuard ? d.topicGuard(message, prev) : prev; // el mensaje manda sobre el contexto
     const t0 = Date.now();
     let firstTokenMs: number | undefined;
     const ctxKey = JSON.stringify([context.entity?.nit, context.period, context.contract, context.results]);
