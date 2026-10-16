@@ -1,0 +1,32 @@
+{
+  "name": "contratos",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "tsx server/index.ts",
+    "dev": "tsx server/index.ts",
+    "build:entities": "tsx scripts/build-entity-index.ts",
+    "test": "vitest run",
+    "test:e2e": "node -e \"console.error('test:e2e pendiente (T006)');process.exit(1)\"",
+    "test:a11y": "node -e \"console.error('test:a11y pendiente (T006)');process.exit(1)\"",
+    "eval": "node -e \"console.error('eval pendiente (T005)');process.exit(1)\"",
+    "scan:secrets": "node -e \"console.error('scan:secrets pendiente');process.exit(1)\"",
+    "loadtest:local": "node -e \"console.error('loadtest:local pendiente');process.exit(1)\"",
+    "wa:template": "node -e \"console.error('wa:template pendiente');process.exit(1)\"",
+    "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "hono": "^4.6.14",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
