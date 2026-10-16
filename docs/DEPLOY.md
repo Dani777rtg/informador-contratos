@@ -40,3 +40,12 @@ Proyecto `informador-contratos-1016`, región `us-east1`. Producción (`informad
 ### Rollback de staging
     gcloud run services update-traffic informador-staging --project informador-contratos-1016 --region us-east1 --to-revisions=<revisión anterior>=100
 Revisión conocida buena: `informador-staging-00002-4wg`.
+
+## Producción (v0.1.0, 2026-10-16)
+- URL: https://informador-253t4zbriq-ue.a.run.app (servicio `informador`, us-east1, proyecto informador-contratos-1016). Revisión servida: `informador-00002-vs4` (la 00001 fue el primer despliegue; el script corrigió ALLOWED_ORIGINS a la URL pública en la 00002).
+- Config verificada: NODE_ENV=production, ALLOWED_ORIGINS = URL pública, sin MOCK_EXTERNALS, 5 secretos, SA informador-run, min 0 / max 5, cpu-boost, timeout 3600.
+- Humo OK: GET / 200 con CSP y cabeceras; /health 200; /api/chat (NIT, Gobernación de Antioquia, "robo" -> rechazo) 200; /session 200 con Origin propio y 403 con ajeno; WS /voice abre con token.
+- Tiempos: /health caliente ~0,2 s; chat 0,3-0,6 s; primera petición tras ~17 min sin tráfico 0,43 s (no se confirmó que la instancia hubiera llegado a 0).
+- Canario 16 min: /health 200 cada minuto (0,21-0,46 s), 0 errores en logs.
+- `informador-staging` eliminado.
+- Rollback: `gcloud run services update-traffic informador --project informador-contratos-1016 --region us-east1 --to-revisions informador-00001-<sufijo>=100` (listar con `gcloud run revisions list`).
