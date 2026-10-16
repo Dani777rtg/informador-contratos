@@ -142,4 +142,11 @@ describe("AC-11.5 evaluacion con preguntas reales", () => {
   it("AC-11.5 package.json tiene el script eval:real", () => {
     expect(read("package.json").scripts?.["eval:real"]).toBeTruthy();
   });
+
+  it("AC-11.5 / AC-13.14 la puerta de despliegue incluye la batería: script eval:battery y resultados >= 90 %", () => {
+    expect(read("package.json").scripts?.["eval:battery"]).toBeTruthy();
+    const files = ["eval/battery-results-deepseek-flash.json", "eval/battery-results-deepseek-v4-pro.json"].filter((f) => existsSync(resolve(root, f)));
+    expect(files.length).toBeGreaterThan(0);
+    for (const f of files) expect(read(f).okRate, f).toBeGreaterThanOrEqual(0.9);
+  });
 });

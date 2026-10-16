@@ -234,4 +234,16 @@ describe("US-01", () => {
       expect(q.get("$where") ?? "").not.toBe("1=1");
     }
   });
+
+  it("AC-01.11 / AC-13.12 consultar rechaza SoQL arbitrario: ni $where ni columnas fuera de lista llegan a Socrata", async () => {
+    const { runQuery } = await import("../../server/agent/query");
+    const { Lru } = await import("../../server/cache");
+    const urls: string[] = [];
+    const fetchFn = (async (u: string) => { urls.push(decodeURIComponent(String(u))); return new Response("[]", { headers: { "content-type": "application/json" } }); }) as typeof fetch;
+    const ctx: any = { client: { base: "http://mock.local/socrata", fetchFn }, cache: new Lru() };
+    const r: any = await runQuery({ operacion: "listar", $where: "1=1", filtros: { "valor; DROP": "x" } } as any, ctx);
+    expect(r.data?.error === "parametro_invalido" || r.data?.error === undefined).toBe(true);
+    for (const u of urls) expect(new URL(u, "http://x").searchParams.get("$where") ?? "").not.toBe("1=1");
+    expect(JSON.stringify(r)).not.toMatch(/DROP/);
+  });
 });

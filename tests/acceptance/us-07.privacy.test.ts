@@ -55,7 +55,7 @@ describe('US-07', () => {
     expect(out).toMatch(/\.pdf$/);
   });
 
-  it('AC-07.4 el registro por pregunta solo guarda tokens, latencia, canal y código de error', async () => {
+  it('AC-07.4 (modo diagnóstico apagado: sin código, nada de contenido) el registro por pregunta solo guarda tokens, latencia, canal y código de error', async () => {
     const { createQuestionLogger } = await logMod();
     const lines: string[] = [];
     const log = createQuestionLogger((l: string) => lines.push(l));
@@ -83,13 +83,13 @@ describe('US-07', () => {
     const log = createQuestionLogger((l: string) => lines.push(l));
     log({
       tokens: 700, latencyMs: 900, channel: 'voz',
-      intent: 'ranking_entidades', route: 'voz', tools: ['top_entidades', 'detalle_contrato'],
+      intent: 'ranking_entidades', route: 'voz', tools: ['consultar', 'detalle_contrato'],
       declineCode: 'NO-05', errorType: 'timeout', closeReason: 'inactividad',
       question: '¿Cuánto gastó la alcaldía de Zipaquirá?', answer: 'La alcaldía de Zipaquirá gastó mucho',
       nit: '890399011', entityName: 'Alcaldía de Zipaquirá', phone: '+573001234567', ip: '203.0.113.77',
     });
     const all = lines.join('\n');
-    for (const v of ['ranking_entidades', 'voz', 'top_entidades', 'detalle_contrato', 'NO-05', 'timeout', 'inactividad']) expect(all).toContain(v);
+    for (const v of ['ranking_entidades', 'voz', 'consultar', 'detalle_contrato', 'NO-05', 'timeout', 'inactividad']) expect(all).toContain(v);
     for (const leak of ['Zipaquirá', 'gastó mucho', '890399011', '3001234567', '203.0.113.77']) expect(all).not.toContain(leak);
   });
 
@@ -97,12 +97,18 @@ describe('US-07', () => {
     const { createQuestionLogger } = await logMod();
     const lines: string[] = [];
     createQuestionLogger((l: string) => lines.push(l))({
-      channel: 'voz', intent: 'ranking', route: 'agente', tools: ['top_entidades'], placeMatched: 'confirmar',
+      channel: 'voz', intent: 'ranking', route: 'agente', tools: ['consultar'], placeMatched: 'confirmar',
       resultCode: 'ok', latencyMs: 1800, tokens: 900, question: '¿Cuánto en Tunja?', text: 'respuesta privada',
     });
     const all = lines.join('\n');
     for (const v of ['confirmar', 'resultCode', 'placeMatched', 'agente', '1800']) expect(all).toContain(v);
     for (const leak of ['Tunja', 'respuesta privada']) expect(all).not.toContain(leak);
+  });
+
+  it('AC-13.16 documenta en PRIVACIDAD.md el modo diagnóstico: finalidad, código secreto y borrado a 24 h / 1 día', () => {
+    const doc = readFileSync(resolve(root, 'docs/PRIVACIDAD.md'), 'utf8');
+    expect(doc).toMatch(/diagn[óo]stic/i);
+    expect(doc).toMatch(/24\s*h|1\s*d[íi]a|un d[íi]a/i);
   });
 
   it('AC-07.4 documenta el plazo de borrado de 30 días', () => {

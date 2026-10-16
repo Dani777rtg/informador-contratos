@@ -62,7 +62,11 @@ const mkCtx = async () => {
 };
 const run = async (name: string, args: Record<string, unknown>) => (await tools()).runTool(name, args, await mkCtx()) as Promise<any>;
 const dataRequests = () => soc.requests.filter((u) => !/group=ciudad,departamento|\$group=ciudad,departamento/.test(u));
-const NAMES = ["gasto_total", "gasto_por_categoria", "top_entidades", "top_contratistas", "contratos_mayores", "buscar_contratos", "detalle_contrato"];
+const NAMES = ["consultar", "buscar_entidad", "detalle_contrato"]; // cambio 009: TOOL_DEFS (en voz además decline)
+// consultar (AC-13.12): filtros cerrados + operación; el modelo nunca emite SoQL.
+const cons = (filtros: Record<string, unknown>, extra: Record<string, unknown> = {}) => run("consultar", { filtros, operacion: "listar", ...extra });
+const MAYORES = { orden: "desc", limite: 5 };
+const PERIODO = { desde: "2026-01-01", hasta: "2026-12-31" };
 
 describe("AC-13.1 misión explícita", () => {
   it("AC-13.1 MISSION_PROMPT fija el estilo: guía, sin opinar, 2 frases, 1 pregunta, un dato a la vez, 3 resultados por voz, decir que no sabe", async () => {
@@ -79,7 +83,7 @@ describe("AC-13.1 misión explícita", () => {
 });
 
 describe("AC-13.2 herramientas exploratorias sin NIT", () => {
-  it("AC-13.2 TOOL_DEFS define las siete herramientas con parámetros cerrados y sin exigir entidad ni NIT", async () => {
+  it("AC-13.2 TOOL_DEFS define consultar, buscar_entidad y detalle_contrato con parámetros cerrados y sin exigir entidad ni NIT", async () => {
     const { TOOL_DEFS } = await tools();
     const defs = TOOL_DEFS as any[];
     const nameOf = (d: any) => d.name ?? d.function?.name;
@@ -88,14 +92,20 @@ describe("AC-13.2 herramientas exploratorias sin NIT", () => {
       const params = d.parameters ?? d.function?.parameters;
       expect(params?.type).toBe("object");
       for (const req of params.required ?? []) expect(req).not.toMatch(/nit|entidad/i);
-      if (nameOf(d) !== "detalle_contrato") for (const p of ["municipio", "departamento", "entidad", "tema"]) expect(Object.keys(params.properties), `${nameOf(d)}.${p}`).toContain(p);
     }
+    const consultar = defs.find((d) => nameOf(d) === "consultar");
+    const props = (consultar.parameters ?? consultar.function.parameters).properties;
+    expect(Object.keys(props)).toEqual(expect.arrayContaining(["filtros", "operacion", "agrupar", "orden", "limite"]));
+    expect(Object.keys(props.filtros.properties)).toEqual(expect.arrayContaining(["municipio", "departamento", "entidad", "tema"]));
   });
 
-  it.each(["gasto_total", "gasto_por_categoria", "top_entidades", "top_contratistas", "contratos_mayores", "buscar_contratos"])(
-    "AC-13.2 %s responde por territorio (municipio) y año, sin NIT ni entidad",
-    async (name) => {
-      const r = await run(name, { municipio: "Manizales", anio: 2026, limite: 5 });
+  it.each([
+    ["sumar", undefined], ["contar", undefined], ["promediar", undefined], ["listar", undefined],
+    ["sumar", "entidad"], ["sumar", "contratista"], ["sumar", "categoria"],
+  ] as const)(
+    "AC-13.2 consultar %s agrupar=%s responde por territorio (municipio) y fechas, sin NIT ni entidad",
+    async (operacion, agrupar) => {
+      const r = await run("consultar", { filtros: { municipio: "Manizales", ...PERIODO }, operacion, agrupar, orden: "desc", limite: 5 });
       expect(r.data?.error, JSON.stringify(r.data).slice(0, 200)).toBeUndefined();
       expect(JSON.stringify(r).length).toBeGreaterThan(50);
       expect(dataRequests().length).toBeGreaterThan(0);
@@ -103,12 +113,12 @@ describe("AC-13.2 herramientas exploratorias sin NIT", () => {
   );
 
   it("AC-13.2 por departamento o a nivel país (sin ningún filtro territorial) también responde", async () => {
-    expect((await run("gasto_total", { departamento: "Caldas" })).data?.error).toBeUndefined();
-    expect((await run("top_entidades", {})).data?.error).toBeUndefined();
+    expect((await run("consultar", { filtros: { departamento: "Caldas" }, operacion: "sumar" })).data?.error).toBeUndefined();
+    expect((await run("consultar", { operacion: "sumar" })).data?.error).toBeUndefined();
   });
 
   it("AC-13.2 SoQL lo construye el servidor: sin SoQL crudo del modelo, $limit <= 100", async () => {
-    await run("buscar_contratos", { municipio: "Manizales", tema: "x' OR 1=1; DROP --", limite: 100000, $where: "1=1" });
+    await run("consultar", { filtros: { municipio: "Manizales", tema: "x' OR 1=1; DROP --" }, operacion: "listar", limite: 100000, $where: "1=1" });
     for (const u of dataRequests()) {
       const q = new URL(u, "http://x").searchParams;
       expect(Number(q.get("$limit") ?? 0)).toBeLessThanOrEqual(100);
@@ -117,8 +127,16 @@ describe("AC-13.2 herramientas exploratorias sin NIT", () => {
   });
 
   it("AC-13.2 un municipio desconocido no lanza: lugar_desconocido con sugerencias", async () => {
-    const r = await run("top_entidades", { municipio: "Qwzxv Inexistente" });
-    expect(r.data.error).toBe("lugar_desconocido");
+    const r = await run("consultar", { filtros: { municipio: "Qwzxv Inexistente" }, operacion: "sumar", agrupar: "entidad" });
+    expect(["lugar_desconocido", "parametro_invalido", "sin_resultados"]).toContain(r.data.error);
+  });
+});
+
+describe("AC-13.13 buscar_entidad en la herramienta (cambio 009)", () => {
+  it("AC-13.13 buscar_entidad devuelve candidatos { nit, nombre, confianza }", async () => {
+    const r = await run("buscar_entidad", { texto: "MinTIC" });
+    expect(Array.isArray(r.data?.candidatos)).toBe(true);
+    expect(r.data.candidatos[0]).toEqual(expect.objectContaining({ nit: expect.any(String), nombre: expect.any(String), confianza: expect.anything() }));
   });
 });
 
@@ -143,14 +161,14 @@ describe("AC-13.3 coincidencia aproximada y ampliación al departamento", () => 
   });
 
   it("AC-13.3 'Manisales' dicho a la herramienta se resuelve al municipio correcto", async () => {
-    const r = await run("top_entidades", { municipio: "Manisales" });
+    const r = await run("consultar", { filtros: { municipio: "Manisales" }, operacion: "sumar", agrupar: "entidad" });
     expect(r.data?.error).toBeUndefined();
     expect(dataRequests().join("\n")).toMatch(/manizales/i);
   });
 
   it("AC-13.3 sin datos en el municipio amplía al departamento y lo dice", async () => {
     soc.mode = "sinManizales";
-    const r = await run("top_entidades", { municipio: "Manizales" });
+    const r = await run("consultar", { filtros: { municipio: "Manizales" }, operacion: "sumar", agrupar: "entidad" });
     expect(r.data?.error).toBeUndefined();
     expect(JSON.stringify(r.cards).length).toBeGreaterThan(5);
     expect(`${r.note ?? ""} ${JSON.stringify(r.data)}`).toMatch(/departamento/i);
@@ -160,21 +178,21 @@ describe("AC-13.3 coincidencia aproximada y ampliación al departamento", () => 
 
 describe("AC-13.5 declinar con precisión (y TM-16)", () => {
   it("AC-13.5 los rankings por valor están permitidos: contratos_mayores y top_contratistas devuelven datos, no declinación", async () => {
-    for (const n of ["contratos_mayores", "top_contratistas"]) {
-      const r = await run(n, { departamento: "Caldas" });
+    for (const [n, a] of [["mayores", { operacion: "listar", orden: "desc" }], ["contratistas", { operacion: "sumar", agrupar: "contratista", orden: "desc" }]] as const) {
+      const r = await run("consultar", { filtros: { departamento: "Caldas" }, ...a });
       expect(r.data?.error, n).toBeUndefined();
       expect(JSON.stringify(r.data), n).not.toMatch(/declin|no puedo|no est[aá] permitido/i);
     }
   });
 
   it("AC-13.5 el nombre del contratista y los datos publicados del contrato se muestran", async () => {
-    const r = await run("contratos_mayores", { municipio: "Manizales" });
+    const r = await cons({ municipio: "Manizales" }, MAYORES);
     expect(JSON.stringify(r)).toContain("Constructora Andes");
   });
 
   it("AC-13.5 / TM-16 el documento o contacto de una persona natural no aparece en ningún resultado", async () => {
-    for (const [n, a] of [["buscar_contratos", { municipio: "Manizales" }], ["contratos_mayores", { municipio: "Manizales" }], ["top_contratistas", {}]] as const) {
-      expect(JSON.stringify(await run(n, a as any)), n).not.toContain(PERSON_DOC);
+    for (const [n, a] of [["listar", { filtros: { municipio: "Manizales" }, operacion: "listar" }], ["mayores", { filtros: { municipio: "Manizales" }, operacion: "listar", orden: "desc" }], ["contratistas", { filtros: { departamento: "Caldas" }, operacion: "sumar", agrupar: "contratista" }]] as const) {
+      expect(JSON.stringify(await run("consultar", a as any)), n).not.toContain(PERSON_DOC);
     }
   });
 
@@ -240,7 +258,7 @@ describe("AC-13.4 seguimientos con lo que quedó en la conversación", () => {
   });
 
   it("AC-13.4 detalle_contrato acepta el id de un contrato mostrado en resultados previos", async () => {
-    const lista = await run("contratos_mayores", { municipio: "Manizales" });
+    const lista = await cons({ municipio: "Manizales" }, MAYORES);
     const id = JSON.stringify(lista).match(/CO1\.PCCNTR\.\d+/)?.[0];
     expect(id).toBeTruthy();
     const d = await run("detalle_contrato", { id_contrato: id });
@@ -252,7 +270,7 @@ describe("AC-13.6 presupuesto de tiempo y respaldo", () => {
   it("AC-13.6 / AC-01.9 datos.gov.co falla: 1 reintento, no más, y responde desde el respaldo con su fecha", async () => {
     soc.mode = "fail";
     const t0 = Date.now();
-    const r = await run("contratos_mayores", {});
+    const r = await run("consultar", { operacion: "listar", orden: "desc" });
     expect(Date.now() - t0).toBeLessThan(7500);
     expect(dataRequests().length).toBeLessThanOrEqual(2); // intento + 1 reintento
     expect(r.data?.error).toBeUndefined();
@@ -262,7 +280,7 @@ describe("AC-13.6 presupuesto de tiempo y respaldo", () => {
   it("AC-13.6 / AC-01.9 datos.gov.co lento: se corta cerca de 6,5 s, no espera indefinidamente", async () => {
     soc.mode = "slow";
     const t0 = Date.now();
-    const r = await run("contratos_mayores", {});
+    const r = await run("consultar", { operacion: "listar", orden: "desc" });
     const ms = Date.now() - t0;
     expect(ms).toBeLessThan(8500);
     expect(ms).toBeGreaterThan(1000);
@@ -271,7 +289,7 @@ describe("AC-13.6 presupuesto de tiempo y respaldo", () => {
 
   it("AC-13.6 sin respaldo aplicable se responde servicio_no_disponible sin lanzar", async () => {
     soc.mode = "fail";
-    const r = await run("buscar_contratos", { municipio: "Manizales", tema: "tema-que-no-esta-en-el-respaldo-xyz" });
+    const r = await cons({ municipio: "Manizales", tema: "tema-que-no-esta-en-el-respaldo-xyz" });
     expect(r.data).toBeTruthy();
     expect(r.data.error).toBe("servicio_no_disponible"); // cambio 007: consulta fuera del respaldo
   }, 20_000);
@@ -279,9 +297,9 @@ describe("AC-13.6 presupuesto de tiempo y respaldo", () => {
   it("AC-13.6 caché en memoria: la misma consulta repetida no vuelve a datos.gov.co", async () => {
     const ctx = await mkCtx();
     const { runTool } = await tools();
-    await runTool("gasto_total", { departamento: "Caldas", anio: 2026 }, ctx);
+    await runTool("consultar", { filtros: { departamento: "Caldas", ...PERIODO }, operacion: "sumar" }, ctx);
     const n = dataRequests().length;
-    await runTool("gasto_total", { departamento: "Caldas", anio: 2026 }, ctx);
+    await runTool("consultar", { filtros: { departamento: "Caldas", ...PERIODO }, operacion: "sumar" }, ctx);
     expect(dataRequests().length).toBe(n);
   });
 
@@ -295,7 +313,7 @@ describe("AC-13.6 presupuesto de tiempo y respaldo", () => {
 
   it("AC-13.6 el resultado de una herramienta puede traer instrucción breve (note) cuando el prompt no basta", async () => {
     soc.mode = "sinManizales";
-    const r = await run("top_entidades", { municipio: "Manizales" });
+    const r = await run("consultar", { filtros: { municipio: "Manizales" }, operacion: "sumar", agrupar: "entidad" });
     expect(typeof r.note).toBe("string");
     expect(r.note.length).toBeGreaterThan(5);
     expect(r.note.length).toBeLessThan(400);
@@ -330,7 +348,7 @@ describe("AC-13.1 (cambio 007) saludo cálido y tono cercano", () => {
 describe("AC-13.2 (cambio 007) lista en pantalla con ver más", () => {
   it("AC-13.2 buscar_contratos entrega entre 5 y 10 tarjetas y ofrece ver más", async () => {
     soc.mode = "muchos";
-    const r = await run("buscar_contratos", { municipio: "Manizales" });
+    const r = await cons({ municipio: "Manizales" });
     const cs = (r.cards ?? []).filter((c: any) => c.kind === "contract");
     expect(cs.length).toBeGreaterThanOrEqual(5);
     expect(cs.length).toBeLessThanOrEqual(10);
@@ -339,7 +357,7 @@ describe("AC-13.2 (cambio 007) lista en pantalla con ver más", () => {
 
   it("AC-13.2 cascada: sin datos en el municipio ofrece ampliar", async () => {
     soc.mode = "sinManizales";
-    const r = await run("buscar_contratos", { municipio: "Manizales" });
+    const r = await cons({ municipio: "Manizales" });
     expect(`${r.note ?? ""} ${JSON.stringify(r.data)}`).toMatch(/ampli|departamento/i);
   });
 });
@@ -349,10 +367,10 @@ describe("AC-13.6 / AC-01.8 (cambio 007) un error no se repite desde caché", ()
     const ctx = await mkCtx();
     const { runTool } = await tools();
     soc.mode = "fail";
-    await runTool("buscar_contratos", { municipio: "Manizales", tema: "tema-que-no-esta-en-el-respaldo-xyz" }, ctx);
+    await runTool("consultar", { filtros: { municipio: "Manizales", tema: "tema-que-no-esta-en-el-respaldo-xyz" }, operacion: "listar" }, ctx);
     soc.mode = "ok";
     const n = dataRequests().length;
-    const r: any = await runTool("buscar_contratos", { municipio: "Manizales", tema: "tema-que-no-esta-en-el-respaldo-xyz" }, ctx);
+    const r: any = await runTool("consultar", { filtros: { municipio: "Manizales", tema: "tema-que-no-esta-en-el-respaldo-xyz" }, operacion: "listar" }, ctx);
     expect(dataRequests().length).toBeGreaterThan(n);
     expect(r.data?.error).toBeUndefined();
   }, 30_000);
@@ -378,7 +396,7 @@ describe("AC-13.8 montos atípicos", () => {
 
   it("AC-13.8 contratos_mayores excluye el atípico del ranking y lo muestra aparte con nota neutral", async () => {
     soc.mode = "atipico";
-    const r = await run("contratos_mayores", { municipio: "Manizales" });
+    const r = await cons({ municipio: "Manizales" }, MAYORES);
     const ranking = (r.cards ?? []).filter((c: any) => !c.atipico);
     expect(JSON.stringify(ranking)).not.toContain("Atipica");
     expect(r.data?.atipicos?.length ?? 0).toBeGreaterThan(0);
@@ -389,8 +407,8 @@ describe("AC-13.8 montos atípicos", () => {
 
   it("AC-13.8 la misma pregunta da el mismo dato (texto y voz comparten herramienta) y el total excluye el atípico", async () => {
     soc.mode = "atipico";
-    const a = await run("gasto_total", { municipio: "Manizales" });
-    const b = await run("gasto_total", { municipio: "Manizales" });
+    const a = await run("consultar", { filtros: { municipio: "Manizales" }, operacion: "sumar" });
+    const b = await run("consultar", { filtros: { municipio: "Manizales" }, operacion: "sumar" });
     expect(JSON.stringify(a.data)).toBe(JSON.stringify(b.data));
     expect(JSON.stringify(a.data?.total ?? a.data)).not.toMatch(/25000000000000/);
   });

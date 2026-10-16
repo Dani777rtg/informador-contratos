@@ -125,7 +125,7 @@ describe("US-13 voice agent: Settings", () => {
     expect(s.type).toBe("Settings");
     expect(s.agent.listen.provider).toMatchObject({ type: "deepgram", model: "nova-3", language: "es" });
     expect(s.agent.listen.provider.keyterms.length).toBeGreaterThan(0);
-    expect(s.agent.think.provider).toMatchObject({ model: "deepseek-flash", temperature: 0.2 });
+    expect(s.agent.think.provider).toMatchObject({ model: expect.stringMatching(/^deepseek-/), temperature: 0.2 }) /* el modelo lo decide AC-13.15 */;
     expect(s.agent.think.endpoint.url).toBe("https://api.deepseek.com/chat/completions");
     expect(s.agent.think.endpoint.headers.authorization).toBe(`Bearer ${KEY}`);
     expect(s.agent.think.prompt).toContain(MISSION_PROMPT);
@@ -312,8 +312,8 @@ describe("US-13 voice agent: herramientas en el servidor", () => {
   it("AC-13.2 / AC-13.7 FunctionCallRequest se resuelve en el servidor: consulta a datos.gov.co, responde al agente y el cliente no ve la llamada", async () => {
     await boot();
     await connect();
-    const r = await callTool("top_entidades", { municipio: "Manizales" });
-    expect(r).toMatchObject({ type: "FunctionCallResponse", id: "fc1", name: "top_entidades" });
+    const r = await callTool("consultar", { filtros: { municipio: "Manizales" }, operacion: "sumar", agrupar: "entidad" });
+    expect(r).toMatchObject({ type: "FunctionCallResponse", id: "fc1", name: "consultar" });
     expect(typeof r.content).toBe("string");
     expect(soc.requests.length).toBeGreaterThan(0);
     await pause(100);
@@ -345,7 +345,7 @@ describe("US-13 voice agent: herramientas en el servidor", () => {
     expect(PLACE_KEYTERMS.length).toBeGreaterThanOrEqual(132);
   });
 
-  it("AC-07.4 cada turno de voz deja una línea de registro con canal, ruta, herramientas, código de resultado y tiempos, sin contenido", async () => {
+  it("AC-07.4 (modo diagnóstico apagado, sin DIAG_CODE) cada turno de voz deja una línea de registro con canal, ruta, herramientas, código de resultado y tiempos, sin contenido", async () => {
     await boot();
     const ws = await connect();
     await until(() => sent("Settings").length > 0);
@@ -374,7 +374,7 @@ describe("US-13 voice agent: herramientas en el servidor", () => {
     await boot();
     await connect();
     soc.mode = "hostil";
-    const r = await callTool("contratos_mayores", { municipio: "Manizales" });
+    const r = await callTool("consultar", { filtros: { municipio: "Manizales" }, operacion: "listar", orden: "desc" });
     const c: string = r.content;
     expect(c).not.toMatch(/<\/?(datos|sistema|system)/i);
     expect(c).not.toContain("\n\nSYSTEM");

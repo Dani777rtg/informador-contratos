@@ -170,7 +170,7 @@ risk: high — datos personales (Ley 1581 de 2012) y datos bancarios en el datas
   serves: US-07
 - **AC-07.3** WHEN el usuario entra por primera vez, o antes de pedir su número de WhatsApp, THE SYSTEM SHALL mostrar un aviso de privacidad corto (qué se guarda, para qué, por cuánto tiempo, derechos) y registrar la aceptación (RNF-16).
   serves: US-07
-- **AC-07.4** THE SYSTEM SHALL registrar por turno solo tokens, latencia, canal, código de error, intención, ruta (atajo, agente, respaldo), herramientas llamadas, código de declinación y motivo de cierre de la voz, sin texto de pregunta ni respuesta, sin NIT, nombres, teléfonos ni IP, con plazo de borrado de 30 días documentado (cambio 006); en voz el registro es por turno (lugar reconocido o no, herramienta, código de resultado, ruta y tiempos), sin contenido (cambio 007).
+- **AC-07.4** THE SYSTEM SHALL registrar por turno solo tokens, latencia, canal, código de error, intención, ruta (atajo, agente, respaldo), herramientas llamadas, código de declinación y motivo de cierre de la voz, sin texto de pregunta ni respuesta, sin NIT, nombres, teléfonos ni IP, con plazo de borrado de 30 días documentado (cambio 006); en voz el registro es por turno (lugar reconocido o no, herramienta, código de resultado, ruta y tiempos), sin contenido (cambio 007); excepción: el modo diagnóstico del dueño (AC-13.16) (cambio 009).
   serves: US-07
 
 ### US-08 Seguridad y anti-abuso (Must)
@@ -236,7 +236,7 @@ risk: high — la evaluación real (AC-11.5, cambio 004) llama a servicios exter
   serves: US-11
 - **AC-11.4** THE SYSTEM SHALL generar el reporte de métricas de la misión (tiempos, tokens, pruebas, linter, vulnerabilidades y resultados de límites) de la sección 7b del cliente.
   serves: US-11
-- **AC-11.5** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una evaluación con ~60 preguntas y ~10 conversaciones de varios turnos tipo ciudadano (`eval/real-questions.json`, `npm run eval:real`, contra datos.gov.co y DeepSeek reales; texto y voz, preguntas exploratorias por territorio, cambios de tema, seguimientos de contrato, montos en pesos, fallas de datos.gov.co) con ≥ 90 % de respuestas correctas —datos de la entidad, territorio y tema pedidos, sin marcado interno, con fuente, cifras habladas en palabras y sin muletillas— y dejar el resultado en `eval/real-results.json` (cambios 004, 005 y 006); con los chequeos estrictos restaurados según la auditoría de QA y las preguntas originales "en Nariño"/"en Caldas" (cambio 007).
+- **AC-11.5** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una evaluación con ~60 preguntas y ~10 conversaciones de varios turnos tipo ciudadano (`eval/real-questions.json`, `npm run eval:real`, contra datos.gov.co y DeepSeek reales; texto y voz, preguntas exploratorias por territorio, cambios de tema, seguimientos de contrato, montos en pesos, fallas de datos.gov.co) con ≥ 90 % de respuestas correctas —datos de la entidad, territorio y tema pedidos, sin marcado interno, con fuente, cifras habladas en palabras y sin muletillas— y dejar el resultado en `eval/real-results.json` (cambios 004, 005 y 006); con los chequeos estrictos restaurados según la auditoría de QA y las preguntas originales "en Nariño"/"en Caldas" (cambio 007); la puerta de despliegue incluye también la batería con juez de AC-13.14 (cambio 009).
   serves: US-11
 
 ### US-12 Carga local y documentos de entrega (Should)
@@ -258,11 +258,11 @@ Como ciudadano curioso quiero preguntar por lo que se gastó en mi municipio, de
 serves: O-1, O-5
 risk: high — integración externa (Deepgram Voice Agent recibe la clave de DeepSeek), datos personales de contratistas y núcleo funcional del producto (cambio 006)
 
-- **AC-13.1** THE SYSTEM SHALL actuar con una misión explícita: guiar al ciudadano de lo general a lo particular sin opinar, máximo 2 frases y 1 pregunta por turno, pedir un dato a la vez sin repetir lo ya dicho, por voz como máximo 3 resultados y el resto en pantalla, y decir cuando no sabe (cambio 006); si el usuario saluda, responde el saludo con calidez y se ofrece a ayudar sin soltar datos; tono cercano (tutear, frases cálidas, sin sonar a formulario) (cambio 007).
+- **AC-13.1** THE SYSTEM SHALL actuar con una misión explícita: guiar al ciudadano de lo general a lo particular sin opinar, máximo 2 frases y 1 pregunta por turno, pedir un dato a la vez sin repetir lo ya dicho, por voz como máximo 3 resultados y el resto en pantalla, y decir cuando no sabe (cambio 006); si el usuario saluda, responde el saludo con calidez y se ofrece a ayudar sin soltar datos; tono cercano (tutear, frases cálidas, sin sonar a formulario) (cambio 007); además, con criterio: entiende qué quiere la persona, decide cómo consultarlo y, si algo no se puede, dice qué sí puede y lo ofrece; sin atajos de reglas salvo el saludo (cambio 009).
   serves: US-13
-- **AC-13.2** WHEN el usuario pregunta cuánto se gastó, en qué se gastó más, qué entidades gastaron más, qué contratistas recibieron más o cuáles fueron los contratos más grandes en un municipio, departamento o el país y un periodo THE SYSTEM SHALL responder de inmediato con herramientas de parámetros cerrados (`gasto_total`, `gasto_por_categoria`, `top_entidades`, `top_contratistas`, `contratos_mayores`, `buscar_contratos`, `detalle_contrato`) y SoQL construido por el servidor, sin exigir entidad ni NIT, y ofrecer afinar (cambio 006); al pedir contratos siempre muestra contratos: 3 por voz y 5 a 10 en pantalla con "ver más"; si la consulta falla, cascada (consulta liviana → respaldo de listas por municipio y tema → ofrecer ampliar a otro territorio o año), nunca "no pude" si hay algo que mostrar (cambio 007).
+- **AC-13.2** WHEN el usuario pregunta cuánto se gastó, en qué se gastó más, qué entidades gastaron más, qué contratistas recibieron más o cuáles fueron los contratos más grandes en un municipio, departamento o el país y un periodo THE SYSTEM SHALL responder de inmediato con herramientas de parámetros cerrados (`gasto_total`, `gasto_por_categoria`, `top_entidades`, `top_contratistas`, `contratos_mayores`, `buscar_contratos`, `detalle_contrato`) y SoQL construido por el servidor, sin exigir entidad ni NIT, y ofrecer afinar (cambio 006); al pedir contratos siempre muestra contratos: 3 por voz y 5 a 10 en pantalla con "ver más"; si la consulta falla, cascada (consulta liviana → respaldo de listas por municipio y tema → ofrecer ampliar a otro territorio o año), nunca "no pude" si hay algo que mostrar (cambio 007); desde el cambio 009 estas preguntas se resuelven con la herramienta flexible `consultar` (AC-13.12) en lugar de herramientas fijas.
   serves: US-13
-- **AC-13.3** THE SYSTEM SHALL reconocer municipios y entidades por coincidencia aproximada contra listas oficiales (tolera errores del STT) y, si un municipio no tiene datos, ampliar al departamento diciéndolo (cambio 006).
+- **AC-13.3** THE SYSTEM SHALL reconocer municipios y entidades por coincidencia aproximada contra listas oficiales (tolera errores del STT) y, si un municipio no tiene datos, ampliar al departamento diciéndolo (cambio 006); las entidades se reconocen con `buscar_entidad` (AC-13.13) (cambio 009).
   serves: US-13
 - **AC-13.4** WHEN el usuario se refiere a algo mostrado ("ese contrato", "el más grande", "esa empresa", "esa entidad") THE SYSTEM SHALL resolverlo con lo que quedó en la conversación y nunca negarse a dar el detalle de un contrato mostrado (cambio 006).
   serves: US-13
@@ -279,6 +279,16 @@ risk: high — integración externa (Deepgram Voice Agent recibe la clave de Dee
 - **AC-13.10** THE SYSTEM SHALL pasar a la transcripción como keyterms los 32 departamentos y los ~150 municipios principales, reconocer lugares con coincidencia aproximada tolerante a errores de transcripción y, si no reconoce un lugar, confirmar ("¿Dijiste Tunja, en Boyacá?") en vez de decir que no hay datos (cambio 007).
   serves: US-13
 - **AC-13.11** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una prueba automática con ≥ 15 preguntas reales por texto y por voz con audio sintetizado contra staging o producción con ≥ 90 % de respuestas correctas, además de AC-11.5 (cambio 007).
+  serves: US-13
+- **AC-13.12** THE SYSTEM SHALL ofrecer al modelo una herramienta `consultar` con parámetros cerrados y SoQL construido por el servidor (el modelo emite JSON, nunca SoQL): filtros (entidad, contratista, municipio, departamento, tema, rango de fechas, rango de valor, estado, modalidad, tipo de contrato), operación (listar, contar, sumar, promediar, mínimo, máximo), agrupación (entidad, contratista, categoría, modalidad, mes, año, municipio), orden ascendente o descendente y límite recortado a 10, con presupuesto de tiempo y máximo de llamadas por turno; las agrupaciones nacionales sin filtro acotante salen del respaldo o se rechazan con un mensaje claro; se conservan `detalle_contrato` y `decline` (cambio 009).
+  serves: US-13
+- **AC-13.13** THE SYSTEM SHALL ofrecer `buscar_entidad(texto)` que devuelve candidatos usando un diccionario de siglas y nombres comunes (MinTIC, ICBF, INVÍAS, DIAN, SENA, Fiscalía, Registraduría, Policía, Ejército, etc.); el modelo usa su conocimiento y, si hay duda, pregunta con opciones (cambio 009).
+  serves: US-13
+- **AC-13.14** WHEN se va a desplegar THE SYSTEM SHALL pasar una batería automática de ~200 preguntas ciudadanas variadas (siglas, errores de escritura, menor/mayor/promedio, fechas, estados, modalidades, seguimientos) evaluada por un juez automático que revisa la pregunta, la consulta hecha, los datos devueltos y la respuesta, con ≥ 90 % (cambio 009).
+  serves: US-13
+- **AC-13.15** THE SYSTEM SHALL elegir el modelo (`deepseek-flash` o `deepseek-v4-pro`) con una comparación medida sobre la batería de AC-13.14 (acierto, tiempo y costo por pregunta), documentada (cambio 009).
+  serves: US-13
+- **AC-13.16** WHERE el dueño activa el modo diagnóstico con un código secreto THE SYSTEM SHALL registrar pregunta, respuesta, herramienta y datos en un log propio con retención de 1 día, excluido del log general, sin claves, tokens, cabeceras, IP, user-agent ni cédulas, correos o teléfonos; sin el código (o con un código erróneo) no registra contenido; el código vive en Secret Manager, nunca en URL, bundle ni logs, y se valida en tiempo constante con límite de intentos (cambio 009).
   serves: US-13
 
 ## Aporte de expertos (ECC)
@@ -341,6 +351,8 @@ flowchart LR
 - TM-14: Navegador del usuario · texto del LLM o de SECOP con HTML o scripts se ejecuta (XSS) · mitigación: AC-08.6 — serves: US-08
 - TM-15: Clave de DeepSeek · viaja a Deepgram en `Settings` del Voice Agent y podría filtrarse al cliente o a logs · mitigación: AC-13.7 y clave dedicada con tope de gasto — serves: US-13
 - TM-16: Datos personales · declinar menos expone documentos o contactos de personas naturales · mitigación: AC-13.5, AC-07.1, AC-07.2 — serves: US-13
+- TM-17: Contenido de conversaciones · el modo diagnóstico registra preguntas y respuestas · mitigación: AC-13.16 — serves: US-13
+- TM-18: Datos abiertos y costo · una consulta flexible demasiado amplia agota tiempo o cuota · mitigación: AC-13.12 — serves: US-13
 
 ## Pruebas
 
@@ -512,6 +524,24 @@ serves: AC-13.10, AC-13.11, AC-13.1, AC-13.5, AC-05.8, AC-07.4, AC-11.5
 - Archivos: `server/voice/*`, `server/data/places.ts`, `server/log.ts`, `eval/*`, `scripts/prod-probe.ts`
 - Check: `npx vitest run tests/acceptance/us-13.voice-agent.test.ts tests/acceptance/us-07.privacy.test.ts tests/acceptance/us-11.real-eval.test.ts` y `npm run probe:prod`
 - depends: T023, T024
+
+### T028 [US-13] Consulta flexible y buscar_entidad (cambio 009)
+serves: AC-13.12, AC-13.13, AC-13.2, AC-13.3, TM-18
+- Archivos: `server/agent/query.ts`, `server/agent/tools.ts`, `server/data/entity-aliases.ts`, `server/data/*`, `server/mocks/deepseek.ts`
+- Check: `npx vitest run tests/acceptance/us-13.guia.test.ts tests/acceptance/us-01.consulta.test.ts`
+- depends: T025, T026, T027
+
+### T029 [US-13] Misión con criterio, retiro de atajos y modo diagnóstico (cambio 009)
+serves: AC-13.1, AC-13.16, AC-07.4, TM-17
+- Archivos: `server/agent/mission.ts`, `server/index.ts`, `server/voice/agent.ts`, `server/log.ts`, `server/diag.ts`, `docs/PRIVACIDAD.md`, `scripts/gcp-diag-log.ps1`
+- Check: `npx vitest run tests/acceptance/us-13.voice-agent.test.ts tests/acceptance/us-07.privacy.test.ts tests/acceptance/us-03.limits.test.ts`
+- depends: T028
+
+### T030 [US-13] Batería de ~200 preguntas con juez y comparación de modelos (cambio 009)
+serves: AC-13.14, AC-13.15, AC-11.5
+- Archivos: `eval/battery*.json`, `eval/judge.ts`, `eval/battery.ts`, `docs/MODELO.md`
+- Check: `npm run eval:battery` ≥ 90 % y `npx vitest run tests/acceptance/us-11.real-eval.test.ts`
+- depends: T028, T029
 
 **Grupos paralelos:** G0 {T001, T012, T014, T018} → G1 {T002, T003, T006, T010, T011} → G2 {T004, T005, T007, T009, T016, T020} → G3 {T008, T013, T015} → G4 {T017, T019}. Los archivos de las tareas de un mismo grupo no se solapan.
 **Estimado:** ~7,5 h de reloj con 4–5 constructores en paralelo y ~2,5 h de colchón para verificación y despliegue, frente a las 10 h (límite 20:18). La aprobación de la plantilla de Meta (hasta 24 h) corre en paralelo; si no llega, se cumple AC-10.4.

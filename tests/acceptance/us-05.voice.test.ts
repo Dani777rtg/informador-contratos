@@ -183,7 +183,7 @@ describe("US-05 voz manos libres (Voice Agent)", () => {
     expect(md).not.toMatch(/flux-general-multi/i);
     expect(md).toMatch(/p95/i);
     expect(md).toMatch(/p50/i);
-    expect(md).toMatch(/~?\s*2\s*s/i);
+    expect(md).toMatch(/~?\s*2\s*s\b/i);
     expect(md).toMatch(/una sola llamada|1 llamada|una llamada/i);
     expect(md).toMatch(/1[.,]?500\s*tokens/i);
     expect(md).toMatch(/https?:\/\//);
