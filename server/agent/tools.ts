@@ -12,14 +12,14 @@ const ID = /^[\w.-]{1,60}$/;
 export function createTools(data: DataCtx, entities: Entity[]): ToolRegistry {
   const consultar: Tool = {
     name: "consultar_contratos",
-    description: "Consulta contratos públicos del SECOP de una entidad (por NIT o nombre) o tema. tipo: lista, mayores, gasto_por_categoria, fuentes_de_recursos.",
+    description: "Contratos SECOP por entidad o tema.",
     parameters: {
       type: "object",
       properties: {
         tipo: { type: "string", enum: ["lista", "mayores", "gasto_por_categoria", "fuentes_de_recursos"] },
-        nit: { type: "string", description: "NIT de la entidad, solo dígitos" },
-        entidad: { type: "string", description: "Nombre de la entidad" },
-        tema: { type: "string", description: "Objeto del contrato, p. ej. alumbrado público" },
+        nit: { type: "string", description: "NIT" },
+        entidad: { type: "string", description: "Entidad" },
+        tema: { type: "string", description: "Objeto del contrato" },
         anio: { type: "integer", minimum: 2000, maximum: 2100 },
       },
       required: ["tipo"],
@@ -60,7 +60,7 @@ export function createTools(data: DataCtx, entities: Entity[]): ToolRegistry {
   };
   const detalle: Tool = {
     name: "detalle_contrato",
-    description: "Detalle y pagos de un contrato por su id_contrato (de una lista previa).",
+    description: "Detalle y pagos de un contrato.",
     parameters: { type: "object", properties: { id_contrato: { type: "string" } }, required: ["id_contrato"] },
     async run(args) {
       const id = String(args.id_contrato ?? "");
@@ -71,7 +71,7 @@ export function createTools(data: DataCtx, entities: Entity[]): ToolRegistry {
   };
   const documentos: Tool = {
     name: "documentos_contrato",
-    description: "Enlaces oficiales a los documentos publicados en SECOP de un contrato (id_contrato). Nunca descarga archivos.",
+    description: "Documentos SECOP de un contrato.",
     parameters: { type: "object", properties: { id_contrato: { type: "string" } }, required: ["id_contrato"] },
     async run(args) {
       const id = String(args.id_contrato ?? "");

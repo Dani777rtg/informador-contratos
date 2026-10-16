@@ -17,14 +17,14 @@ describe("bucle del agente", () => {
     const llm: Llm = {
       async complete({ tools }) {
         offered.push(tools.length);
-        return offered.length === 1 ? { content: "", toolCalls: call(2), tokens: 1 } : offered.length === 2 ? { content: "", toolCalls: call(3), tokens: 1 } : { content: "Listo.", toolCalls: [], tokens: 1 };
+        return offered.length === 1 ? { content: "", toolCalls: call(4), tokens: 1 } : { content: "Listo.", toolCalls: [], tokens: 1 };
       },
     };
     const tools: ToolRegistry = { spend: { ...echo.spend, run: async () => { ran++; return { data: { total: 1234 } }; } } };
     const r = await runAgent({ message: "gasto", context: {}, tools, llm });
     expect(ran).toBe(3);
     expect(r.toolCalls).toHaveLength(3);
-    expect(offered[2]).toBe(0);
+    expect(offered[1]).toBe(0);
   });
   it("cifras del mensaje del usuario no sirven como respaldo, los años sí", async () => {
     const llm: Llm = { complete: async () => ({ content: "Costó 999 millones. En 2024 hubo actividad.", toolCalls: [], tokens: 1 }) };

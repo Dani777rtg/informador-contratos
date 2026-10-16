@@ -6,7 +6,19 @@ import { MAX_TOOLS_PER_TURN } from "../guards/validate";
 
 export { MAX_TOOLS_PER_TURN };
 const LLM_TIMEOUT_MS = 30_000;
-const MAX_ROUNDS = 3;
+const MAX_ROUNDS = 2; // ronda 1 con herramientas, ronda 2 solo redacta
+const MAX_OUT_TOKENS = 250; // respuesta corta: el detalle va en tarjetas
+const MAX_ROWS = 5;
+const MAX_STR = 60;
+
+/** Versión compacta de un resultado para el LLM: ≤5 filas, textos cortos, sin URLs. Las tarjetas completas no pasan por aquí. */
+export function compact(v: unknown): unknown {
+  if (typeof v === "string") return v.length > MAX_STR ? v.slice(0, MAX_STR) + "…" : v;
+  if (Array.isArray(v)) return v.slice(0, MAX_ROWS).map(compact);
+  if (v && typeof v === "object")
+    return Object.fromEntries(Object.entries(v).filter(([k]) => k !== "kind" && !/url/i.test(k)).map(([k, x]) => [k, compact(x)]));
+  return v;
+}
 
 import type { Ctx } from "../session";
 export type { Ctx };
@@ -52,7 +64,8 @@ export interface AgentResult {
   context: Ctx;
 }
 
-/** Cliente OpenAI-compatible de DeepSeek (stream:true, sin razonamiento). Modelo solo por DEEPSEEK_MODEL. */
+// ponytail: no se envía parámetro "thinking": no hay confirmación de que deepseek-flash lo acepte (un 400 rompería todo); se usa el modo por defecto del modelo.
+/** Cliente OpenAI-compatible de DeepSeek (stream:true). Modelo solo por DEEPSEEK_MODEL. */
 export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?: string; fetch?: typeof fetch } = {}): Llm {
   const baseUrl = (o.baseUrl ?? process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com").replace(/\/$/, "");
   const model = o.model ?? process.env.DEEPSEEK_MODEL ?? "deepseek-flash";
@@ -63,7 +76,7 @@ export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?
       const res = await doFetch(`${baseUrl}/chat/completions`, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model, messages, tools: tools.length ? tools : undefined, stream: true, stream_options: { include_usage: true } }),
+        body: JSON.stringify({ model, messages, tools: tools.length ? tools : undefined, max_tokens: MAX_OUT_TOKENS, stream: true, stream_options: { include_usage: true } }),
         signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
       });
       if (!res.ok || !res.body) throw new Error(`LLM HTTP ${res.status}`);
@@ -187,10 +200,11 @@ export async function runAgent(a: {
         const args = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
         toolCalls.push({ name: c.name, args });
         const res = await tool.run(args, context);
-        results.push(res.data);
+        const slim = compact(res.data);
+        results.push(slim);
         cards.push(...(res.cards ?? []));
         context = { ...context, ...res.context };
-        out = wrapData(res.data);
+        out = wrapData(slim);
       } catch {
         out = wrapData({ error: "tool_error" });
       }
