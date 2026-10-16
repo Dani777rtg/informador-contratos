@@ -1,4 +1,4 @@
-# Informador de contratos públicos
+﻿# Informador de contratos públicos
 
 Asistente en español que responde preguntas sobre contratos públicos de Colombia (SECOP II, datos abiertos de datos.gov.co) por texto, voz y WhatsApp, con fuente y fecha de consulta en cada respuesta.
 
@@ -6,7 +6,7 @@ Asistente en español que responde preguntas sobre contratos públicos de Colomb
 
 ## Arquitectura en breve
 - `server/`: API Hono (Node >= 22). Agente (DeepSeek) con herramientas que consultan Socrata; estado de conversación firmado con HMAC (sin sesión en servidor); guardas (límite por IP, tope diario de tokens, validación); voz por WebSocket con Deepgram (STT/TTS); WhatsApp Cloud API con plantilla.
-- `web/`: front Vite (se publica en Firebase Hosting).
+- `web/`: front Vite; el servidor lo sirve desde `web/dist` en el mismo origen (`npm run build:web`).
 - `server/mocks/`: sustitutos de Socrata, DeepSeek, Deepgram y WhatsApp para trabajar sin claves.
 - Despliegue: Cloud Run (`docs/DEPLOY.md`).
 
@@ -14,7 +14,7 @@ Asistente en español que responde preguntas sobre contratos públicos de Colomb
 ```bash
 npm ci
 MOCK_EXTERNALS=1 npx tsx server/index.ts   # API en http://localhost:8080
-npm run dev:web                            # front, en otra terminal
+npm run dev:web                            # front con recarga, en otra terminal (o `npm run build:web` y abrir :8080)
 curl localhost:8080/health                 # {"ok":true}
 ```
 En PowerShell: `$env:MOCK_EXTERNALS="1"; npx tsx server/index.ts`.

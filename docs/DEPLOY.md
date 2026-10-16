@@ -7,14 +7,13 @@ Proyecto GCP `informador-contratos-1016`, región `us-east1`. Cada comando de `s
 2. `pwsh scripts/deploy.ps1`: Cloud Build -> Cloud Run (min-instances 0, max 5, CPU boost, timeout 3600 s, público HTTPS, 5 secretos de Secret Manager, `NODE_ENV=production`, sin `MOCK_EXTERNALS`) con `--no-traffic`.
 3. Revisión previa: probar la URL de la revisión nueva (`/health`) antes de aprobar.
 4. Aprobación: el script pide escribir SI (o `-Approve`); solo el dueño aprueba producción. Sin aprobación la revisión queda sin tráfico.
-5. Frontend: `npm run build:web` con `VITE_API_URL` = URL de Cloud Run y `firebase deploy --only hosting`.
+5. El front se construye en el Dockerfile (`npm run build:web`) y lo sirve el mismo servicio: un solo origen, `VITE_API_URL` vacío. Tras el primer deploy el script fija `ALLOWED_ORIGINS` = URL del servicio. Staging es público (sin auth), igual que producción.
 
 ## Rollback
 El script imprime la revisión anterior. Para volver a ella:
 
     gcloud run services update-traffic informador --project informador-contratos-1016 --region us-east1 --to-revisions=<anterior>=100
 
-Hosting: `firebase hosting:rollback --project informador-contratos-1016`.
 
 ## Región
 Decisión y mediciones (ms) en `docs/COSTOS.md`: us-east1 vs southamerica-east1.
@@ -38,9 +37,6 @@ Proyecto `informador-contratos-1016`, región `us-east1`. Producción (`informad
 - Escala a cero: `container/instance_count` activo e inactivo en 0 tras ~7 min sin tráfico.
 - Rollback ensayado: `update-traffic --to-revisions=<anterior>=100` 6,6 s; restaurar `--to-latest` 8,4 s. Sin base propia que restaurar aparte de Firestore (solo caché WhatsApp/estado efímero); no se hizo restauración.
 
-### Pendiente (bloqueado)
-Frontend de staging: Firebase no está añadido al proyecto (`firebase projects:addfirebase` y la API REST devuelven 403 con la sesión de gcloud; la CLI de Firebase no tiene sesión). Requiere que el dueño ejecute una vez `npx firebase-tools login` y `npx firebase-tools projects:addfirebase informador-contratos-1016` (gratis). Después `pwsh scripts/deploy.ps1 -Staging` despliega el canal `staging` y fija `ALLOWED_ORIGINS` a su URL. Mientras tanto `ALLOWED_ORIGINS` = `https://informador-contratos-1016.web.app`.
-
 ### Rollback de staging
     gcloud run services update-traffic informador-staging --project informador-contratos-1016 --region us-east1 --to-revisions=<revisión anterior>=100
-Revisión conocida buena: `informador-staging-00002-4wg`. Hosting: `firebase hosting:rollback --project informador-contratos-1016` (canal live) o borrar el canal con `firebase hosting:channel:delete staging --project informador-contratos-1016`.
+Revisión conocida buena: `informador-staging-00002-4wg`.

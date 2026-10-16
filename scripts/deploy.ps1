@@ -1,6 +1,6 @@
-﻿# Despliegue: Cloud Build -> Cloud Run -> Firebase Hosting.
-#   pwsh scripts/deploy.ps1 -Staging     servicio informador-staging + canal de vista previa "staging" (sin aprobación)
-#   pwsh scripts/deploy.ps1              producción: revisión sin tráfico -> aprobación del dueño -> tráfico -> Hosting live
+﻿# Despliegue: Cloud Build -> Cloud Run (un solo servicio sirve front y API).
+#   pwsh scripts/deploy.ps1 -Staging     servicio informador-staging + sin aprobación; público (sin auth) como producción, es un prototipo
+#   pwsh scripts/deploy.ps1              producción: revisión sin tráfico -> aprobación del dueño -> tráfico
 # No modifica el proyecto activo global de gcloud: cada comando fija --project.
 param([switch]$Approve, [switch]$Staging)
 $ErrorActionPreference = 'Continue' # el progreso va por stderr; los fallos se detectan con $LASTEXITCODE
@@ -10,7 +10,6 @@ $Service = if ($Staging) { 'informador-staging' } else { 'informador' }
 $Sa = "informador-run@$Project.iam.gserviceaccount.com"
 $Secrets = 'DEEPSEEK_API_KEY','DEEPGRAM_API_KEY','DATOSGOV_APP_TOKEN','WHATSAPP_ACCESS_TOKEN','HMAC_SECRET'
 $Image = "$Region-docker.pkg.dev/$Project/app/${Service}:$(Get-Date -Format yyyyMMdd-HHmmss)"
-function firebase { npx --yes firebase-tools @args } # $Project se pasa en cada llamada
 
 # Variables no secretas desde .env (sin imprimirlas) si el entorno no las trae.
 if (Test-Path .env) {
@@ -36,8 +35,9 @@ if ($LASTEXITCODE) { throw 'IAM datastore falló' }
 gcloud builds submit --tag $Image --project $Project --region $Region
 if ($LASTEXITCODE) { throw 'build falló' }
 
-# Orígenes: producción = dominio live; staging arranca igual y se corrige con la URL del canal tras desplegarlo.
-$Origins = "https://$Project.web.app"
+# Mismo origen: ALLOWED_ORIGINS = URL del propio servicio. Si ya existe se reutiliza; en el primer deploy se corrige abajo.
+$Origins = gcloud run services describe $Service --project $Project --region $Region --format 'value(status.url)' 2>$null
+if (-not $Origins) { $Origins = "https://$Service.invalid" }
 
 $prev = gcloud run services describe $Service --project $Project --region $Region --format 'value(status.latestReadyRevision)' 2>$null
 Write-Host "Revisión anterior (para rollback): $prev"
@@ -67,17 +67,8 @@ if (-not $Staging) {
 }
 
 $api = gcloud run services describe $Service --project $Project --region $Region --format 'value(status.url)'
-$env:VITE_API_URL = $api
-npm run build:web
-if ($LASTEXITCODE) { throw 'build:web falló' }
-if ($Staging) {
-  $out = firebase hosting:channel:deploy staging --project $Project --expires 30d --json | ConvertFrom-Json
-  $web = $out.result.$Project.url
-  if (-not $web) { throw 'El canal de Hosting no devolvió URL (¿sesión de Firebase?)' }
-  Write-Host "Frontend staging: $web"
-  gcloud run services update $Service --project $Project --region $Region --update-env-vars "^|^ALLOWED_ORIGINS=$web"
+if ($api -ne $Origins) {
+  gcloud run services update $Service --project $Project --region $Region --update-env-vars "^|^ALLOWED_ORIGINS=$api"
   if ($LASTEXITCODE) { throw 'update ALLOWED_ORIGINS falló' }
-} else {
-  firebase deploy --only hosting --project $Project
 }
-Write-Host "API: $api"
+Write-Host "App (front + API): $api"

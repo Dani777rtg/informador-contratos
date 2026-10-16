@@ -8,6 +8,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { applyTurn, createSessionCodec, emptyContext, type Ctx as Ctx2 } from "./session.js";
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { bodyLimit } from "hono/body-limit";
 import { DATASET, fetchRows, query as socrataQuery, normalize, resolveEntity, toEntity, type Client, type Cond, type Entity, type Row } from "./data/socrata.js";
@@ -85,7 +86,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     await next();
     for (const [k, v] of Object.entries(securityHeaders(createNonce()))) c.res.headers.set(k, v);
   });
-  // El front vive en Firebase Hosting (otro origen): CORS solo para los orígenes permitidos.
+  // Front y API comparten origen (Cloud Run); CORS solo para los orígenes permitidos (dev con Vite en otro puerto).
   const allowed = (env.ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const corsMw = cors({ origin: (o) => (allowed.includes(o) ? o : null), allowMethods: ["GET", "POST"], allowHeaders: ["content-type"], maxAge: 600 });
   for (const p of ["/api/*", "/session", "/health"]) app.use(p, corsMw);
@@ -284,6 +285,13 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
       });
     }
   });
+  // Front (web/dist) en el mismo servicio; va al final: solo atiende lo que ninguna ruta anterior resolvió.
+  app.use("*", async (c, next) => {
+    await next();
+    if (c.req.method === "GET" && c.res.status === 200 && !c.res.headers.has("cache-control") && !c.res.headers.has("access-control-allow-origin") && c.res.headers.get("content-type")?.match(/html|javascript|css|image|font/))
+      c.res.headers.set("Cache-Control", c.req.path.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "no-cache");
+  });
+  app.use("*", serveStatic({ root: "web/dist" }));
   return { app, attach };
 }
 
