@@ -10,6 +10,10 @@ import { createSocrataMock, MOCK_ENTITIES } from "./mocks/socrata.js";
 import { createDeepseekMock } from "./mocks/deepseek.js";
 import { attachDeepgramMock } from "./mocks/deepgram.js";
 import { createWhatsappMock } from "./mocks/whatsapp.js";
+import { createRateLimiter, clientIp } from "./guards/rate-limit.js";
+import { createDemandGuard } from "./guards/demand.js";
+import { validateClientMessage } from "./guards/validate.js";
+import { createNonce, securityHeaders } from "./headers.js";
 
 type Env = Record<string, string | undefined>;
 const MAX_VISIBLE = 5;
@@ -41,11 +45,27 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     client = { base: "http://mock.local/__mock/socrata", fetchFn: ((u: string, i?: RequestInit) => socrata.request(u, i)) as typeof fetch };
   }
 
+  app.use("*", async (c, next) => {
+    await next();
+    for (const [k, v] of Object.entries(securityHeaders(createNonce()))) c.res.headers.set(k, v);
+  });
+  const limiter = createRateLimiter({});
+  const demand = createDemandGuard({});
+  app.use("/api/*", async (c, next) => {
+    const r = limiter.check(clientIp(c.req.header("x-forwarded-for")));
+    if (!r.allowed) return c.json({ text: r.message, cards: [] }, 429, { "retry-after": String(r.retryAfterSec) });
+    const d = demand.admit("text");
+    if (!d.allowed) return c.json({ text: d.message, cards: [] }, 503);
+    await next();
+  });
+
   app.get("/health", (c) => c.json({ ok: true }));
 
   app.post("/api/chat", async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as { message?: unknown; state?: unknown };
-    const message = typeof body.message === "string" ? body.message.slice(0, 500) : "";
+    const v = validateClientMessage({ type: "message", text: body.message }, { turnCount: 0 });
+    if (!v.ok) return c.json({ text: v.error, cards: [] }, 400);
+    const message = body.message as string;
     const state = typeof body.state === "string" ? body.state : "";
     const now = new Date();
     const from = new Date(now); from.setFullYear(from.getFullYear() - 1);
