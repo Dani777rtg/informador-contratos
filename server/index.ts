@@ -22,6 +22,8 @@ import { createRateLimiter, clientIp } from "./guards/rate-limit.js";
 import { createDemandGuard } from "./guards/demand.js";
 import { validateClientMessage } from "./guards/validate.js";
 import { createVoice } from "./voice/index.js";
+import { createWhatsApp } from "./whatsapp/index.js";
+import { firestoreStore, memoryStore, templateStatus } from "./whatsapp/store.js";
 import { createNonce, securityHeaders } from "./headers.js";
 
 type Env = Record<string, string | undefined>;
@@ -75,6 +77,26 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
   app.post("/session", (c) => voice.originAllowed(c.req.header("origin")) ? c.json({ token: voice.newToken() }) : c.json({ error: "origin" }, 403));
 
   app.get("/health", (c) => c.json({ ok: true }));
+
+  // WhatsApp: resumen y enlace salen del estado de la conversación (solo ids validados), nunca de texto libre del cliente.
+  const wabaId = env.WHATSAPP_BUSINESS_ACCOUNT_ID ?? env.WHATSAPP_WABA_ID ?? "", templateName = env.WHATSAPP_TEMPLATE ?? "resumen_secop", token = env.WHATSAPP_ACCESS_TOKEN ?? env.WHATSAPP_TOKEN ?? "";
+  const ver = env.WHATSAPP_API_VERSION ?? "v21.0";
+  const waFetch = mock ? ((u: string, i?: RequestInit) => app.request(u.replace(/^https:\/\/graph\.facebook\.com\/[^/]+/, "/__mock/whatsapp"), i)) as typeof fetch : fetch;
+  const approved = templateStatus(waFetch, { wabaId, token, name: templateName, base: mock ? "/__mock/whatsapp" : `https://graph.facebook.com/${ver}` });
+  const waStore = mock || !env.GOOGLE_CLOUD_PROJECT ? memoryStore() : firestoreStore(env.GOOGLE_CLOUD_PROJECT);
+  app.post("/api/whatsapp", async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { phone?: unknown; consent?: unknown; state?: unknown };
+    const ids = ((codec.verify(b.state) ?? emptyContext()).results ?? []).filter((i) => /^[\w.-]{1,60}$/.test(i));
+    if (!ids.length) return c.json({ ok: false, message: "Primero pídeme los contratos de una entidad y luego te los envío." }, 400);
+    const secopUrl = `https://www.datos.gov.co/d/${DATASET}`;
+    const wa = createWhatsApp({
+      fetch: waFetch, store: waStore, now: Date.now, wabaId, phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID ?? "", token, templateName,
+      templateApproved: await approved(), apiVersion: ver,
+    });
+    const ip = clientIp(c.req.header("x-forwarded-for"));
+    const r = await wa.send({ ip, phone: typeof b.phone === "string" ? b.phone : "", consent: b.consent === true, summary: `Resumen de ${ids.length} contratos`, secopUrl });
+    return c.json(r, r.ok ? 200 : r.retryAfterSeconds ? 429 : 400);
+  });
 
   app.post("/api/chat", async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as { message?: unknown; state?: unknown };

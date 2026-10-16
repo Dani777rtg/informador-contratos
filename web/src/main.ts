@@ -1,5 +1,6 @@
 import { ask, type Reply } from "./api";
 import { loadState, saveState } from "./session";
+import { renderWhatsappForm } from "./whatsapp";
 import { renderReply, renderError } from "./render";
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -32,6 +33,7 @@ async function send(message: string): Promise<void> {
     status.textContent = "";
     $("examples").hidden = true;
     renderReply(answer, r, (t) => void send(t));
+    if (state && r.cards?.some((k) => k.kind === "contract")) { const h = document.createElement("div"); answer.append(h); renderWhatsappForm(h, () => state); }
   } catch {
     status.className = "status error";
     status.textContent = renderError();
