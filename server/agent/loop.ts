@@ -67,6 +67,9 @@ export interface AgentResult {
 
 // Modo sin razonamiento explícito (API: thinking.type = "disabled"): más rápido y con tool_calls estructuradas.
 const DSML = /DSML|<｜/;
+/** Quita del texto del modelo cualquier bloque de datos internos que haya copiado (<datos_secop>…</datos_secop>, JSON crudo). */
+export const scrub = (t: string): string =>
+  t.replace(/<datos_secop>[\s\S]*?(<\/datos_secop>|$)/g, "").replace(/<\/?datos_secop>/g, "").replace(/^\s*\{[\s\S]*?\}\s*$/gm, "").trim();
 /** DeepSeek a veces devuelve la llamada a herramienta como texto con su marcado interno (DSML). Se convierte en tool_calls. */
 export function parseDsml(content: string): LlmToolCall[] {
   const out: LlmToolCall[] = [];
@@ -137,7 +140,7 @@ export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?
 function makeGate(onToken: ((t: string) => void) | undefined, allowed: () => number[]) {
   let pending = "";
   const emit = (s: string) => {
-    const text = dropForbidden(verifyNumbers(s, allowed()).text);
+    const text = dropForbidden(verifyNumbers(scrub(s), allowed()).text);
     if (text) onToken?.(text + " ");
   };
   return {
@@ -228,5 +231,5 @@ export async function runAgent(a: {
   }
   // Nunca se muestra ni se habla marcado interno del modelo.
   if (DSML.test(text)) return { text: "No pude completar esa consulta. Intenta preguntarlo de otra forma, por ejemplo con el nombre de la entidad.", cards, toolCalls, tokens, context, degraded: true };
-  return { text: dropForbidden(verifyNumbers(text, allowed()).text), cards, toolCalls, tokens, context };
+  return { text: dropForbidden(verifyNumbers(scrub(text), allowed()).text), cards, toolCalls, tokens, context };
 }

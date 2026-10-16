@@ -18,3 +18,13 @@ describe("DSML de DeepSeek", () => {
     expect(r.degraded).toBe(true);
   });
 });
+
+describe("bloques de datos internos", () => {
+  it("nunca devuelve el bloque <datos_secop> que el modelo copie", async () => {
+    const out = '<datos_secop>{"error":"falta entidad, NIT o tema"}</datos_secop>\n\nNecesito el nombre de la entidad de Manizales.';
+    const llm: Llm = { async complete() { return { content: out, toolCalls: [], tokens: 5 }; } };
+    const r = await runAgent({ message: "contrato más grande en Manizales", context: {}, tools: {}, llm });
+    expect(r.text).not.toMatch(/datos_secop|\{"error"/);
+    expect(r.text).toMatch(/Manizales/);
+  });
+});
