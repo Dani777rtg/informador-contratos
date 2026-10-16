@@ -6,26 +6,17 @@ import type { Server } from "node:http";
 import { randomBytes } from "node:crypto";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { applyTurn, createSessionCodec, emptyContext, resolveFollowUp, type Ctx as Ctx2 } from "./session.js";
+import { createSessionCodec, emptyContext, type Ctx as Ctx2 } from "./session.js";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { bodyLimit } from "hono/body-limit";
-import { DATASET, fetchRows, query as socrataQuery, normalize, resolveEntity, toEntity, type Client, type Cond, type Entity, type Row } from "./data/socrata.js";
-import demoAnswers from "./fallback/demo-answers.json" with { type: "json" };
-import { demoKey, type DemoEntry, type DemoKind } from "./fallback/demo.js";
+import { DATASET, toEntity, type Client, type Entity, type Row } from "./data/socrata.js";
 import { Lru } from "./cache.js";
-import { createPlaces, findPlace } from "./data/places.js";
+import { createPlaces } from "./data/places.js";
 import { loadSnapshot } from "./fallback/snapshot.js";
-import { OUTLIER_NOTE } from "./data/outliers.js";
-import { TOPICS, topicTerms } from "./tools/filters.js";
-import { roundAmounts, roundedPesos, normalNames, toSpoken } from "./speech/spoken.js";
-import { byValue, contractCard, MAX_VISIBLE, searchContracts, type Ctx } from "./tools/search.js";
-import { fundingBreakdown, spendByCategory, topContracts } from "./tools/spend.js";
-import { contractDetail } from "./tools/detail.js";
-import { prefilter } from "./agent/guardrails.js";
-import { decline } from "./agent/decline.js";
-import { listDocuments } from "./tools/documents.js";
+import { roundAmounts, normalNames, toSpoken } from "./speech/spoken.js";
+import { type Ctx } from "./tools/search.js";
 import { createSocrataMock, MOCK_ENTITIES } from "./mocks/socrata.js";
 import { createDeepseekMock } from "./mocks/deepseek.js";
 import { attachDeepgramMock } from "./mocks/deepgram.js";
@@ -42,10 +33,10 @@ import { createMetrics } from "./metrics.js";
 import { createQuestionLogger } from "./log.js";
 import { createWhatsApp } from "./whatsapp/index.js";
 import { firestoreStore, memoryStore, templateStatus } from "./whatsapp/store.js";
+import { diagLog, isDiagnostic } from "./diag.js";
 import { createNonce, securityHeaders } from "./headers.js";
 
 type Env = Record<string, string | undefined>;
-const DEMO = demoAnswers as Record<string, DemoEntry>;
 type Answer = Record<string, unknown> & { text: string; state: string };
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -84,7 +75,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
   });
   // Front y API comparten origen (Cloud Run); CORS solo para los orígenes permitidos (dev con Vite en otro puerto).
   const allowed = (env.ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  const corsMw = cors({ origin: (o) => (allowed.includes(o) ? o : null), allowMethods: ["GET", "POST"], allowHeaders: ["content-type"], maxAge: 600 });
+  const corsMw = cors({ origin: (o) => (allowed.includes(o) ? o : null), allowMethods: ["GET", "POST"], allowHeaders: ["content-type", "x-diag-code"], maxAge: 600 });
   for (const p of ["/api/*", "/session", "/health"]) app.use(p, corsMw);
   // Con sustitutos locales (MOCK_EXTERNALS=1, nunca en producción) el límite por defecto sube para no frenar las pruebas.
   const limiter = createRateLimiter({ limit: posNum(env.RATE_LIMIT_PER_MIN, mock ? 10_000 : 20) });
@@ -158,7 +149,10 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
     const verified = codec.verify(state) ?? emptyContext();
     const v = validateClientMessage({ type: "message", text: body.message }, { turnCount: verified.turns ?? 0 });
     if (!v.ok) return c.json({ text: v.error, cards: [] }, 400);
-    return c.json(await answer(body.message as string, verified, "texto"));
+    const diag = isDiagnostic(c.req.header("x-diag-code"), clientIp(c.req.header("x-forwarded-for"), socketIp(c) ?? "unknown"), env);
+    const out = await answer(body.message as string, verified, "texto");
+    if (diag) diagLog({ channel: "texto", pregunta: body.message, respuesta: out.text });
+    return c.json(out);
   });
 
   /** Una respuesta del asistente (texto y voz comparten atajos, agente y contexto). */
@@ -183,146 +177,13 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
     // Saludo solo: respuesta cálida sin datos ni LLM (AC-13.1).
     if (/^((hola|buen[oa]s( (dias|tardes|noches))?|hey|saludos|como estas|que tal|como vas)[\s,.!¡¿?]*)+$/.test(message.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim()))
       return reply({ text: "¡Hola! Qué gusto saludarte. Te ayudo a entender en qué se gasta el dinero público según el SECOP: por municipio, departamento, entidad o contratista. ¿Qué te gustaría saber?" });
-    const where: Cond[] = [];
-    let label = "";
-    const norm = normalize(message);
-    const withSource = (at: Date, cached: boolean) => ({ source: { ...source, dataUpdatedAt: at.toISOString() }, cached });
-    const fail = () => reply({ text: "No pude consultar datos.gov.co en este momento y no tengo una copia guardada. Intenta de nuevo en unos minutos." });
-
-    // Juicios, acusaciones y ataques al prompt: plantilla fija al instante, sin LLM (0 tokens).
-    const blocked = prefilter(message);
-    if (blocked) return reply({ text: decline(blocked) });
-
-    // Documentos del contrato de la lista anterior: solo enlaces oficiales, nunca el archivo.
-    if (/documento|contrato firmado|estudio previo/.test(norm)) {
-      const ids = (prev.results ?? []).filter((i) => /^[\w.-]{1,60}$/.test(i));
-      const id = /segundo|tercer|primer/.test(norm) || !prev.contract ? ids[/segundo/.test(norm) ? 1 : /tercer/.test(norm) ? 2 : 0] : prev.contract;
-      if (!id) return reply({ text: "Primero pídeme los contratos de una entidad y luego los documentos de uno." });
-      try {
-        const [k] = await socrataQuery(client, { where: [{ col: "id_contrato", op: "=", value: id }], limit: 1 });
-        if (!k?.proceso_de_compra) return reply({ text: "No encontré ese contrato. Prueba pidiendo de nuevo la lista de contratos." });
-        const year = Number(k.fecha_de_firma?.slice(0, 4)) || undefined;
-        const request = /contrato firmado|estudio previo/.exec(norm)?.[0];
-        const r = await listDocuments({ processId: k.proceso_de_compra, year, request }, {
-          query: (ds, p) => fetchRows(client, new URLSearchParams(Object.entries(p).map(([a, b]) => [a, String(b)])), ds) as Promise<Record<string, string>[]>,
-        });
-        const links = r.documents.map((d) => `${d.name} (${d.type}, ${d.size}, ${d.uploadedAt.slice(0, 10)})`).join("; ");
-        return reply({
-          text: r.found ? "Estos son los documentos publicados en SECOP." : r.message,
-          cards: [{ kind: "documents", documents: r.documents, processUrl: r.processUrl, summary: links }],
-        });
-      } catch { return fail(); }
-    }
-    // Detalle de un contrato de la lista anterior (el contexto firmado lleva sus id_contrato).
-    // También «dame ese contrato», «el más grande», «el primero», «ábrelo»: se resuelven sobre los resultados mostrados (del atajo o del agente).
-    const followId = resolveFollowUp(message, prev);
-    if (/detalle|pagos|avance/.test(norm) || followId) {
-      const ids = (prev.results ?? []).filter((i) => /^[\w.-]{1,60}$/.test(i));
-      const id = followId && /^[\w.-]{1,60}$/.test(followId) ? followId : ids[/segundo/.test(norm) ? 1 : /tercer/.test(norm) ? 2 : 0];
-      if (!id) return reply({ text: "Primero pídeme los contratos de una entidad y luego el detalle de uno." });
-      try {
-        const d = await contractDetail(ctx, id);
-        if (!d) return reply({ text: "No encontré ese contrato. Prueba pidiendo de nuevo la lista de contratos." });
-        cur = applyTurn(prev, { contract: id });
-        const c = d.card;
-        return reply({
-          text: `${c.contractor ?? "El contratista"} firmó con ${c.entity ?? "la entidad"} un contrato por ${c.value}${c.status ? `, hoy ${String(c.status).toLowerCase()}` : ""}. Se ha pagado ${c.paid} y quedan pendientes ${c.pending}.`,
-          cards: [c], ...withSource(d.at, d.cached),
-        });
-      } catch { return fail(); }
-    }
-
-    const nit = /\bnit\s*:?\s*([\d.]{6,13})/i.exec(message)?.[1]?.replace(/\D/g, "");
-    const res = resolveEntity(message, entities);
-    if (res.kind === "ambiguous") {
-      return reply({ text: "Hay varias entidades con ese nombre. ¿Cuál te interesa?", options: res.options.map((e) => e.name) });
-    }
-    const topicHit = TOPICS.find(([re]) => re.test(norm));
-    // Un tema que ya es parte del nombre de la entidad ("Ministerio de Educación") no es un filtro aparte.
-    const topic = topicHit && !(res.kind === "entity" && res.entity.norm.includes(normalize(topicHit[1]))) ? topicHit[1] : undefined;
-    const byEntity = res.kind === "entity" || Boolean(nit);
-    // Pregunta por contratistas o por un lugar: el atajo no sabe responderla, la resuelve el agente con filtros completos.
-    const ranking = /\b(empresas?|contratistas?|proveedor(es)?|quien(es)?)\b|que mas|mas contratos/.test(norm);
-    // Atajo sin LLM solo con intención y filtros inequívocos: entidad (o NIT) sola, tema nacional solo, o seguimiento de un atajo previo (sin filtros del agente).
-    const pf = prev.filtros;
-    const analyticsIntent = /mas grandes?|mayor(es)?|\btop\b|de donde|fuente|origen|recursos|gasta|gasto|en que/.test(norm);
-    const followBase = !byEntity && !topic && prev.entity && !pf?.ciudad && !pf?.departamento && !pf?.tema && !pf?.proveedor && pf?.tipo !== "top_contratistas" &&
-      (year || analyticsIntent || /contratos|lista/.test(norm));
-    // La lista de municipios solo hace falta (y solo se espera) si el atajo es posible: así "hola" no espera a Socrata.
-    const known = !ranking && !byEntity && (topic || followBase) ? await places() : [];
-    const hasTerr = Boolean(findPlace(message, known).ciudad || findPlace(message, known).departamento || findPlace(message, known).ambiguous);
-    const followUp = followBase && !hasTerr && known.length > 0;
-    // En voz una lista de contratos no se lee: la resume el agente; los análisis (mayores, gasto, fuentes) y seguimientos sí salen por atajo.
-    const spokenList = channel === "voz" && !analyticsIntent && !(followUp && pf?.tipo && pf.tipo !== "lista");
-    const shortcut = !ranking && !spokenList && (byEntity ? !topic : topic ? !hasTerr && known.length > 0 : Boolean(followUp)); // sin la lista de municipios no se puede descartar un territorio: al agente
-    if (!shortcut) {
-      agentUsed = true;
-      try {
-        const a = await ask(message, prev, channel);
-        cur = a.context;
-        return reply({ text: a.text || (a.cards.length ? "Estos son los resultados de tu consulta, con datos oficiales de SECOP." : "No pude armar una respuesta con datos oficiales. Intenta con el nombre de la entidad."), cards: a.cards, period: cur.period ?? period, cached: a.cached, tokens: a.tokens, filters: { ...cur.filtros, entity: cur.entity?.name } });
-      } catch { return fail(); }
-    }
-    // Seguimiento ("¿y en 2024?"): sin entidad/NIT/tema nuevos se reutiliza la entidad del contexto.
-    const explicit = res.kind === "entity" || nit || topic;
-    // Cambio de tema sin año explícito: vuelve a los últimos 12 meses (no arrastra el periodo anterior).
-    if (explicit && !year) period = { from: day(from), to: day(now), defaulted: true };
-    if (res.kind === "entity") { where.push({ col: "nit_entidad", op: "=", value: res.entity.nit }); label = res.entity.name; }
-    else if (nit) { where.push({ col: "nit_entidad", op: "=", value: nit }); label = `NIT ${nit}`; }
-    else if (topic) { where.push({ col: "objeto_del_contrato", op: "ulike", value: topicTerms(topic) }); label = topic; }
-    else if (prev.entity) { where.push({ col: "nit_entidad", op: "=", value: prev.entity.nit }); label = prev.entity.name; }
-    else return reply({ text: "No encontré una entidad, NIT o tema en tu pregunta. Prueba con el nombre de la entidad." });
-    const turnEntity = res.kind === "entity" ? res.entity : nit ? { nit, name: `NIT ${nit}` } : undefined;
-    cur = applyTurn(prev, {
-      topicChange: explicit ? true : undefined, entity: turnEntity,
-      period: year ? { from: period.from, to: period.to } : undefined,
-    });
-    where.push({ col: "fecha_de_firma", op: ">=", value: `${period.from}T00:00:00` });
-    if (!period.defaulted) where.push({ col: "fecha_de_firma", op: "<=", value: `${period.to}T23:59:59` });
-    const periodText = period.defaulted ? "No indicaste periodo, así que usé los últimos 12 meses." : `Periodo: ${period.from} a ${period.to}.`;
-
-    const TOP = ["Estos son los contratos más grandes de", topContracts, "top"], FUND = ["Así se reparte, por fuente de recursos, el dinero de", fundingBreakdown, "funding"], SPEND = ["Esto es lo que gasta por categoría", spendByCategory, "spend"];
-    // "¿Y en 2024?": sin intención nueva se conserva la del turno anterior.
-    const prevTipo = followUp && !/contratos|lista/.test(norm) ? pf?.tipo : undefined;
-    const analytics = /mas grandes?|mayor(es)?|\btop\b/.test(norm) ? TOP
-      : /de donde|fuente|origen|recursos/.test(norm) ? FUND
-      : /gasta|gasto|en que/.test(norm) ? SPEND
-      : prevTipo === "mayores" ? TOP : prevTipo === "fuentes_de_recursos" ? FUND : prevTipo === "gasto_por_categoria" ? SPEND : undefined;
-    cur = applyTurn(cur, { filtros: { tipo: analytics === TOP ? "mayores" : analytics === FUND ? "fuentes_de_recursos" : analytics === SPEND ? "gasto_por_categoria" : "lista" } });
-    const kind: DemoKind = (analytics?.[2] as DemoKind | undefined) ?? "contracts";
+    // Todo lo demás lo decide el agente con sus herramientas (texto y voz, misma misión).
+    agentUsed = true;
     try {
-      if (analytics) {
-        const [intro, tool] = analytics as [string, typeof topContracts];
-        const r = await tool(ctx, where);
-        const noData = period.defaulted ? "en los últimos 12 meses" : `entre ${period.from} y ${period.to}`;
-        if (!r.cards.length) return reply({ text: `No encontré datos para ${label} ${noData}. Prueba ampliando el periodo o revisando el nombre.` });
-        if ("ids" in r) cur = applyTurn(cur, { results: r.ids as string[] });
-        // Cifra clave en lenguaje llano; el valor exacto queda en la tarjeta.
-        const first = ((r.cards as Record<string, unknown>[]).find((c) => !/^(otro|no definido|no aplica)/i.test(String(c.category ?? ""))) ?? r.cards[0]) as Record<string, unknown>;
-        const key = kind === "top" ? `El mayor es de ${roundedPesos(Number(String(first.value).replace(/\D/g, "")))}${first.contractor ? `, con ${normalNames(String(first.contractor)).replace(/\.$/, "")}` : ""}.`
-          : kind === "spend" ? `Lo que más se contrata es ${String(first.category).toLowerCase()}.`
-          : `La fuente principal es ${String(first.source).toLowerCase()}.`;
-        return reply({ text: `${intro} ${label}. ${key} ${periodText}${r.atipicos?.length ? ` Un contrato aparte: ${OUTLIER_NOTE}.` : ""}`, cards: [...r.cards, ...(r.atipicos ?? [])], ...withSource(r.at, r.cached) });
-      }
-      const r = await searchContracts(ctx, where);
-      const found = r.value;
-      if (!found.length) {
-        return reply({ text: `No encontré contratos para ${label} ${period.defaulted ? "en los últimos 12 meses" : `entre ${period.from} y ${period.to}`}. Prueba ampliando el periodo o revisando el nombre.` });
-      }
-      const shown = byValue(found.slice(0, MAX_VISIBLE));
-      cur = applyTurn(cur, { results: shown.map((x) => x.id_contrato).filter((i): i is string => Boolean(i)) });
-      return reply({
-        text: `Estos son los contratos de ${label}, de mayor a menor valor. ${periodText}`,
-        cards: [...shown.map(contractCard), ...r.atipicos], hasMore: found.length > MAX_VISIBLE, ...withSource(r.at, r.cached),
-      });
-    } catch {
-      const demo = DEMO[demoKey(where, kind, period)];
-      if (!demo) return fail();
-      return reply({
-        text: `datos.gov.co no respondió; te muestro una respuesta precalculada de ${demo.label}, con datos al ${demo.updatedAt.slice(0, 10)}.`,
-        cards: demo.cards, cached: true, source: { ...source, dataUpdatedAt: demo.updatedAt },
-      });
-    }
+      const a = await ask(message, prev, channel);
+      cur = { ...a.context, turns: prev.turns }; // el tope de turnos vive en el estado firmado
+      return reply({ text: a.text || (a.cards.length ? "Estos son los resultados de tu consulta, con datos oficiales de SECOP." : "No pude armar una respuesta con datos oficiales. Intenta con el nombre de la entidad."), cards: a.cards, period: cur.period ?? period, cached: a.cached, tokens: a.tokens, filters: { ...cur.filtros, entity: cur.entity?.name } });
+    } catch { return reply({ text: "No pude consultar datos.gov.co en este momento y no tengo una copia guardada. Intenta de nuevo en unos minutos." }); }
   }
   // Front (web/dist) en el mismo servicio; va al final: solo atiende lo que ninguna ruta anterior resolvió.
   app.use("*", async (c, next) => {

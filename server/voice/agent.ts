@@ -6,6 +6,7 @@ import { PLACE_KEYTERMS } from "../data/places.js";
 import { guessCall } from "./prefetch.js";
 import { emptyContext, type Ctx } from "../session.js";
 import { MAX_TOOLS_PER_TURN, posNum } from "../guards/validate.js";
+import { diagLog, isDiagnostic } from "../diag.js";
 import { normalNames, toSpoken, wordsAmount, wordsMoney } from "../speech/spoken.js";
 
 type Env = Record<string, string | undefined>;
@@ -81,6 +82,8 @@ const withDeadline = <T>(p: Promise<T>, ms: number) =>
   Promise.race([p, new Promise<never>((_, no) => setTimeout(() => no(new Error("deadline")), ms).unref())]);
 
 export interface AgentHooks {
+  /** Origen (IP) de la conexión: límite de intentos del código de diagnóstico. */
+  origin?: string;
   run?: typeof runTool;
   /** Un turno hablado: ms de fin de turno a primer audio, herramientas y código de declinación. Sin contenido. */
   turn?(t: { latencyMs: number; tools: string[]; declineCode?: string; intent: string; placeMatched?: "si" | "no" | "confirmar"; resultCode: string }): void;
@@ -103,6 +106,7 @@ export function runAgentSession(client: WebSocket, url: string, env: Env, hooks:
   let up: WebSocket | null = null;
   let ready = false, ended = false, attempts = 0, errorType: string | undefined;
   let ctx: Ctx = emptyContext();
+  let diag = false, diagAsked = false; // modo diagnóstico (TM-17): solo el primer mensaje Diag cuenta
   const history: Turn[] = [];
   const early: Buffer[] = []; // hasta 4 s de voz dicha mientras conecta (frames de 40 ms)
   const queued: string[] = [];
@@ -149,6 +153,7 @@ export function runAgentSession(client: WebSocket, url: string, env: Env, hooks:
         turnTools.push(f.name); all.push(f.name);
         const r = await withDeadline(run(f.name, args, undefined, ctx), 12_000).catch(() => ({ data: { error: "servicio_no_disponible" }, cards: [], context: undefined, note: undefined }));
         ctx = { ...ctx, ...r.context };
+        if (diag) diagLog({ channel: "voz", herramienta: f.name, args });
         const err = (r.data as { error?: unknown } | undefined)?.error;
         if (typeof err === "string") resultCode = err.slice(0, 40);
         if (args.municipio || args.departamento || args.ciudad) placeMatched = err === "lugar_desconocido" ? ((r.data as { confirmar?: unknown }).confirmar ? "confirmar" : "no") : "si";
@@ -172,6 +177,7 @@ export function runAgentSession(client: WebSocket, url: string, env: Env, hooks:
     else if (type === "ConversationText" && (m.role === "user" || m.role === "assistant") && typeof m.content === "string") {
       // Si el agente refleja la configuración (clave o prompt), el texto no sale ni se guarda (TM-15).
       if (secrets.some((s) => (m.content as string).includes(s))) return;
+      if (diag) diagLog({ channel: "voz", rol: m.role, texto: m.content });
       history.push({ type: "History", role: m.role, content: m.content.slice(0, 2000) });
       if (history.length > 40) history.shift();
       if (m.role === "user") { const g = guessCall(m.content); if (g) void withDeadline(run(g.name, g.args, undefined, ctx), 12_000).catch(() => undefined); } // calienta la caché mientras el modelo decide
@@ -223,6 +229,7 @@ export function runAgentSession(client: WebSocket, url: string, env: Env, hooks:
     let msg: Json | null = null;
     try { const p: unknown = JSON.parse(data.toString()); msg = p && typeof p === "object" ? (p as Json) : null; } catch { /* inválido */ }
     if (msg?.type === "KeepAlive") return;
+    if (msg?.type === "Diag") { if (!diagAsked) { diagAsked = true; diag = isDiagnostic(typeof msg.code === "string" ? msg.code : undefined, hooks.origin ?? "unknown", env); } return; }
     if (msg?.type === "AskText") {
       if (!validAsk(msg.text)) { send({ type: "Notice", text: `Escribe un mensaje de hasta ${MAX_ASK_CHARS} caracteres.` }); return; }
       tokens = Math.min(5, tokens + ((now - refilled) / 1000) * 2); refilled = now;

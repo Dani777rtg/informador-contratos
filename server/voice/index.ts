@@ -59,7 +59,7 @@ export function createVoice(env: Env, guards: { limiter?: ReturnType<typeof crea
             active--; const n = (byIp.get(ip) ?? 1) - 1; if (n > 0) byIp.set(ip, n); else byIp.delete(ip);
             used(); daily.ms += Date.now() - started;
           });
-          runAgentSession(ws, url, env, hooks);
+          runAgentSession(ws, url, env, { ...hooks, origin: ip });
         });
       });
     },

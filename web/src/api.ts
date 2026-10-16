@@ -7,8 +7,9 @@ export interface Reply {
 const API = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 
 export async function ask(message: string, state?: string): Promise<Reply> {
+  const diag = localStorage.getItem("diag"); // solo el dueño (modo diagnóstico)
   const res = await fetch(`${API}/api/chat`, {
-    method: "POST", headers: { "content-type": "application/json" },
+    method: "POST", headers: { "content-type": "application/json", ...(diag ? { "x-diag-code": diag } : {}) },
     body: JSON.stringify({ message, state }),
   });
   if (!res.ok) throw new Error(String(res.status));

@@ -8,3 +8,4 @@ Conforme a la Ley 1581 de 2012 y el Decreto 1377 de 2013. **Este texto no sustit
 - **Plazo:** los registros se borran a los 30 días.
 - **Derechos:** conocer, actualizar, rectificar y suprimir sus datos, y revocar la autorización.
 - **Canal:** [completar: correo/teléfono de contacto para consultas y reclamos].
+- **Modo diagnóstico (solo del dueño):** con un código secreto (DIAG_CODE, Secret Manager) el responsable puede activar el registro de las preguntas y respuestas de sus propias sesiones de prueba, para corregir fallas del asistente. Finalidad: depuración de calidad; base: el interés legítimo del responsable sobre sus propias pruebas (no se activa para el público ni sin el código). Los textos se redactan (correos, teléfonos, cédulas) y se truncan, van a un registro aparte (`diag`) que se **borra a las 24 horas** (retención de 1 día), y el código nunca se registra. Se configura con `scripts/gcp-diag-log.ps1`.

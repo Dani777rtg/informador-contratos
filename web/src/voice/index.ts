@@ -87,6 +87,8 @@ export function initVoice(ui: VoiceUi) {
       };
       s.onclose = () => { if (ws === s) stopAll(FAIL); };
       await new Promise<void>((ok, fail) => { s.onopen = () => ok(); s.onerror = () => fail(new Error()); });
+      const diag = localStorage.getItem("diag"); // solo el dueño; nunca en la URL
+      if (diag) s.send(JSON.stringify({ type: "Diag", code: diag }));
       for (const f of early.splice(0)) s.send(f);
       keep = setInterval(() => { if (s.readyState === WebSocket.OPEN) s.send(JSON.stringify({ type: "KeepAlive" })); }, KEEPALIVE_MS);
       paused = false; set("listening");

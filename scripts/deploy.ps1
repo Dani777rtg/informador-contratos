@@ -11,6 +11,8 @@ $Region = 'us-east1'
 $Service = if ($Staging) { 'informador-staging' } else { 'informador' }
 $Sa = "informador-run@$Project.iam.gserviceaccount.com"
 $Secrets = 'DEEPSEEK_API_KEY','DEEPGRAM_API_KEY','DATOSGOV_APP_TOKEN','WHATSAPP_ACCESS_TOKEN','HMAC_SECRET'
+# Opcional: modo diagnóstico del dueño; si el secreto no existe se omite y el modo queda desactivado (fail-closed).
+if (gcloud secrets list --project $Project --filter 'name~DIAG_CODE$' --format 'value(name)') { $Secrets += 'DIAG_CODE' }
 $Image = "$Region-docker.pkg.dev/$Project/app/${Service}:$(Get-Date -Format yyyyMMdd-HHmmss)"
 
 # Variables no secretas desde .env (sin imprimirlas) si el entorno no las trae.
