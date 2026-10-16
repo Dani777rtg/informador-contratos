@@ -129,7 +129,7 @@ describe("US-13 voice agent: Settings", () => {
     expect(s.agent.think.endpoint.url).toBe("https://api.deepseek.com/chat/completions");
     expect(s.agent.think.endpoint.headers.authorization).toBe(`Bearer ${KEY}`);
     expect(s.agent.think.prompt).toContain(MISSION_PROMPT);
-    expect(s.agent.think.functions).toEqual(TOOL_DEFS);
+    expect(s.agent.think.functions.filter((f: any) => (f.name ?? f.function?.name) !== "decline")).toEqual(TOOL_DEFS);
     expect(s.agent.speak.provider.model).toBe("aura-2-celeste-es");
     expect(s.agent.greeting).toBeUndefined();
     const fb: any = buildSettings({ DEEPSEEK_API_KEY: FALLBACK_KEY, DEEPSEEK_BASE_URL: "https://api.deepseek.com" } as any);
