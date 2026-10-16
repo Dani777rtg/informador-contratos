@@ -21,6 +21,7 @@ import { createWhatsappMock } from "./mocks/whatsapp.js";
 import { createRateLimiter, clientIp } from "./guards/rate-limit.js";
 import { createDemandGuard } from "./guards/demand.js";
 import { validateClientMessage } from "./guards/validate.js";
+import { createVoice } from "./voice/index.js";
 import { createNonce, securityHeaders } from "./headers.js";
 
 type Env = Record<string, string | undefined>;
@@ -41,14 +42,15 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
   const mock = env.MOCK_EXTERNALS === "1";
   const app = new Hono();
   const entities = loadEntities(env, mock);
-  let attach: ((s: Server) => void) | undefined;
+  const voice = createVoice(env);
+  let attach: ((s: Server) => void) | undefined = voice.attach;
   let client: Client = { base: env.SOCRATA_BASE ?? "https://www.datos.gov.co", token: env.DATOSGOV_APP_TOKEN };
   if (mock) {
     const socrata = createSocrataMock();
     app.route("/", socrata);
     app.route("/", createWhatsappMock());
     app.route("/__mock/deepseek", createDeepseekMock());
-    attach = attachDeepgramMock;
+    attach = (s) => { voice.attach(s); attachDeepgramMock(s); };
     client = { base: "http://mock.local/__mock/socrata", fetchFn: ((u: string, i?: RequestInit) => socrata.request(u, i)) as typeof fetch };
   }
 
@@ -69,6 +71,8 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
   const ctx: Ctx = { client, cache: new Lru<Row[]>() };
   // HMAC_SECRET viene de Secret Manager en producción; sin él (local) la clave es efímera y las sesiones no sobreviven a un reinicio.
   const codec = createSessionCodec({ keys: { 1: env.HMAC_SECRET || randomBytes(32).toString("hex") }, currentKeyVersion: 1 });
+
+  app.post("/session", (c) => voice.originAllowed(c.req.header("origin")) ? c.json({ token: voice.newToken() }) : c.json({ error: "origin" }, 403));
 
   app.get("/health", (c) => c.json({ ok: true }));
 
