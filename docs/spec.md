@@ -218,7 +218,7 @@ risk: high — integración externa, número de teléfono de un tercero y posibl
 ### US-11 Velocidad, costo y métricas (Must)
 Como dueño del producto quiero medir velocidad, tokens y costo para demostrar que todo es instantáneo y barato.
 serves: O-3, O-4
-risk: low — medición y caché local sin datos personales (los logs ya cumplen AC-07.4)
+risk: high — la evaluación real (AC-11.5, cambio 004) llama a servicios externos pagados y es la puerta de veracidad (O-1) antes de desplegar
 
 - **AC-11.1** THE SYSTEM SHALL registrar por pregunta tokens y latencia y reportar p50/p95/p99 por canal (texto, voz, WhatsApp), con el arranque en frío aparte (RNF-02).
   serves: US-11
@@ -227,6 +227,8 @@ risk: low — medición y caché local sin datos personales (los logs ya cumplen
 - **AC-11.3** THE SYSTEM SHALL usar los tokens de LLM que necesite cada respuesta (sin tope fijo por pregunta; cambio 001), registrar y reportar el consumo por pregunta, y responder una pregunta repetida desde caché con 0 tokens (RNF-03).
   serves: US-11
 - **AC-11.4** THE SYSTEM SHALL generar el reporte de métricas de la misión (tiempos, tokens, pruebas, linter, vulnerabilidades y resultados de límites) de la sección 7b del cliente.
+  serves: US-11
+- **AC-11.5** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una evaluación con ≥ 25 preguntas ciudadanas reales (`eval/real-questions.json`, `npm run eval:real`, contra datos.gov.co y DeepSeek reales) con ≥ 90 % de respuestas correctas —datos de la entidad, territorio y tema pedidos, sin marcado interno del modelo y con fuente— y dejar el resultado en `eval/real-results.json` (cambio 004).
   serves: US-11
 
 ### US-12 Carga local y documentos de entrega (Should)
@@ -305,6 +307,7 @@ flowchart LR
 ## Pruebas
 
 - Pruebas de aceptación: `tests/acceptance/` (las escribe QA, bloqueadas). Corren localmente con DeepSeek, Deepgram, datos.gov.co y WhatsApp simulados por los sustitutos de `server/mocks/` con tiempos representativos.
+- Evaluación con preguntas ciudadanas reales (`npm run eval:real`, ≥ 90 %) como condición de despliegue — AC-11.5, cambio 004.
 - Pertinentes: unitarias y de integración de herramientas con respuestas SoQL grabadas, incluido el NIT 890399011 y valores con comillas e inyección SoQL; E2E Playwright local (texto y voz simulada con audio pregrabado); evaluación de límites `npm run eval` contra DeepSeek real como condición de verificación — O-2; prueba de abuso con un objeto de contrato `<script>` y un enlace `javascript:` — TM-12, TM-14; axe y Lighthouse local — O-6; escaneo de secretos y `npm audit` — seguridad; **carga y estrés solo en local contra sustitutos (nunca en la nube)** — O-3, O-4; prueba manual de envío real de la plantilla de Meta.
 - No aplica: DAST contra producción — se limita a revisión de cabeceras y rate limit local; pruebas de recuperación ante desastres — sin base de datos de pago; pruebas de carga en la nube — decisión del dueño por costo.
 
@@ -429,6 +432,12 @@ serves: AC-11.3
 - Archivos: `server/agent/answer-cache.ts`, `server/agent/token-budget.ts`
 - Check: `npm test -- answer-cache`
 - depends: T003
+
+### T021 [US-11] Evaluación con preguntas ciudadanas reales y corrección de respuestas (cambio 004)
+serves: AC-11.5
+- Archivos: `eval/real-questions.json`, `eval/real-run.ts`, `eval/real-results.json`, `server/index.ts`, `server/agent/*`, `server/data/socrata.ts`, `server/tools/*`
+- Check: `npm run eval:real` ≥ 90 % y `npx vitest run tests/acceptance/us-11.real-eval.test.ts`
+- depends: T003, T009
 
 **Grupos paralelos:** G0 {T001, T012, T014, T018} → G1 {T002, T003, T006, T010, T011} → G2 {T004, T005, T007, T009, T016, T020} → G3 {T008, T013, T015} → G4 {T017, T019}. Los archivos de las tareas de un mismo grupo no se solapan.
 **Estimado:** ~7,5 h de reloj con 4–5 constructores en paralelo y ~2,5 h de colchón para verificación y despliegue, frente a las 10 h (límite 20:18). La aprobación de la plantilla de Meta (hasta 24 h) corre en paralelo; si no llega, se cumple AC-10.4.
