@@ -2,20 +2,24 @@
   "name": "contratos",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "tsx server/index.ts",
     "dev": "tsx server/index.ts",
     "build:entities": "tsx scripts/build-entity-index.ts",
     "test": "vitest run",
-    "test:e2e": "node -e \"console.error('test:e2e pendiente (T006)');process.exit(1)\"",
-    "test:a11y": "node -e \"console.error('test:a11y pendiente (T006)');process.exit(1)\"",
+    "test:e2e": "playwright test",
+    "test:a11y": "vitest run tests/acceptance/us-04.ui.test.ts",
     "eval": "node -e \"console.error('eval pendiente (T005)');process.exit(1)\"",
     "scan:secrets": "tsx scripts/scan-secrets.ts",
     "loadtest:local": "node -e \"console.error('loadtest:local pendiente');process.exit(1)\"",
     "wa:template": "node -e \"console.error('wa:template pendiente');process.exit(1)\"",
     "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:web": "vite build --config web/vite.config.ts",
+    "dev:web": "vite --config web/vite.config.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
@@ -23,10 +27,14 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^22.10.0",
     "@types/ws": "^8.5.13",
+    "axe-core": "^4.14.0",
+    "jsdom": "^30.1.3",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
+    "vite": "^5.4.21",
     "vitest": "^2.1.8"
   }
 }
