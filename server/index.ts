@@ -113,12 +113,16 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
   // HMAC_SECRET viene de Secret Manager en producción; sin él (local) la clave es efímera y las sesiones no sobreviven a un reinicio.
   const codec = createSessionCodec({ keys: { 1: env.HMAC_SECRET || randomBytes(32).toString("hex") }, currentKeyVersion: 1 });
 
-  const voice = createVoice(env, ask, codec);
+  const voice = createVoice(env, ask, codec, { limiter, demand });
   attach = (s) => { voice.attach(s); mockAttach?.(s); };
 
   app.get("/api/metrics", (c) => env.METRICS_TOKEN && c.req.header("x-metrics-token") === env.METRICS_TOKEN ? c.json(metrics.report()) : c.json({ error: "forbidden" }, 403));
 
-  app.post("/session", (c) => voice.originAllowed(c.req.header("origin")) ? c.json({ token: voice.newToken() }) : c.json({ error: "origin" }, 403));
+  app.post("/session", (c) => {
+    const r = limiter.check(clientIp(c.req.header("x-forwarded-for"), socketIp(c) ?? "unknown"));
+    if (!r.allowed) return c.json({ error: r.message }, 429, { "retry-after": String(r.retryAfterSec) });
+    return voice.originAllowed(c.req.header("origin")) ? c.json({ token: voice.newToken() }) : c.json({ error: "origin" }, 403);
+  });
 
   app.get("/health", (c) => c.json({ ok: true }));
 

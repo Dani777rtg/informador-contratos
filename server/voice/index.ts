@@ -4,6 +4,8 @@ import { WebSocket, WebSocketServer, type RawData } from "ws";
 import { emptyContext, type Ctx, type createSessionCodec } from "../session.js";
 import type { createAsker } from "../agent/ask.js";
 import { posNum } from "../guards/validate.js";
+import { clientIp, type createRateLimiter } from "../guards/rate-limit.js";
+import type { createDemandGuard } from "../guards/demand.js";
 import { issueSessionToken, verifyUpgrade } from "../guards/ws-auth.js";
 
 type Env = Record<string, string | undefined>;
@@ -13,7 +15,8 @@ const ACK_MS = 500;
 const NO_VOICE = "La voz no está disponible por ahora; seguimos por texto.";
 
 /** Voz (Flux STT + Aura TTS) sobre WebSocket. Sin persistencia: ni audio ni transcripciones tocan disco ni logs. */
-export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec: ReturnType<typeof createSessionCodec>) {
+export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec: ReturnType<typeof createSessionCodec>,
+  guards: { limiter?: ReturnType<typeof createRateLimiter>; demand?: ReturnType<typeof createDemandGuard> } = {}) {
   const secret = env.SESSION_SECRET ?? randomBytes(32).toString("hex");
   const origins = (env.ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const sessionMax = posNum(env.VOICE_SESSION_MAX_SECONDS, 600) * 1000;
@@ -29,7 +32,7 @@ export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec
   const ttsUrl = env.DEEPGRAM_TTS_URL ?? "wss://api.deepgram.com/v1/speak";
   const voice = env.TTS_VOICE ?? "aura-2-celeste-es";
   const auth = { Authorization: `Token ${env.DEEPGRAM_API_KEY ?? ""}` };
-  const wss = new WebSocketServer({ noServer: true });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
 
   const open = (url: string, params: Record<string, string>) =>
     new Promise<WebSocket>((ok, fail) => {
@@ -166,6 +169,14 @@ export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec
         if (u.pathname !== "/voice") { if (!u.pathname.startsWith("/__mock/")) socket.destroy(); return; }
         const v = verifyUpgrade({ origin: req.headers.origin, token: u.searchParams.get("token") ?? undefined }, { allowedOrigins: origins, secret });
         if (!v.ok) { socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n"); socket.destroy(); return; }
+        const reject = (status: string, text: string) => {
+          socket.write(`HTTP/1.1 ${status}\r\nContent-Type: text/plain; charset=utf-8\r\nConnection: close\r\n\r\n${text}`);
+          socket.destroy();
+        };
+        const rl = guards.limiter?.check(clientIp(req.headers["x-forwarded-for"] as string | undefined, req.socket.remoteAddress ?? "unknown"));
+        if (rl && !rl.allowed) { reject("429 Too Many Requests", rl.message ?? ""); return; }
+        const d = guards.demand?.admit("voice");
+        if (d && !d.allowed) { reject("503 Service Unavailable", d.message ?? ""); return; }
         wss.handleUpgrade(req, socket, head, (ws) => session(ws));
       });
     },
