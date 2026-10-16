@@ -35,6 +35,8 @@ status: approved
 
 Budget exceeded: AC — los criterios compuestos del cliente se partieron en criterios de una sola respuesta verificable y se añadieron los P0 que faltaban (US-01, US-02, US-04, US-05, US-08, US-09 pasan de 6 criterios).
 
+Budget exceeded: US — el cambio 006 agrega US-13 (13 historias).
+
 Budget exceeded: T — la tarea T022 del cambio 005 (conversación natural) cruza US-01, US-05 y US-06; por eso US-01 cuenta 4 tareas.
 
 Valores por defecto (variables de entorno, ajustables sin cambiar código): 20 peticiones/min por IP, 500 caracteres por mensaje, 30 turnos por conversación, 60 s por enunciado de audio, 10 min por sesión de voz, 3 herramientas por turno, tope diario de 1.000.000 de tokens de LLM y 120 min de voz, caducidad del estado firmado 2 h.
@@ -60,13 +62,13 @@ risk: high — integración externa con datos.gov.co y datos personales público
   serves: US-01
 - **AC-01.8** THE SYSTEM SHALL generar cada cifra mostrada o hablada solo a partir del resultado de la consulta (tarjetas desde datos estructurados) y descartar del texto del LLM cualquier número que no esté en esos resultados (RNF-01).
   serves: US-01
-- **AC-01.9** IF datos.gov.co responde en más de 3 s o falla THEN THE SYSTEM SHALL servir la respuesta en caché o precalculada de las preguntas de la demo con la fecha de los datos, y si no existe decir en una frase qué pasó y qué hacer (RNF-08).
+- **AC-01.9** IF datos.gov.co responde lento o falla THEN THE SYSTEM SHALL hacer 1 reintento con tope de 6,5 s de API y, si sigue fallando, responder desde la copia comprimida de agregados y contratos recientes del contenedor o la caché, avisando la fecha de los datos; si no hay respaldo, decir en una frase qué pasó y qué hacer, nunca "la búsqueda falló" a secas (RNF-08; cambio 006).
   serves: US-01
-- **AC-01.10** THE SYSTEM SHALL incluir en cada respuesta el dataset fuente, la fecha de consulta, la fecha hasta la que están actualizados los datos y un enlace oficial, con cifras como `$1.234.567.890` (RF-17, RF-23, RNF-06).
+- **AC-01.10** THE SYSTEM SHALL incluir en cada respuesta el dataset fuente, la fecha de consulta, la fecha hasta la que están actualizados los datos y un enlace oficial; la tarjeta muestra el valor exacto en pesos con "COP" (`$1.234.567.890 COP`) (RF-17, RF-23, RNF-06; cambio 006).
   serves: US-01
 - **AC-01.11** THE SYSTEM SHALL construir toda consulta SoQL en el servidor desde parámetros tipados con lista permitida de columnas y operadores, valores escapados, `$limit` ≤ 100 y `$where` acotado, de modo que ninguna entrada del usuario o del modelo llegue como SoQL crudo.
   serves: US-01
-- **AC-01.12** THE SYSTEM SHALL redactar la respuesta de texto en lenguaje llano con la cifra clave redondeada ("$27.000 millones") y nombres en formato normal (no en mayúsculas crudas); el valor exacto queda en la tarjeta (cambio 005).
+- **AC-01.12** THE SYSTEM SHALL redactar la respuesta de texto en lenguaje llano con la cifra clave redondeada en pesos ("$2.700 millones de pesos") y nombres en formato normal (no en mayúsculas crudas); el valor exacto queda en la tarjeta (cambios 005 y 006).
   serves: US-01
 
 ### US-02 Ver y abrir documentos del contrato (Must)
@@ -124,17 +126,17 @@ Como ciudadano quiero hablar con el agente y oírlo responder sin pulsar "enviar
 serves: O-3, O-5
 risk: high — integración externa pagada (Deepgram) con audio de ciudadanos
 
-- **AC-05.1** WHEN el usuario deja de hablar THE SYSTEM SHALL detectar el fin de turno automáticamente (Flux `flux-general-multi`, `language_hint=es`), haber transcrito mientras hablaba y empezar a responder en voz sin más pasos (RF-19e).
+- **AC-05.1** WHEN el usuario deja de hablar THE SYSTEM SHALL detectar el fin de turno con el Voice Agent de Deepgram (`wss://agent.deepgram.com/v1/agent/converse`, listen nova-3 en español con keyterms) y responder en voz sin más pasos (RF-19e; cambio 006).
   serves: US-05
-- **AC-05.2** THE SYSTEM SHALL empezar a hablar con la primera frase útil (LLM en streaming → TTS por frases, una conexión TTS por conversación), con la voz fija `aura-2-celeste-es` o `aura-2-gloria-es`, y mostrar el mismo contenido en pantalla (RF-19).
+- **AC-05.2** THE SYSTEM SHALL responder en voz por el Voice Agent (think = DeepSeek `deepseek-flash` por endpoint compatible con OpenAI, temperatura 0,2; speak = `aura-2-celeste-es`) y mostrar el mismo contenido en pantalla a partir de `ConversationText` (RF-19; cambio 006).
   serves: US-05
-- **AC-05.3** WHEN el usuario habla encima del agente THE SYSTEM SHALL callar el audio en menos de 200 ms y escuchar (RF-19e).
+- **AC-05.3** WHEN el usuario habla encima del agente THE SYSTEM SHALL vaciar el audio en cola al recibir `UserStartedSpeaking` y escuchar (RF-19e; cambio 006).
   serves: US-05
 - **AC-05.4** THE SYSTEM SHALL no decir frases de relleno ni acuses ("Claro, déjame buscar eso"); mientras busca solo muestra el estado visual "Buscando en SECOP…" (cambio 005; retira el acuse de RF-19e por decisión del dueño).
   serves: US-05
-- **AC-05.5** IF el servicio de voz no responde THEN THE SYSTEM SHALL avisar que la voz no está disponible y mantener el chat por texto funcionando (RF-19b).
+- **AC-05.5** IF la sesión de voz se corta THEN THE SYSTEM SHALL mantener el micrófono continuo y el KeepAlive del protocolo del agente, reintentar la sesión y solo avisar que la voz no está disponible si no se recupera; el chat por texto sigue funcionando (RF-19b; cambio 006).
   serves: US-05
-- **AC-05.6** THE SYSTEM SHALL medir fin de turno → primera palabra con desglose (fin de turno, STT final, LLM primer token, datos, TTS primer audio), con objetivo p95 < 1 s y meta p50 ≈ 500 ms, usando atajos rápidos también en voz y DeepSeek en modo sin razonamiento (cambio 005), y documentar fuentes y decisiones en `docs/VOZ.md` (RNF-02b, RF-19g).
+- **AC-05.6** THE SYSTEM SHALL medir fin de turno → primera palabra del Voice Agent (fin de turno, herramienta, primer audio) con objetivo p95 < 1 s y meta p50 ≈ 500 ms, y documentar fuentes y decisiones en `docs/VOZ.md` (RNF-02b, RF-19g; cambio 006).
   serves: US-05
 - **AC-05.7** THE SYSTEM SHALL no guardar audio ni transcripciones en disco ni en logs (RNF-16).
   serves: US-05
@@ -148,7 +150,7 @@ Como ciudadano quiero seguir mi conversación entre voz y texto sin repetir nada
 serves: O-5
 risk: high — el estado de la conversación vive en el navegador, es firmado y contiene preguntas de ciudadanos (datos personales, RNF-16)
 
-- **AC-06.1** WHEN el usuario hace una pregunta de seguimiento ("¿y en 2024?", "el segundo", "¿y ese contrato?", "dame ese contrato", "el más grande", "el primero", "ábrelo") por voz o por texto THE SYSTEM SHALL resolverla con el contexto acumulado (entidad, periodo, contrato en foco y los resultados mostrados, también los que trajo el agente) en ambos canales (RF-10, RF-19f; cambio 005).
+- **AC-06.1** WHEN el usuario hace una pregunta de seguimiento ("¿y en 2024?", "el segundo", "ese contrato", "el más grande", "ábrelo") THE SYSTEM SHALL resolverla con el contexto acumulado: en voz, con el historial de la sesión del Voice Agent, donde también entra lo escrito o tocado mientras la voz está activa (`InjectUserMessage`); en solo texto, con el contexto firmado y los resultados mostrados (RF-10, RF-19f; cambios 005 y 006).
   serves: US-06
 - **AC-06.2** WHEN el usuario recarga la página o reconecta la voz THE SYSTEM SHALL recuperar el contexto desde un estado firmado por el servidor (HMAC, versión de clave, caducidad 2 h).
   serves: US-06
@@ -168,7 +170,7 @@ risk: high — datos personales (Ley 1581 de 2012) y datos bancarios en el datas
   serves: US-07
 - **AC-07.3** WHEN el usuario entra por primera vez, o antes de pedir su número de WhatsApp, THE SYSTEM SHALL mostrar un aviso de privacidad corto (qué se guarda, para qué, por cuánto tiempo, derechos) y registrar la aceptación (RNF-16).
   serves: US-07
-- **AC-07.4** THE SYSTEM SHALL registrar por pregunta solo tokens, latencia, canal y códigos de error, sin el contenido de la pregunta ni números de teléfono en claro, con plazo de borrado de 30 días documentado.
+- **AC-07.4** THE SYSTEM SHALL registrar por turno solo tokens, latencia, canal, código de error, intención, ruta (atajo, agente, respaldo), herramientas llamadas, código de declinación y motivo de cierre de la voz, sin texto de pregunta ni respuesta, sin NIT, nombres, teléfonos ni IP, con plazo de borrado de 30 días documentado (cambio 006).
   serves: US-07
 
 ### US-08 Seguridad y anti-abuso (Must)
@@ -234,7 +236,7 @@ risk: high — la evaluación real (AC-11.5, cambio 004) llama a servicios exter
   serves: US-11
 - **AC-11.4** THE SYSTEM SHALL generar el reporte de métricas de la misión (tiempos, tokens, pruebas, linter, vulnerabilidades y resultados de límites) de la sección 7b del cliente.
   serves: US-11
-- **AC-11.5** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una evaluación con ≥ 25 preguntas ciudadanas reales (`eval/real-questions.json`, `npm run eval:real`, contra datos.gov.co y DeepSeek reales) con ≥ 90 % de respuestas correctas —datos de la entidad, territorio y tema pedidos, sin marcado interno del modelo y con fuente—, que incluya preguntas habladas y chequee cifras en palabras en el texto hablado, ausencia de muletillas y seguimiento de contrato resuelto (cambio 005), y dejar el resultado en `eval/real-results.json` (cambio 004).
+- **AC-11.5** WHEN se va a desplegar a producción THE SYSTEM SHALL pasar una evaluación con ~60 preguntas y ~10 conversaciones de varios turnos tipo ciudadano (`eval/real-questions.json`, `npm run eval:real`, contra datos.gov.co y DeepSeek reales; texto y voz, preguntas exploratorias por territorio, cambios de tema, seguimientos de contrato, montos en pesos, fallas de datos.gov.co) con ≥ 90 % de respuestas correctas —datos de la entidad, territorio y tema pedidos, sin marcado interno, con fuente, cifras habladas en palabras y sin muletillas— y dejar el resultado en `eval/real-results.json` (cambios 004, 005 y 006).
   serves: US-11
 
 ### US-12 Carga local y documentos de entrega (Should)
@@ -250,6 +252,26 @@ risk: low — pruebas locales con sustitutos y documentación
   serves: US-12
 - **AC-12.4** THE SYSTEM SHALL incluir un guion de demo de 3–5 minutos con preguntas y orden que recorre los criterios de aceptación principales, y capturas móvil y escritorio de cada estado (RF-28, DIS-07).
   serves: US-12
+
+### US-13 Guía exploratoria del ciudadano (Must)
+Como ciudadano curioso quiero preguntar por lo que se gastó en mi municipio, departamento o país y bajar a los contratos que me interesen, para entender en qué se usa la plata pública sin saber nombres de entidades ni NIT.
+serves: O-1, O-5
+risk: high — integración externa (Deepgram Voice Agent recibe la clave de DeepSeek), datos personales de contratistas y núcleo funcional del producto (cambio 006)
+
+- **AC-13.1** THE SYSTEM SHALL actuar con una misión explícita: guiar al ciudadano de lo general a lo particular sin opinar, máximo 2 frases y 1 pregunta por turno, pedir un dato a la vez sin repetir lo ya dicho, por voz como máximo 3 resultados y el resto en pantalla, y decir cuando no sabe (cambio 006).
+  serves: US-13
+- **AC-13.2** WHEN el usuario pregunta cuánto se gastó, en qué se gastó más, qué entidades gastaron más, qué contratistas recibieron más o cuáles fueron los contratos más grandes en un municipio, departamento o el país y un periodo THE SYSTEM SHALL responder de inmediato con herramientas de parámetros cerrados (`gasto_total`, `gasto_por_categoria`, `top_entidades`, `top_contratistas`, `contratos_mayores`, `buscar_contratos`, `detalle_contrato`) y SoQL construido por el servidor, sin exigir entidad ni NIT, y ofrecer afinar (cambio 006).
+  serves: US-13
+- **AC-13.3** THE SYSTEM SHALL reconocer municipios y entidades por coincidencia aproximada contra listas oficiales (tolera errores del STT) y, si un municipio no tiene datos, ampliar al departamento diciéndolo (cambio 006).
+  serves: US-13
+- **AC-13.4** WHEN el usuario se refiere a algo mostrado ("ese contrato", "el más grande", "esa empresa", "esa entidad") THE SYSTEM SHALL resolverlo con lo que quedó en la conversación y nunca negarse a dar el detalle de un contrato mostrado (cambio 006).
+  serves: US-13
+- **AC-13.5** THE SYSTEM SHALL declinar solo por NO-01..NO-16 con definiciones precisas: los rankings por valor están permitidos (solo se prohíben "mejores/peores"); el nombre del contratista y los datos publicados del contrato se muestran; el documento o contacto de una persona natural nunca; abrir o mostrar un contrato o su documento oficial no es una acción prohibida; nunca declinar por dato faltante o no encontrado (cambio 006).
+  serves: US-13
+- **AC-13.6** THE SYSTEM SHALL tener un presupuesto de tiempo (1 reintento, tope de 6,5 s de API), caché en memoria y una copia comprimida de agregados y contratos recientes en el contenedor como respaldo con su fecha; inyectar instrucciones en el resultado de la herramienta cuando el prompt no basta; explicar la jerga en una frase y sugerir siguientes preguntas derivadas de lo mostrado (cambio 006).
+  serves: US-13
+- **AC-13.7** THE SYSTEM SHALL mantener la clave de DeepSeek y el prompt fuera de toda trama al cliente y de los logs; aceptar del cliente solo audio con tope por trama y JSON tipados (nunca `Settings`, `UpdatePrompt`, `UpdateThink` ni `Function*`) y reenviarle solo eventos conocidos; limitar Origin, tamaño, tasa, duración, sesiones por IP y globales; aceptar `InjectUserMessage` solo como texto de 1 a 500 caracteres sin caracteres de control; y cercar los textos de SECOP en los resultados de herramientas como datos (cambio 006).
+  serves: US-13
 
 ## Aporte de expertos (ECC)
 
@@ -270,7 +292,7 @@ risk: low — pruebas locales con sustitutos y documentación
 | Resolución de entidad contra un índice precalculado (NIT/nombre normalizado, ~5.100 entidades) cargado en memoria | `like '%x%'` en el servidor (> 2 min) | Velocidad y exactitud con nombres no normalizados |
 | Caché LRU en memoria + respuestas precalculadas de la demo | Base de datos de caché | RNF-09, sin servicios que cobren en reposo |
 | Firestore (modo nativo, capa gratuita) solo para: límite de WhatsApp por IP y tope diario de gasto | Contadores en memoria | Deben ser compartidos y sobrevivir a reinicios; los contadores por IP del resto de peticiones son por instancia y acotados por `max-instances` |
-| Voz: Flux `flux-general-multi` con `eager_eot_threshold` para empezar el borrador del LLM, cancelado en `TurnResumed` | `nova-3` con endpointing por silencio | Fin de turno por modelo; recorta cientos de ms; costo extra ~50–70 % de llamadas LLM solo en voz |
+| Voz: Deepgram Voice Agent API (STT nova-3, think DeepSeek deepseek-flash, speak aura-2-celeste-es) con historial en la sesión del agente (cambio 006, arquitectura probada en cosas/hackaton) | Pipeline propio Flux + TTS por frases + contexto firmado | El pipeline propio perdía contexto y se cortaba; el Voice Agent resuelve turnos, barge-in, voz e historial en una sola sesión |
 | Documentos solo por enlace oficial (no se retransmiten) | Proxy de descarga con User-Agent | NO-14, privacidad y costo; el navegador del usuario sí envía User-Agent |
 | Pruebas de carga y estrés siempre locales con sustitutos internos | Pruebas en Cloud Run | Pedido del dueño: ahorrar costos; RNF-13 |
 
@@ -309,6 +331,8 @@ flowchart LR
 - TM-12: Enlaces de documentos · una URL del dataset con esquema `javascript:` o host ajeno lleva a phishing · mitigación: AC-02.5 — serves: US-02
 - TM-13: Estado de conversación · un estado falsificado, viejo o reproducido cambia el contexto del agente · mitigación: AC-06.2, AC-06.3 — serves: US-06
 - TM-14: Navegador del usuario · texto del LLM o de SECOP con HTML o scripts se ejecuta (XSS) · mitigación: AC-08.6 — serves: US-08
+- TM-15: Clave de DeepSeek · viaja a Deepgram en `Settings` del Voice Agent y podría filtrarse al cliente o a logs · mitigación: AC-13.7 y clave dedicada con tope de gasto — serves: US-13
+- TM-16: Datos personales · declinar menos expone documentos o contactos de personas naturales · mitigación: AC-13.5, AC-07.1, AC-07.2 — serves: US-13
 
 ## Pruebas
 
@@ -450,6 +474,18 @@ serves: AC-05.4, AC-05.9, AC-01.12, AC-06.1
 - Archivos: `server/voice/*`, `server/agent/*`, `server/speech/*`, `server/index.ts`, `web/src/render.ts`
 - Check: `npx vitest run tests/acceptance/us-05.voice.test.ts tests/acceptance/us-06.session.test.ts tests/acceptance/us-01.consulta.test.ts` y `npm run eval:real`
 - depends: T007, T009, T021
+
+### T023 [US-13] Herramientas exploratorias, coincidencia aproximada, presupuesto de tiempo y respaldo (cambio 006)
+serves: AC-13.2, AC-13.3, AC-13.6, AC-01.9, AC-01.10, AC-01.12, AC-07.4, TM-16
+- Archivos: `server/agent/tools.ts`, `server/data/*`, `server/fallback/*`, `scripts/snapshot.ts`, `server/log.ts`, `web/src/render.ts`
+- Check: `npx vitest run tests/acceptance/us-13.guia.test.ts tests/acceptance/us-01.consulta.test.ts tests/acceptance/us-07.privacy.test.ts`
+- depends: T021, T022
+
+### T024 [US-13] Voz con Deepgram Voice Agent, misión e historial compartido (cambio 006)
+serves: AC-13.1, AC-13.4, AC-13.5, AC-13.7, AC-05.1, AC-05.2, AC-05.3, AC-05.5, AC-05.6, AC-06.1, AC-11.5, TM-15
+- Archivos: `server/voice/*`, `server/agent/mission.ts`, `server/agent/system-prompt.ts`, `web/src/voice/*`, `web/src/main.ts`, `eval/*`, `docs/VOZ.md`, `scripts/deploy.ps1`
+- Check: `npx vitest run tests/acceptance/us-13.voice-agent.test.ts tests/acceptance/us-05.voice.test.ts tests/acceptance/us-06.session.test.ts` y `npm run eval:real` ≥ 90 %
+- depends: T021, T022
 
 **Grupos paralelos:** G0 {T001, T012, T014, T018} → G1 {T002, T003, T006, T010, T011} → G2 {T004, T005, T007, T009, T016, T020} → G3 {T008, T013, T015} → G4 {T017, T019}. Los archivos de las tareas de un mismo grupo no se solapan.
 **Estimado:** ~7,5 h de reloj con 4–5 constructores en paralelo y ~2,5 h de colchón para verificación y despliegue, frente a las 10 h (límite 20:18). La aprobación de la plantilla de Meta (hasta 24 h) corre en paralelo; si no llega, se cumple AC-10.4.

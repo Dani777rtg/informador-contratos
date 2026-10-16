@@ -152,44 +152,41 @@ describe("US-01", () => {
     }
   });
 
-  it("AC-01.9 datos.gov.co caído: sirve caché/precalculado con fecha o explica en una frase", async () => {
-    await ask("contratos de la Alcaldía de Cali"); // calienta caché
-    await mock("fail");
-    const r = await ask("contratos de la Alcaldía de Cali");
-    expect(r.cards.length).toBeGreaterThan(0);
-    expect(r.source.dataUpdatedAt).toBeTruthy();
-    const none = await ask("contratos de un municipio sin precalculo xyz");
-    expect(none.cards.filter((c) => c.kind === "contract")).toHaveLength(0);
-    expect(none.text.length).toBeGreaterThan(10);
-    expect(none.text.split(/[.!?]\s/).length).toBeLessThanOrEqual(3);
-  });
-
-  it("AC-01.9 datos.gov.co lento (>3 s): responde sin esperar indefinidamente", async () => {
+  it("AC-01.9 datos.gov.co lento: 1 reintento con tope de 6,5 s de API, responde sin esperar más (cambio 006)", async () => {
     await mock("slow");
     const t0 = Date.now();
     const r = await ask("contratos de la Alcaldía de Cali");
-    expect(Date.now() - t0).toBeLessThan(6000);
+    expect(Date.now() - t0).toBeLessThan(8500);
     expect(r.text.length).toBeGreaterThan(0);
-  }, 15000);
+  }, 20000);
 
-  it("AC-01.10 fuente, fechas, enlace oficial y formato de moneda $1.234.567.890", async () => {
+  it("AC-01.9 datos.gov.co caído: responde desde respaldo o caché avisando la fecha de los datos (cambio 006)", async () => {
+    await mock("fail");
+    const r = await ask("contratos de la Alcaldía de Cali");
+    expect(r.source.dataUpdatedAt).toBeTruthy();
+    expect(`${r.text} ${r.source.dataUpdatedAt}`).toMatch(/20\d\d-\d\d-\d\d|\d{1,2} de [a-záéíóú]+ de 20\d\d|20\d\d/);
+    expect(r.text).not.toMatch(/^la b[uú]squeda fall[oó]\.?$/i);
+  });
+
+  it("AC-01.10 fuente, fechas, enlace oficial y la tarjeta con el valor exacto en pesos con COP (cambio 006)", async () => {
     const r = await ask("contratos de la Alcaldía de Cali");
     expect(r.source.dataset).toBeTruthy();
     expect(r.source.queriedAt).toBeTruthy();
     expect(r.source.dataUpdatedAt).toBeTruthy();
     expect(r.source.url).toMatch(/^https:\/\//);
-    const money = [...flat(r).matchAll(/\$[\d.]+/g)].map((m) => m[0]);
+    const money = r.cards.flatMap((c) => [c.value, c.total]).filter((v): v is string => typeof v === "string" && v.includes("$"));
     expect(money.length).toBeGreaterThan(0);
-    for (const m of money) expect(m).toMatch(/^\$\d{1,3}(\.\d{3})*$/);
+    for (const m of money) expect(m).toMatch(/^\$\d{1,3}(\.\d{3})* COP$/);
   });
 
-  it("AC-01.12 el texto usa cifra redondeada y nombres normales; la tarjeta conserva el valor exacto", async () => {
+  it("AC-01.12 el texto usa '$N millones de pesos' redondeado y nombres normales; la tarjeta conserva el valor exacto con COP (cambio 006)", async () => {
     const r = await ask("¿Cuáles son los contratos más grandes de la Alcaldía de Cali?");
-    expect(r.text).toMatch(/\$?\d{1,3}(\.\d{3})*\s+millones|\$?\d+\s+mil millones/i);
+    expect(r.text).toMatch(/\$\d{1,3}(\.\d{3})*\s+millones de pesos|\$\d+\s+mil millones de pesos/i);
     expect(r.text).not.toMatch(/\d{10,}/);
-    expect(r.text).not.toMatch(/\d{1,3}(\.\d{3}){3,}/); // ni $1.234.567.890 completo
-    expect(r.text).not.toMatch(/\b[A-ZÁÉÍÓÚÑ]{3,}(\s+[A-ZÁÉÍÓÚÑ]{2,})+\b/); // nombres en mayúsculas completas
-    const exact = r.cards.map((c) => String(c.value ?? c.total ?? "")).filter((v) => /^\$\d{1,3}(\.\d{3})+$/.test(v));
+    expect(r.text).not.toMatch(/\d{1,3}(\.\d{3}){3,}/);
+    expect(r.text).not.toMatch(/COP/);
+    expect(r.text).not.toMatch(/[A-ZÁÉÍÓÚÑ]{3,}(\s+[A-ZÁÉÍÓÚÑ]{2,})+/);
+    const exact = r.cards.map((c) => String(c.value ?? c.total ?? "")).filter((v) => /^\$\d{1,3}(\.\d{3})+ COP$/.test(v));
     expect(exact.length).toBeGreaterThan(0);
   });
 

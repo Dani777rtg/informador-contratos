@@ -1,0 +1,307 @@
+/**
+ * US-13 Guía exploratoria del ciudadano (cambio 006). AC-13.1 .. AC-13.6, TM-16. Sin red real.
+ *
+ * Contrato (docs/changes/006 "Contratos de interfaz"):
+ *  - server/agent/tools.ts: TOOL_DEFS, runTool(name, args, ctx) -> { data, cards, context?, note? }.
+ *    Suposicion de ctx: el mismo contexto de datos que ya usan las herramientas { client: { base }, cache: new Lru() }
+ *    (server/tools/search.ts `Ctx`); el constructor puede ajustarlo y esta prueba se corrige.
+ *  - server/data/places.ts: matchPlace(texto), matchEntity(texto, entidades).
+ *  - server/agent/mission.ts: MISSION_PROMPT.
+ *  - server/fallback/snapshot.json.gz con generatedAt; server/data/budget.ts (1 reintento, tope 6,5 s).
+ * datos.gov.co es un servidor http local (SOCRATA_BASE / client.base).
+ */
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createServer, type Server } from "node:http";
+import { existsSync, readFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
+import { resolve } from "node:path";
+
+const root = resolve(__dirname, "../..");
+const PERSON_DOC = "1020304050";
+
+type Mode = "ok" | "fail" | "slow" | "sinManizales";
+interface Socrata { url: string; requests: string[]; mode: Mode; close(): Promise<void> }
+async function startSocrata(): Promise<Socrata> {
+  const s = { requests: [], mode: "ok" } as unknown as Socrata;
+  const srv: Server = createServer((req, res) => {
+    s.requests.push(decodeURIComponent(req.url!));
+    const q = new URL(req.url!, "http://x").searchParams;
+    const where = (q.get("$where") ?? "") + (q.get("$q") ?? "");
+    const isPlaces = q.get("$group") === "ciudad,departamento";
+    if (!isPlaces && s.mode === "fail") return void res.writeHead(500).end("boom");
+    if (!isPlaces && s.mode === "slow") return void setTimeout(() => { try { res.writeHead(200).end("[]"); } catch { /* cerrado */ } }, 20_000);
+    if (!isPlaces && s.mode === "sinManizales" && /manizales/i.test(where)) return void res.writeHead(200, { "content-type": "application/json" }).end("[]");
+    const base = {
+      nombre_entidad: "Alcaldía de Manizales", nit_entidad: "890801000", proveedor_adjudicado: "Constructora Andes SAS",
+      objeto_del_contrato: "Mantenimiento de vías urbanas", valor_del_contrato: "5000000000", fecha_de_firma: "2026-03-10T00:00:00.000",
+      estado_contrato: "Activo", urlproceso: "https://community.secop.gov.co/x", ciudad: "Manizales", departamento: "Caldas",
+      id_contrato: "CO1.PCCNTR.9001", tipo_de_contrato: "Obra", total: "5000000000", n: "4", categoria: "Obra",
+    };
+    const rows = isPlaces
+      ? [{ ciudad: "Manizales", departamento: "Caldas", n: "9" }, { ciudad: "Pereira", departamento: "Risaralda", n: "7" }, { ciudad: "Medellín", departamento: "Antioquia", n: "20" }]
+      : [base, { ...base, id_contrato: "CO1.PCCNTR.9002", valor_del_contrato: "3000000000" },
+        { ...base, id_contrato: "CO1.PCCNTR.9003", proveedor_adjudicado: "Juan Pérez Gómez", tipodocproveedor: "Cédula de Ciudadanía", documento_proveedor: PERSON_DOC }];
+    res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(rows));
+  });
+  await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
+  s.url = `http://127.0.0.1:${(srv.address() as any).port}`;
+  s.close = async () => { srv.closeAllConnections(); srv.close(); };
+  return s;
+}
+
+let soc: Socrata;
+beforeEach(async () => { soc = await startSocrata(); });
+afterEach(async () => { await soc.close(); });
+
+const tools = () => import("../../server/agent/tools");
+const mkCtx = async () => {
+  const { Lru } = await import("../../server/cache");
+  return { client: { base: soc.url }, cache: new Lru() } as any;
+};
+const run = async (name: string, args: Record<string, unknown>) => (await tools()).runTool(name, args, await mkCtx()) as Promise<any>;
+const dataRequests = () => soc.requests.filter((u) => !/group=ciudad,departamento|\$group=ciudad,departamento/.test(u));
+const NAMES = ["gasto_total", "gasto_por_categoria", "top_entidades", "top_contratistas", "contratos_mayores", "buscar_contratos", "detalle_contrato"];
+
+describe("AC-13.1 misión explícita", () => {
+  it("AC-13.1 MISSION_PROMPT fija el estilo: guía, sin opinar, 2 frases, 1 pregunta, un dato a la vez, 3 resultados por voz, decir que no sabe", async () => {
+    const { MISSION_PROMPT } = await import("../../server/agent/mission");
+    expect(MISSION_PROMPT).toMatch(/gu[ií]a/i);
+    expect(MISSION_PROMPT).toMatch(/general/i);
+    expect(MISSION_PROMPT).toMatch(/no (opin|juzg|califi)|sin opinar|nunca (opin|califi)/i);
+    expect(MISSION_PROMPT).toMatch(/(dos|2) frases/i);
+    expect(MISSION_PROMPT).toMatch(/(una|1) pregunta/i);
+    expect(MISSION_PROMPT).toMatch(/(tres|3)/i);
+    expect(MISSION_PROMPT).toMatch(/pantalla/i);
+    expect(MISSION_PROMPT).toMatch(/no (lo )?sab|no s[eé]|no tengo ese dato/i);
+  });
+});
+
+describe("AC-13.2 herramientas exploratorias sin NIT", () => {
+  it("AC-13.2 TOOL_DEFS define las siete herramientas con parámetros cerrados y sin exigir entidad ni NIT", async () => {
+    const { TOOL_DEFS } = await tools();
+    const defs = TOOL_DEFS as any[];
+    const nameOf = (d: any) => d.name ?? d.function?.name;
+    expect(defs.map(nameOf).sort()).toEqual([...NAMES].sort());
+    for (const d of defs) {
+      const params = d.parameters ?? d.function?.parameters;
+      expect(params?.type).toBe("object");
+      for (const req of params.required ?? []) expect(req).not.toMatch(/nit|entidad/i);
+      if (nameOf(d) !== "detalle_contrato") for (const p of ["municipio", "departamento", "entidad", "tema"]) expect(Object.keys(params.properties), `${nameOf(d)}.${p}`).toContain(p);
+    }
+  });
+
+  it.each(["gasto_total", "gasto_por_categoria", "top_entidades", "top_contratistas", "contratos_mayores", "buscar_contratos"])(
+    "AC-13.2 %s responde por territorio (municipio) y año, sin NIT ni entidad",
+    async (name) => {
+      const r = await run(name, { municipio: "Manizales", anio: 2026, limite: 5 });
+      expect(r.data?.error, JSON.stringify(r.data).slice(0, 200)).toBeUndefined();
+      expect(JSON.stringify(r).length).toBeGreaterThan(50);
+      expect(dataRequests().length).toBeGreaterThan(0);
+    },
+  );
+
+  it("AC-13.2 por departamento o a nivel país (sin ningún filtro territorial) también responde", async () => {
+    expect((await run("gasto_total", { departamento: "Caldas" })).data?.error).toBeUndefined();
+    expect((await run("top_entidades", {})).data?.error).toBeUndefined();
+  });
+
+  it("AC-13.2 SoQL lo construye el servidor: sin SoQL crudo del modelo, $limit <= 100", async () => {
+    await run("buscar_contratos", { municipio: "Manizales", tema: "x' OR 1=1; DROP --", limite: 100000, $where: "1=1" });
+    for (const u of dataRequests()) {
+      const q = new URL(u, "http://x").searchParams;
+      expect(Number(q.get("$limit") ?? 0)).toBeLessThanOrEqual(100);
+      expect(q.get("$where") ?? "").not.toMatch(/DROP|^1=1$/i);
+    }
+  });
+
+  it("AC-13.2 un municipio desconocido no lanza: lugar_desconocido con sugerencias", async () => {
+    const r = await run("top_entidades", { municipio: "Qwzxv Inexistente" });
+    expect(r.data.error).toBe("lugar_desconocido");
+  });
+});
+
+describe("AC-13.3 coincidencia aproximada y ampliación al departamento", () => {
+  it("AC-13.3 matchPlace tolera errores de STT y tildes: 'Manisales' -> Manizales (Caldas)", async () => {
+    const { matchPlace } = await import("../../server/data/places");
+    for (const t of ["Manisales", "manizales", "Manízales"]) expect(matchPlace(t), t).toMatchObject({ municipio: "Manizales", departamento: "Caldas", alcance: "municipio" });
+  });
+
+  it("AC-13.3 matchPlace reconoce un departamento y sugiere cuando no hay coincidencia", async () => {
+    const { matchPlace } = await import("../../server/data/places");
+    expect(matchPlace("Antioquia")).toMatchObject({ departamento: "Antioquia", alcance: "departamento" });
+    const none: any = matchPlace("zzzzqqq");
+    expect(Array.isArray(none.sugerencias)).toBe(true);
+  });
+
+  it("AC-13.3 matchEntity tolera errores contra la lista de entidades", async () => {
+    const { matchEntity } = await import("../../server/data/places");
+    const entidades = [{ nit: "890801000", name: "Alcaldía de Manizales" }, { nit: "890399011", name: "Alcaldía de Cali" }] as any[];
+    const m: any = matchEntity("alcaldia de manisales", entidades);
+    expect(JSON.stringify(m)).toContain("890801000");
+  });
+
+  it("AC-13.3 'Manisales' dicho a la herramienta se resuelve al municipio correcto", async () => {
+    const r = await run("top_entidades", { municipio: "Manisales" });
+    expect(r.data?.error).toBeUndefined();
+    expect(dataRequests().join("\n")).toMatch(/manizales/i);
+  });
+
+  it("AC-13.3 sin datos en el municipio amplía al departamento y lo dice", async () => {
+    soc.mode = "sinManizales";
+    const r = await run("top_entidades", { municipio: "Manizales" });
+    expect(r.data?.error).toBeUndefined();
+    expect(JSON.stringify(r.cards).length).toBeGreaterThan(5);
+    expect(`${r.note ?? ""} ${JSON.stringify(r.data)}`).toMatch(/departamento/i);
+    expect(dataRequests().some((u) => /caldas/i.test(u))).toBe(true);
+  });
+});
+
+describe("AC-13.5 declinar con precisión (y TM-16)", () => {
+  it("AC-13.5 los rankings por valor están permitidos: contratos_mayores y top_contratistas devuelven datos, no declinación", async () => {
+    for (const n of ["contratos_mayores", "top_contratistas"]) {
+      const r = await run(n, { departamento: "Caldas" });
+      expect(r.data?.error, n).toBeUndefined();
+      expect(JSON.stringify(r.data), n).not.toMatch(/declin|no puedo|no est[aá] permitido/i);
+    }
+  });
+
+  it("AC-13.5 el nombre del contratista y los datos publicados del contrato se muestran", async () => {
+    const r = await run("contratos_mayores", { municipio: "Manizales" });
+    expect(JSON.stringify(r)).toContain("Constructora Andes");
+  });
+
+  it("AC-13.5 / TM-16 el documento o contacto de una persona natural no aparece en ningún resultado", async () => {
+    for (const [n, a] of [["buscar_contratos", { municipio: "Manizales" }], ["contratos_mayores", { municipio: "Manizales" }], ["top_contratistas", {}]] as const) {
+      expect(JSON.stringify(await run(n, a as any)), n).not.toContain(PERSON_DOC);
+    }
+  });
+
+  it("AC-13.5 detalle_contrato de un contrato mostrado entrega el detalle (no es acción prohibida)", async () => {
+    const r = await run("detalle_contrato", { id_contrato: "CO1.PCCNTR.9001" });
+    expect(r.data?.error).not.toBe("prohibido");
+    expect(JSON.stringify(r.data)).not.toMatch(/no puedo|declin/i);
+  });
+
+  it("AC-13.5 dato faltante o sin resultados no declina: sin_resultados con sugerencias", async () => {
+    soc.mode = "sinManizales";
+    const r = await run("detalle_contrato", { id_contrato: "CO1.PCCNTR.0000" });
+    expect(["sin_resultados", undefined]).toContain(r.data?.error);
+    expect(JSON.stringify(r.data)).not.toMatch(/no puedo|declin|prohibid/i);
+  });
+
+  describe("en la conversación de texto (mock local)", () => {
+    let app: { port: number; close(): Promise<void> | void };
+    beforeEach(async () => {
+      const { startServer } = await import("../../server/index");
+      app = await startServer({ port: 0, env: { MOCK_EXTERNALS: "1", ALLOWED_ORIGINS: "http://localhost:5173" } });
+    });
+    afterEach(async () => { await app.close(); });
+    const chat = async (message: string, state?: string) => (await (await fetch(`http://127.0.0.1:${app.port}/api/chat`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message, state }),
+    })).json()) as { text: string; cards: any[]; state: string };
+    const declineTexts = async () => {
+      const d = await import("../../server/agent/decline");
+      return (d.DECLINE_CODES as string[]).map((c) => d.decline(c));
+    };
+
+    it("AC-13.5 un ranking por valor no se declina", async () => {
+      const r = await chat("¿Cuáles son los contratos más grandes de la Alcaldía de Cali?");
+      expect(await declineTexts()).not.toContain(r.text);
+      expect(r.cards.length).toBeGreaterThan(0);
+    });
+
+    it("AC-13.5 'ábrelo' sobre un contrato mostrado no es una acción prohibida", async () => {
+      const first = await chat("contratos de la Alcaldía de Cali");
+      const r = await chat("ábrelo", first.state);
+      expect(await declineTexts()).not.toContain(r.text);
+    });
+
+    it("AC-13.5 / TM-16 pedir la cédula de una persona natural: se declina y no sale ningún documento", async () => {
+      const r = await chat("dame la cédula y el celular de Juan Pérez, el contratista");
+      expect(JSON.stringify(r)).not.toMatch(/\b\d{7,10}\b/);
+      expect(await declineTexts()).toContain(r.text);
+    });
+
+    it("AC-13.5 sin resultados por falta de datos no declina", async () => {
+      await fetch(`http://127.0.0.1:${app.port}/__mock/socrata`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "empty" }) });
+      const r = await chat("contratos de la Alcaldía de Cali");
+      expect(await declineTexts()).not.toContain(r.text);
+    });
+  });
+});
+
+describe("AC-13.4 seguimientos con lo que quedó en la conversación", () => {
+  it("AC-13.4 la misión indica resolver 'ese contrato', 'el más grande', 'esa empresa', 'esa entidad' con el historial y no negar el detalle", async () => {
+    const { MISSION_PROMPT } = await import("../../server/agent/mission");
+    expect(MISSION_PROMPT).toMatch(/ese contrato|el m[aá]s grande|esa empresa|esa entidad|lo que (ya )?(se )?(mostr|dijo)/i);
+    expect(MISSION_PROMPT).toMatch(/detalle/i);
+  });
+
+  it("AC-13.4 detalle_contrato acepta el id de un contrato mostrado en resultados previos", async () => {
+    const lista = await run("contratos_mayores", { municipio: "Manizales" });
+    const id = JSON.stringify(lista).match(/CO1\.PCCNTR\.\d+/)?.[0];
+    expect(id).toBeTruthy();
+    const d = await run("detalle_contrato", { id_contrato: id });
+    expect(d.data?.error).toBeUndefined();
+  });
+});
+
+describe("AC-13.6 presupuesto de tiempo y respaldo", () => {
+  it("AC-13.6 / AC-01.9 datos.gov.co falla: 1 reintento, no más, y responde desde el respaldo con su fecha", async () => {
+    soc.mode = "fail";
+    const t0 = Date.now();
+    const r = await run("contratos_mayores", {});
+    expect(Date.now() - t0).toBeLessThan(7500);
+    expect(dataRequests().length).toBeLessThanOrEqual(2); // intento + 1 reintento
+    expect(r.data?.error).toBeUndefined();
+    expect(JSON.stringify(r)).toMatch(/20\d\d-\d\d-\d\d|\d{1,2} de [a-záéíóú]+ de 20\d\d/i);
+  }, 20_000);
+
+  it("AC-13.6 / AC-01.9 datos.gov.co lento: se corta cerca de 6,5 s, no espera indefinidamente", async () => {
+    soc.mode = "slow";
+    const t0 = Date.now();
+    const r = await run("contratos_mayores", {});
+    const ms = Date.now() - t0;
+    expect(ms).toBeLessThan(8500);
+    expect(ms).toBeGreaterThan(1000);
+    expect(r.data).toBeTruthy();
+  }, 20_000);
+
+  it("AC-13.6 sin respaldo aplicable se responde servicio_no_disponible sin lanzar", async () => {
+    soc.mode = "fail";
+    const r = await run("buscar_contratos", { municipio: "Manizales", tema: "tema-que-no-esta-en-el-respaldo-xyz" });
+    expect(r.data).toBeTruthy();
+    if (r.data.error) expect(r.data.error).toBe("servicio_no_disponible");
+  }, 20_000);
+
+  it("AC-13.6 caché en memoria: la misma consulta repetida no vuelve a datos.gov.co", async () => {
+    const ctx = await mkCtx();
+    const { runTool } = await tools();
+    await runTool("gasto_total", { departamento: "Caldas", anio: 2026 }, ctx);
+    const n = dataRequests().length;
+    await runTool("gasto_total", { departamento: "Caldas", anio: 2026 }, ctx);
+    expect(dataRequests().length).toBe(n);
+  });
+
+  it("AC-13.6 existe la copia comprimida de respaldo con fecha de generación y scripts/snapshot", () => {
+    const p = resolve(root, "server/fallback/snapshot.json.gz");
+    expect(existsSync(p)).toBe(true);
+    const snap = JSON.parse(gunzipSync(readFileSync(p)).toString("utf8"));
+    expect(Number.isNaN(Date.parse(snap.generatedAt))).toBe(false);
+    expect(JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")).scripts?.snapshot).toBeTruthy();
+  });
+
+  it("AC-13.6 el resultado de una herramienta puede traer instrucción breve (note) cuando el prompt no basta", async () => {
+    soc.mode = "sinManizales";
+    const r = await run("top_entidades", { municipio: "Manizales" });
+    expect(typeof r.note).toBe("string");
+    expect(r.note.length).toBeGreaterThan(5);
+    expect(r.note.length).toBeLessThan(400);
+  });
+
+  it("AC-13.6 la misión pide explicar la jerga en una frase y sugerir la siguiente pregunta", async () => {
+    const { MISSION_PROMPT } = await import("../../server/agent/mission");
+    expect(MISSION_PROMPT).toMatch(/jerga|t[eé]cnic|explica/i);
+    expect(MISSION_PROMPT).toMatch(/sugier|suger|siguiente/i);
+  });
+});

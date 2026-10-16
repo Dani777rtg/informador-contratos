@@ -31,9 +31,11 @@ const ctx = applyTurn(emptyContext(), {
 });
 
 describe("US-06 contexto compartido entre voz y texto", () => {
-  it("AC-06.1: un turno de texto deja contexto que un turno de voz recibe y refina (y viceversa)", () => {
+  // Cambio 006: en voz el historial vive en la sesión del Voice Agent y el texto entra por InjectUserMessage
+  // (ver us-13.voice-agent.test.ts, AC-06.1). El contexto firmado y resolveFollowUp valen solo para el camino de solo texto.
+  it("AC-06.1 (solo texto): el contexto firmado se conserva entre turnos y se refina", () => {
     const codec = mk();
-    // texto -> firma; voz reconecta con ese estado y pregunta "¿y en 2024?"
+    // texto -> firma; el siguiente turno de texto pregunta "¿y en 2024?"
     const fromText = codec.verify(codec.sign(ctx))!;
     const voiceTurn = applyTurn(fromText, { period: { from: "2024-01-01", to: "2024-12-31" } });
     expect(voiceTurn.entity).toEqual(ctx.entity); // entidad conservada

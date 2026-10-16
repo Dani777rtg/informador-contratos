@@ -19,10 +19,10 @@ const read = (p: string) => JSON.parse(readFileSync(resolve(root, p), "utf8"));
 const arr = (j: any): any[] => (Array.isArray(j) ? j : j?.questions ?? []);
 
 describe("AC-11.5 evaluacion con preguntas reales", () => {
-  it("AC-11.5 real-questions.json tiene >= 25 preguntas con texto y chequeo esperado", () => {
+  it("AC-11.5 real-questions.json tiene >= 55 preguntas (cambio 006: ~60) con texto y chequeo esperado", () => {
     expect(existsSync(resolve(root, "eval/real-questions.json"))).toBe(true);
     const qs = arr(read("eval/real-questions.json"));
-    expect(qs.length).toBeGreaterThanOrEqual(25);
+    expect(qs.length).toBeGreaterThanOrEqual(55);
     for (const q of qs) {
       expect(typeof q.question).toBe("string");
       expect(q.question.trim().length).toBeGreaterThan(0);
@@ -75,6 +75,35 @@ describe("AC-11.5 evaluacion con preguntas reales", () => {
     const seguimiento = qs.filter((q) => /contrato/i.test(q.question) && (q.followUp || q.followup || q.previous || q.after));
     expect(seguimiento.length).toBeGreaterThan(0);
     expect(seguimiento.some((q) => byId.get(q.id)?.ok === true)).toBe(true);
+  });
+
+  it("AC-11.5 (cambio 006) real-conversations.json tiene ~10 conversaciones de varios turnos, texto y voz, con falla de datos.gov.co", () => {
+    expect(existsSync(resolve(root, "eval/real-conversations.json"))).toBe(true);
+    const raw = read("eval/real-conversations.json");
+    const cs: any[] = Array.isArray(raw) ? raw : raw?.conversations ?? [];
+    expect(cs.length).toBeGreaterThanOrEqual(8);
+    for (const c of cs) {
+      expect(c.id).toBeTruthy();
+      expect(c.turns.length, c.id).toBeGreaterThanOrEqual(2);
+      for (const t of c.turns) {
+        expect(["texto", "voz"]).toContain(t.channel);
+        expect(String(t.question).trim().length).toBeGreaterThan(0);
+        expect(t.expect && Object.keys(t.expect).length).toBeGreaterThan(0);
+      }
+    }
+    const canales = new Set(cs.flatMap((c) => c.turns.map((t: any) => t.channel)));
+    expect(canales.has("texto") && canales.has("voz")).toBe(true);
+    expect(JSON.stringify([cs, arr(read("eval/real-questions.json"))])).toMatch(/falla|ca[ií]d|respaldo|datosgov_down|fail/i);
+  });
+
+  it("AC-11.5 (cambio 006) real-results.json trae las conversaciones, una entrada por conversación y >= 90 % ok", () => {
+    const r = read("eval/real-results.json");
+    const raw = read("eval/real-conversations.json");
+    const cs: any[] = Array.isArray(raw) ? raw : raw?.conversations ?? [];
+    expect(Array.isArray(r.conversations)).toBe(true);
+    expect(r.conversations.map((x: any) => x.id).sort()).toEqual(cs.map((c) => c.id).sort());
+    const ok = r.conversations.filter((x: any) => x.ok === true).length;
+    expect(ok / r.conversations.length).toBeGreaterThanOrEqual(0.9);
   });
 
   it("AC-11.5 package.json tiene el script eval:real", () => {

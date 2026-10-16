@@ -77,6 +77,22 @@ describe('US-07', () => {
     expect(all).not.toContain('3001234567');
   });
 
+  it('AC-07.4 (cambio 006) registra intención, ruta, herramientas, código de declinación, tipo de error y motivo de cierre, sin texto ni identificadores', async () => {
+    const { createQuestionLogger } = await logMod();
+    const lines: string[] = [];
+    const log = createQuestionLogger((l: string) => lines.push(l));
+    log({
+      tokens: 700, latencyMs: 900, channel: 'voz',
+      intent: 'ranking_entidades', route: 'voz', tools: ['top_entidades', 'detalle_contrato'],
+      declineCode: 'NO-05', errorType: 'timeout', closeReason: 'inactividad',
+      question: '¿Cuánto gastó la alcaldía de Zipaquirá?', answer: 'La alcaldía de Zipaquirá gastó mucho',
+      nit: '890399011', entityName: 'Alcaldía de Zipaquirá', phone: '+573001234567', ip: '203.0.113.77',
+    });
+    const all = lines.join('\n');
+    for (const v of ['ranking_entidades', 'voz', 'top_entidades', 'detalle_contrato', 'NO-05', 'timeout', 'inactividad']) expect(all).toContain(v);
+    for (const leak of ['Zipaquirá', 'gastó mucho', '890399011', '3001234567', '203.0.113.77']) expect(all).not.toContain(leak);
+  });
+
   it('AC-07.4 documenta el plazo de borrado de 30 días', () => {
     const doc = readFileSync(resolve(root, 'docs/PRIVACIDAD.md'), 'utf8');
     expect(doc).toMatch(/30\s*días/i);
