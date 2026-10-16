@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 import type { IncomingMessage, Server } from "node:http";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
-import { runAgent, createDeepseekLlm, type Ctx } from "../agent/loop.js";
+import { emptyContext, type Ctx, type createSessionCodec } from "../session.js";
+import type { createAsker } from "../agent/ask.js";
 import { issueSessionToken, verifyUpgrade } from "../guards/ws-auth.js";
 
 type Env = Record<string, string | undefined>;
@@ -11,7 +12,7 @@ const ACK_MS = 500;
 const NO_VOICE = "La voz no está disponible por ahora; seguimos por texto.";
 
 /** Voz (Flux STT + Aura TTS) sobre WebSocket. Sin persistencia: ni audio ni transcripciones tocan disco ni logs. */
-export function createVoice(env: Env) {
+export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec: ReturnType<typeof createSessionCodec>) {
   const secret = env.SESSION_SECRET ?? randomBytes(32).toString("hex");
   const origins = (env.ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const sessionMax = Number(env.VOICE_SESSION_MAX_SECONDS ?? 600) * 1000;
@@ -23,7 +24,6 @@ export function createVoice(env: Env) {
     if (daily.day !== d) { daily.day = d; daily.ms = 0; }
     return daily.ms;
   };
-  const llm = createDeepseekLlm({ baseUrl: env.DEEPSEEK_BASE_URL, apiKey: env.DEEPSEEK_API_KEY });
   const sttUrl = env.DEEPGRAM_STT_URL ?? "wss://api.deepgram.com/v2/listen";
   const ttsUrl = env.DEEPGRAM_TTS_URL ?? "wss://api.deepgram.com/v1/speak";
   const voice = env.TTS_VOICE ?? "aura-2-celeste-es";
@@ -50,7 +50,7 @@ export function createVoice(env: Env) {
     let gen = 0; // turno vigente; un barge-in lo invalida
     let flushes: number[] = [];
     let voiceOn = false;
-    let context: Ctx = {};
+    let context: Ctx = emptyContext();
     let ended = false;
 
     const voiceDown = () => { if (voiceOn) { voiceOn = false; send({ type: "notice", text: NO_VOICE }); } };
@@ -87,19 +87,16 @@ export function createVoice(env: Env) {
       let spokenAny = false;
       const ack = spoken ? setTimeout(() => { if (my === gen && !spokenAny) { spokenAny = true; void speak(ACK, true); } }, ACK_MS) : null;
       try {
-        const r = await runAgent({
-          message, context, tools: {}, llm,
-          onToken: (s) => {
-            if (my !== gen) return;
-            timing.firstToken ??= Date.now() - t0;
-            if (ack) clearTimeout(ack);
-            if (spoken) { spokenAny = true; void speak(s, true); }
-          },
+        const r = await ask(message, context, "voz", (s) => {
+          if (my !== gen) return;
+          timing.firstToken ??= Date.now() - t0;
+          if (ack) clearTimeout(ack);
+          if (spoken) { spokenAny = true; void speak(s, true); }
         });
         if (ack) clearTimeout(ack);
         if (my !== gen) return;
         context = r.context;
-        send({ type: "message", text: r.text, cards: r.cards, timing });
+        send({ type: "message", text: r.text, cards: r.cards, timing, state: codec.sign(context) });
       } catch {
         if (ack) clearTimeout(ack);
         if (my === gen) send({ type: "message", text: "No pude responder en este momento. Intenta de nuevo." });
@@ -124,8 +121,10 @@ export function createVoice(env: Env) {
     client.on("message", (d: RawData, bin) => {
       if (bin) { if (voiceOn && stt?.readyState === WebSocket.OPEN) stt.send(d, { binary: true }); return; }
       try {
-        const m = JSON.parse(d.toString()) as { type?: string; text?: unknown };
-        if (m.type === "message" && typeof m.text === "string" && m.text.trim()) void turn(m.text, false);
+        const m = JSON.parse(d.toString()) as { type?: string; text?: unknown; state?: unknown };
+        // Estado firmado del chat: voz y texto comparten una sola conversación; inválido -> conversación nueva.
+        if (m.type === "state") context = codec.verify((m as { state?: unknown }).state) ?? emptyContext();
+        else if (m.type === "message" && typeof m.text === "string" && m.text.trim()) void turn(m.text, false);
       } catch { /* mensaje inválido: se ignora */ }
     });
     client.on("close", stop);
