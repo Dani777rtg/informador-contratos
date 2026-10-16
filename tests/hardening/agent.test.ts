@@ -84,3 +84,14 @@ describe("utilidades", () => {
     await expect(fetchRows({ base: "http://x", fetchFn: hang, timeoutMs: 20 }, new URLSearchParams())).rejects.toThrow("timeout");
   });
 });
+
+import { prefilter } from "../../server/agent/guardrails";
+describe("prefiltro de juicios (0 tokens)", () => {
+  it.each(["¿Ese contrato es un robo?", "¿Se robaron la plata?", "¿Hay sobrecosto?", "¿Es corrupto el alcalde?", "¿Ese contrato es caro?", "¿Está bien hecho?", "es sospechoso"])("%s", (m) => {
+    expect(prefilter(m)).toMatch(/^NO-0[12]$/);
+  });
+  it("no atrapa consultas normales", () => {
+    expect(prefilter("contratos más grandes de la Alcaldía de Cali")).toBeNull();
+    expect(prefilter("documentos del primer contrato")).toBeNull();
+  });
+});

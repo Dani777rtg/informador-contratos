@@ -16,6 +16,8 @@ import { Lru } from "./cache.js";
 import { contractCard, MAX_VISIBLE, searchContracts, type Ctx } from "./tools/search.js";
 import { fundingBreakdown, spendByCategory, topContracts } from "./tools/spend.js";
 import { contractDetail } from "./tools/detail.js";
+import { prefilter } from "./agent/guardrails.js";
+import { decline } from "./agent/decline.js";
 import { listDocuments } from "./tools/documents.js";
 import { createSocrataMock, MOCK_ENTITIES } from "./mocks/socrata.js";
 import { createDeepseekMock } from "./mocks/deepseek.js";
@@ -153,7 +155,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     const now = new Date();
     const from = new Date(now); from.setFullYear(from.getFullYear() - 1);
     const year = /\b(20[12]\d)\b/.exec(message)?.[1];
-    const period: { from: string; to: string; defaulted?: boolean } = year ? { from: `${year}-01-01`, to: `${year}-12-31` }
+    let period: { from: string; to: string; defaulted?: boolean } = year ? { from: `${year}-01-01`, to: `${year}-12-31` }
       : prev.period ? prev.period : { from: day(from), to: day(now), defaulted: true };
     const source = { dataset: DATASET, queriedAt: now.toISOString(), dataUpdatedAt: now.toISOString(), url: `https://www.datos.gov.co/d/${DATASET}` };
     const t0 = Date.now();
@@ -168,6 +170,10 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     const norm = normalize(message);
     const withSource = (at: Date, cached: boolean) => ({ source: { ...source, dataUpdatedAt: at.toISOString() }, cached });
     const fail = () => reply({ text: "No pude consultar datos.gov.co en este momento y no tengo una copia guardada. Intenta de nuevo en unos minutos." });
+
+    // Juicios, acusaciones y ataques al prompt: plantilla fija al instante, sin LLM (0 tokens).
+    const blocked = prefilter(message);
+    if (blocked) return reply({ text: decline(blocked) });
 
     // Documentos del contrato de la lista anterior: solo enlaces oficiales, nunca el archivo.
     if (/documento|contrato firmado|estudio previo/.test(norm)) {
@@ -222,6 +228,8 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     }
     // Seguimiento ("¿y en 2024?"): sin entidad/NIT/tema nuevos se reutiliza la entidad del contexto.
     const explicit = res.kind === "entity" || nit || topic;
+    // Cambio de tema sin año explícito: vuelve a los últimos 12 meses (no arrastra el periodo anterior).
+    if (explicit && !year) period = { from: day(from), to: day(now), defaulted: true };
     if (res.kind === "entity") { where.push({ col: "nit_entidad", op: "=", value: res.entity.nit }); label = res.entity.name; }
     else if (nit) { where.push({ col: "nit_entidad", op: "=", value: nit }); label = `NIT ${nit}`; }
     else if (topic) {

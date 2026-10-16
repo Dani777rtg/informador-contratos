@@ -27,3 +27,15 @@ describe("chat con agente", () => {
     expect(decline("NO-09")).toMatch(/Contralor/);
   });
 });
+
+import { listDocuments } from "../../server/tools/documents";
+describe("documentos con datos reales", () => {
+  it("acepta url_descarga_documento como {url} y cae al dataset del año anterior", async () => {
+    const calls: string[] = [];
+    const r = await listDocuments({ processId: "CO1.BDOS.1", year: 2025 }, {
+      query: async (ds) => { calls.push(ds); return ds === "dmgg-8hin" ? [] : [{ nombre_archivo: "a.pdf", url_descarga_documento: { url: "https://community.secop.gov.co/x?DocumentId=1" } } as never]; },
+    });
+    expect(calls).toEqual(["dmgg-8hin", "nbae-kzan"]);
+    expect(r.found).toBe(true);
+  });
+});

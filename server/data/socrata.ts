@@ -64,7 +64,18 @@ export async function fetchRows(c: Client, params: URLSearchParams, dataset = DA
 export interface Entity { nit: string; name: string; norm: string }
 export const normalize = (s: string): string =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
-export const toEntity = (nit: string, name: string): Entity => ({ nit, name, norm: normalize(name) });
+const SMALL = new Set(["de", "del", "la", "las", "el", "los", "y", "e", "en", "para", "por"]);
+const ACRONYMS = new Set(["ese", "sa", "sas", "ant", "ica", "men", "idrd", "igac", "itm", "dian", "sena", "icbf", "invias", "esap", "dc"]);
+/** Nombre de presentación: sin //, *, paréntesis sobrantes ni espacios dobles; en formato título si venía en mayúsculas. */
+export function displayName(raw: string): string {
+  let s = raw.replace(/[*/\\]+/g, " ").replace(/\s+/g, " ").trim();
+  s = s.replace(/^\((.*)\)$/, "$1").replace(/\s*\(\s*(oficial|entidad oficial)\s*\)\s*$/i, "").replace(/[-\s.,;:]+$/, "").trim();
+  if (/\(/.test(s) !== /\)/.test(s)) s = s.replace(/[()]/g, "").trim();
+  if (s !== s.toUpperCase()) return s;
+  return s.toLowerCase().split(" ").map((w, i) =>
+    /\./.test(w) || ACRONYMS.has(w) ? w.toUpperCase() : i > 0 && SMALL.has(w) ? w : w.replace(/^\p{L}/u, (c) => c.toUpperCase())).join(" ");
+}
+export const toEntity = (nit: string, name: string): Entity => ({ nit, name: displayName(name), norm: normalize(name) });
 
 export type Resolution =
   | { kind: "entity"; entity: Entity }
@@ -89,7 +100,11 @@ export function resolveEntity(message: string, index: Entity[]): Resolution {
   // El lugar pesa más que la palabra genérica: gana el que más tokens no genéricos comparte con la pregunta.
   const score = (t: string[]) => new Set(t.filter((w) => w.length > 2 && !GENERIC.has(w) && mt.includes(w))).size;
   const best = Math.max(0, ...cands.map(({ t }) => score(t)));
-  const options = cands.filter(({ t }) => score(t) === best).map(({ e }) => e);
+  let tied = cands.filter(({ t }) => score(t) === best);
+  // Clara la alcaldía/gobernación: el nombre empieza por la palabra genérica o por el lugar mencionado ("Santiago de Cali Distrito…"), no por una dependencia.
+  const heads = tied.filter(({ t }) => { const p = t.slice(0, t.indexOf(g)); return !p.length || p.some((w) => mt.includes(w)); });
+  if (heads.length === 1) tied = heads;
+  const options = tied.map(({ e }) => e);
   if (options.length === 1) return { kind: "entity", entity: options[0] };
   return options.length ? { kind: "ambiguous", options: options.slice(0, 8) } : { kind: "none" };
 }

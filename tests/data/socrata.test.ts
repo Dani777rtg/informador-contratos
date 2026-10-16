@@ -61,3 +61,20 @@ describe("nombres reales del índice (con basura y alias)", () => {
     expect(p.get("$where")).toBe("departamento = 'Boyacá'");
   });
 });
+
+describe("alcaldía clara y nombre de presentación", () => {
+  const idx = [
+    toEntity("890399011", "SANTIAGO DE CALI DISTRITO ESPECIAL - SECRETARIA DEL DEPORTE Y LA RECREACIÓN"),
+    toEntity("805003895", "PERSONERIA DISTRITAL DE SANTIAGO DE CALI"),
+    toEntity("805013033", "FONDO ESPECIAL DE VIVIENDA DEL MUNICIPIO DE SANTIAGO DE CALI"),
+  ];
+  it("Alcaldía de Cali elige el distrito de Santiago de Cali, no las dependencias", () => {
+    expect(resolveEntity("contratos más grandes de la Alcaldía de Cali", idx)).toMatchObject({ kind: "entity", entity: { nit: "890399011" } });
+  });
+  it("displayName limpia //, *, paréntesis y mayúsculas", () => {
+    expect(toEntity("1", "DEPARTAMENTO DE ANTIOQUIA//").name).toBe("Departamento de Antioquia");
+    expect(toEntity("2", "SUBRED INTEGRADA DE SERVICIOS DE SALUD SUR E.S.E.**").name).toBe("Subred Integrada de Servicios de Salud Sur E.S.E");
+    expect(toEntity("3", "(Secretaría Distrital de Integración Social)").name).toBe("Secretaría Distrital de Integración Social");
+    expect(toEntity("4", "MUNICIPIO DE PEREIRA- OFICIAL").name).toBe("Municipio de Pereira- Oficial");
+  });
+});

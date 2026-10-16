@@ -20,19 +20,24 @@ export async function listDocuments(
   deps: { query(dataset: string, params: Record<string, unknown>): Promise<Row[]> },
 ): Promise<{ documents: Doc[]; processUrl: string; found: boolean; message?: string }> {
   const processUrl = `https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=${encodeURIComponent(input.processId)}`;
-  const rows = await deps.query(documentsDataset(input.year), {
-    $where: `proceso = '${input.processId.replace(/'/g, "''")}'`, $limit: 100,
-  });
+  const params = { $where: `proceso = '${input.processId.replace(/'/g, "''")}'`, $limit: 100 };
+  let rows = await deps.query(documentsDataset(input.year), params);
+  // Sin filas: el proceso pudo cargarse en el dataset del año anterior.
+  if (!rows.length && input.year !== undefined && documentsDataset(input.year - 1) !== documentsDataset(input.year)) {
+    rows = await deps.query(documentsDataset(input.year - 1), params);
+  }
   const seen = new Set<string>();
   let documents: (Doc & { match: string })[] = [];
   for (const r of rows) {
-    const url = safeLink(r.url_descarga_documento);
+    // Datos reales: url_descarga_documento llega como {url: "..."}; los mocks lo envían como texto.
+    const u: unknown = r.url_descarga_documento;
+    const url = safeLink(u && typeof u === "object" ? (u as { url?: unknown }).url : u);
     const name = cleanName(r.nombre_archivo ?? "");
     if (!url || !r.nombre_archivo || seen.has(r.nombre_archivo + url)) continue;
     seen.add(r.nombre_archivo + url);
     documents.push({
       name, type: r.extensi_n || "desconocido", size: r.tamanno_archivo || "0", uploadedAt: r.fecha_carga || "desconocida",
-      url, rel: "noopener noreferrer", match: normalize(`${r.nombre_archivo} ${r.descripci_n_documento ?? ""}`),
+      url, rel: "noopener noreferrer", match: normalize(`${r.nombre_archivo} ${r.descripci_n_documento ?? r.descripci_n ?? ""}`),
     });
   }
   const tokens = normalize(input.request ?? "").split(" ").filter((t) => t && !STOP.has(t)).map((t) => t.replace(/s$/, ""));
