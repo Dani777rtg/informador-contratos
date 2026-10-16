@@ -5,12 +5,13 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { DATASET, normalize, resolveEntity, toEntity, type Client, type Cond, type Entity, type Row } from "./data/socrata.js";
+import { DATASET, fetchRows, query as socrataQuery, normalize, resolveEntity, toEntity, type Client, type Cond, type Entity, type Row } from "./data/socrata.js";
 import demoAnswers from "./fallback/demo-answers.json" with { type: "json" };
 import { Lru } from "./cache.js";
 import { contractCard, MAX_VISIBLE, searchContracts, type Ctx } from "./tools/search.js";
 import { fundingBreakdown, spendByCategory, topContracts } from "./tools/spend.js";
 import { contractDetail } from "./tools/detail.js";
+import { listDocuments } from "./tools/documents.js";
 import { createSocrataMock, MOCK_ENTITIES } from "./mocks/socrata.js";
 import { createDeepseekMock } from "./mocks/deepseek.js";
 import { attachDeepgramMock } from "./mocks/deepgram.js";
@@ -85,6 +86,26 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     const withSource = (at: Date, cached: boolean) => ({ source: { ...source, dataUpdatedAt: at.toISOString() }, cached });
     const fail = () => reply({ text: "No pude consultar datos.gov.co en este momento y no tengo una copia guardada. Intenta de nuevo en unos minutos." });
 
+    // Documentos del contrato de la lista anterior: solo enlaces oficiales, nunca el archivo.
+    if (/documento|contrato firmado|estudio previo/.test(norm)) {
+      const ids = state.startsWith("ids:") ? state.slice(4).split(",").filter((i) => /^[\w.-]{1,60}$/.test(i)) : [];
+      const id = ids[/segundo/.test(norm) ? 1 : /tercer/.test(norm) ? 2 : 0];
+      if (!id) return reply({ text: "Primero pídeme los contratos de una entidad y luego los documentos de uno." });
+      try {
+        const [k] = await socrataQuery(client, { where: [{ col: "id_contrato", op: "=", value: id }], limit: 1 });
+        if (!k?.proceso_de_compra) return reply({ text: "No encontré ese contrato. Prueba pidiendo de nuevo la lista de contratos." });
+        const year = Number(k.fecha_de_firma?.slice(0, 4)) || undefined;
+        const request = /contrato firmado|estudio previo/.exec(norm)?.[0];
+        const r = await listDocuments({ processId: k.proceso_de_compra, year, request }, {
+          query: (ds, p) => fetchRows(client, new URLSearchParams(Object.entries(p).map(([a, b]) => [a, String(b)])), ds) as Promise<Record<string, string>[]>,
+        });
+        const links = r.documents.map((d) => `${d.name} (${d.type}, ${d.size}, ${d.uploadedAt.slice(0, 10)})`).join("; ");
+        return reply({
+          text: r.found ? "Estos son los documentos publicados en SECOP." : r.message,
+          cards: [{ kind: "documents", documents: r.documents, processUrl: r.processUrl, summary: links }],
+        });
+      } catch { return fail(); }
+    }
     // Detalle de un contrato de la lista anterior (el estado lleva sus id_contrato).
     if (/detalle|pagos|avance/.test(norm)) {
       const ids = state.startsWith("ids:") ? state.slice(4).split(",").filter((i) => /^[\w.-]{1,60}$/.test(i)) : [];

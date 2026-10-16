@@ -52,6 +52,10 @@ export function createSocrataMock() {
     if (mode === "empty") return c.json([]);
     const where = c.req.query("$where") ?? "";
     const hit = MOCK_ENTITIES.find((e) => where.includes(e.nit));
+    if (c.req.param("id").startsWith("dmgg-8hin")) {
+      const d = (nombre_archivo: string, n: number) => ({ proceso: "x", n_mero_de_contrato: "C-1", nombre_archivo, extensi_n: "pdf", tamanno_archivo: String(n), fecha_carga: "2026-02-01T00:00:00.000", url_descarga_documento: `https://community.secop.gov.co/Public/Archive/RetrieveFile/Index?DocumentId=${n}` });
+      return c.json([d("Contrato firmado.pdf", 101), d("Contrato firmado.pdf", 101), d("Estudio previo.pdf", 102)]);
+    }
     if (!c.req.param("id").startsWith("jbjy-vk9h")) return c.json([]);
     const agg = (rs: Row[]) => (c.req.query("$select") ?? "").includes("sum(") ? aggregate(rs, c.req.query("$select")!, c.req.query("$group") ?? null) : rs;
     if (hit) return c.json(agg(rows(hit.name, hit.nit, 8)));
