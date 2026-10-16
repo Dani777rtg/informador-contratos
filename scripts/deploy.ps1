@@ -73,7 +73,7 @@ if ($LASTEXITCODE) { throw 'build:web falló' }
 if ($Staging) {
   $out = firebase hosting:channel:deploy staging --project $Project --expires 30d --json | ConvertFrom-Json
   $web = $out.result.$Project.url
-  if (-not $web) { throw 'hosting:channel:deploy no devolvió URL (¿firebase login?)' }
+  if (-not $web) { throw 'El canal de Hosting no devolvió URL (¿sesión de Firebase?)' }
   Write-Host "Frontend staging: $web"
   gcloud run services update $Service --project $Project --region $Region --update-env-vars "^|^ALLOWED_ORIGINS=$web"
   if ($LASTEXITCODE) { throw 'update ALLOWED_ORIGINS falló' }
