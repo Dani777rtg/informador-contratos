@@ -6,6 +6,8 @@ export interface Ctx {
   period?: { from: string; to: string };
   contract?: string;
   results?: string[];
+  /** Turnos ya respondidos en la conversación (firmado con el contexto). */
+  turns?: number;
 }
 export interface Turn extends Partial<Ctx> { topicChange?: boolean }
 
@@ -18,6 +20,7 @@ export function applyTurn(ctx: Ctx, t: Turn): Ctx {
   const { topicChange, ...rest } = t;
   const base: Ctx = topicChange ? {} : ctx;
   const out: Ctx = { ...base };
+  if (ctx.turns !== undefined) out.turns = ctx.turns;
   for (const [k, v] of Object.entries(rest)) if (v !== undefined) (out as Record<string, unknown>)[k] = v;
   return out;
 }

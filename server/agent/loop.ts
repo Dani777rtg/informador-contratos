@@ -1,9 +1,11 @@
 import { SYSTEM_PROMPT, wrapData } from "./system-prompt";
 import { decline, DECLINE_TOOL } from "./decline";
 import { dropForbidden, prefilter } from "./guardrails";
-import { allowedNumbers, verifyNumbers } from "./verify-numbers";
+import { allowedNumbers, verifyNumbers, yearNumbers } from "./verify-numbers";
+import { MAX_TOOLS_PER_TURN } from "../guards/validate";
 
-export const MAX_TOOLS_PER_TURN = 3;
+export { MAX_TOOLS_PER_TURN };
+const LLM_TIMEOUT_MS = 30_000;
 const MAX_ROUNDS = 3;
 
 import type { Ctx } from "../session";
@@ -62,6 +64,7 @@ export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({ model, messages, tools: tools.length ? tools : undefined, stream: true, stream_options: { include_usage: true } }),
+        signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
       });
       if (!res.ok || !res.body) throw new Error(`LLM HTTP ${res.status}`);
       let content = "";
@@ -73,10 +76,13 @@ export function createDeepseekLlm(o: { baseUrl?: string; apiKey?: string; model?
         if (!line.startsWith("data:")) return;
         const d = line.slice(5).trim();
         if (!d || d === "[DONE]") return;
-        const j = JSON.parse(d) as {
+        type Chunk = {
           choices?: { delta?: { content?: string | null; tool_calls?: { index?: number; id?: string; function?: { name?: string; arguments?: string } }[] } }[];
           usage?: { total_tokens?: number };
         };
+        let j: Chunk;
+        try { j = JSON.parse(d) as Chunk; } catch { return; } // línea SSE no parseable: se ignora
+        if (!j || typeof j !== "object") return;
         tokens = j.usage?.total_tokens ?? tokens;
         const delta = j.choices?.[0]?.delta;
         if (delta?.content) { content += delta.content; onToken?.(delta.content); }
@@ -131,8 +137,9 @@ export async function runAgent(a: {
   let tokens = 0;
   let text = "";
   const defs = [...Object.values(a.tools).map((t) => ({ type: "function" as const, function: { name: t.name, description: t.description, parameters: t.parameters } })), DECLINE_TOOL];
-  // Cifras permitidas: resultados de herramientas, contexto y lo que el propio usuario dijo.
-  const allowed = () => allowedNumbers(results, context, a.message);
+  // Cifras permitidas: solo resultados de herramientas; mensaje y contexto aportan únicamente años y fechas.
+  const allowed = () => [...allowedNumbers(results), ...yearNumbers(a.message, context)];
+  let used = 0; // herramientas ya ejecutadas en este turno (todas las rondas)
   const messages: LlmMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: `Contexto actual: ${JSON.stringify(context)}` },
@@ -149,7 +156,12 @@ export async function runAgent(a: {
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const gate = makeGate(a.onToken, allowed);
     const last = round === MAX_ROUNDS - 1;
-    const r = await a.llm.complete({ messages, tools: last ? [] : defs, onToken: gate.push });
+    let r: Awaited<ReturnType<Llm["complete"]>>;
+    try {
+      r = await a.llm.complete({ messages, tools: last || used >= MAX_TOOLS_PER_TURN ? [] : defs, onToken: gate.push });
+    } catch {
+      return { text: "No pude consultar el modelo en este momento. Intenta de nuevo en unos minutos.", cards, toolCalls, tokens, context };
+    }
     gate.flush();
     tokens += r.tokens;
     if (!r.toolCalls.length) { text = r.content; break; }
@@ -159,7 +171,9 @@ export async function runAgent(a: {
       try { code = String((JSON.parse(dc.arguments || "{}") as { code?: unknown }).code ?? ""); } catch { /* código inválido: plantilla genérica */ }
       return { text: decline(code), cards: [], toolCalls: [{ name: "decline", args: { code } }], tokens, context };
     }
-    const run = r.toolCalls.slice(0, MAX_TOOLS_PER_TURN);
+    const run = r.toolCalls.slice(0, MAX_TOOLS_PER_TURN - used);
+    used += run.length;
+    if (!run.length) continue;
     messages.push({
       role: "assistant", content: r.content || null,
       tool_calls: run.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })),
@@ -177,8 +191,8 @@ export async function runAgent(a: {
         cards.push(...(res.cards ?? []));
         context = { ...context, ...res.context };
         out = wrapData(res.data);
-      } catch (e) {
-        out = wrapData({ error: e instanceof Error ? e.message : "error" });
+      } catch {
+        out = wrapData({ error: "tool_error" });
       }
       messages.push({ role: "tool", tool_call_id: c.id, content: out });
     }

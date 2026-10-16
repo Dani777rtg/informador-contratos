@@ -12,3 +12,10 @@ export function sanitizeFileName(name: string, opts: { personNames?: string[] } 
   if (parts.length >= 2) parts.splice(0, parts.length - 1);
   return (parts.join(" - ").replace(/\s+/g, " ").trim() || "documento") + ext;
 }
+
+const PERSON = /\b(?:[Ss]e[ñn]or[a]?|[Ss]ra?\.?|[Dd]ra?\.?|[Ii]ng\.?|[Dd]octor[a]?|[Aa] nombre de|CC|CE)\s+(?:\p{Lu}[\p{L}'.]+\s*){1,5}/gu;
+
+/** Texto libre: quita números de documento (6+ dígitos) y nombres de persona natural tras tratamiento/"a nombre de". */
+export function redactText(s: string): string {
+  return s.replace(DOC, "[doc]").replace(PERSON, "[persona] ").replace(/\s+/g, " ").trim();
+}

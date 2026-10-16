@@ -1,8 +1,10 @@
+import { posNum } from "./validate.js";
+
 export type RateResult = { allowed: boolean; message?: string; retryAfterSec?: number };
 
 // ponytail: contadores en memoria por instancia; el limite real es N x max-instances de Cloud Run.
 export function createRateLimiter(o: { limit?: number; windowMs?: number; now?: () => number } = {}): { check(origin: string): RateResult } {
-  const limit = o.limit ?? Number(process.env.RATE_LIMIT_PER_MIN ?? 20);
+  const limit = o.limit ?? posNum(process.env.RATE_LIMIT_PER_MIN, 20);
   const windowMs = o.windowMs ?? 60_000;
   const now = o.now ?? Date.now;
   const hits = new Map<string, number[]>();

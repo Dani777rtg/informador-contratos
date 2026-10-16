@@ -1,5 +1,7 @@
 // Crea la plantilla de WhatsApp (UTILITY, es) y la sigue hasta APPROVED. Uso: npm run wa:template [-- --status]
 type F = typeof fetch;
+type Tpl = { id?: string; name?: string; status?: string };
+type Json = { id?: string; status?: string; data?: Tpl[]; error?: { message?: string } };
 export type EnsureOpts = {
   fetch: F; wabaId: string; token: string; log: (l: string) => void;
   sleep?: (ms: number) => Promise<void>; statusOnly?: boolean; baseName?: string;
@@ -19,7 +21,7 @@ export async function ensureTemplate(o: EnsureOpts): Promise<{ status: string; n
     const res = await o.fetch(`${base}/${url}`, body
       ? { method: "POST", headers: { ...auth, "content-type": "application/json" }, body: JSON.stringify(body) }
       : { headers: auth });
-    return { ok: res.ok, status: res.status, json: (await res.json().catch(() => ({}))) as any };
+    return { ok: res.ok, status: res.status, json: (await res.json().catch(() => ({}))) as Json };
   };
   const root = o.baseName ?? BASE_NAME;
   const poll = async (id: string, name: string) => {
@@ -27,7 +29,7 @@ export async function ensureTemplate(o: EnsureOpts): Promise<{ status: string; n
     for (let i = 0; i < MAX_POLLS; i++) {
       const r = await call(`${id}?fields=status`);
       if (!r.ok) throw new Error(`Consulta de estado falló (HTTP ${r.status})`);
-      s = r.json.status;
+      s = r.json.status ?? s;
       o.log(`Plantilla ${name}: ${s}`);
       if (s !== "PENDING" && s !== "IN_APPEAL") return s;
       await sleep(5000);
@@ -37,14 +39,14 @@ export async function ensureTemplate(o: EnsureOpts): Promise<{ status: string; n
 
   // Reutiliza una plantilla existente si está aprobada o en revisión.
   const found = await call(`${o.wabaId}/message_templates?name=${root}&fields=id,name,status`);
-  const prev = found.ok ? (found.json.data ?? []).find((t: any) => t.name === root) : undefined;
+  const prev = found.ok ? (found.json.data ?? []).find((t) => t.name === root) : undefined;
   if (prev && prev.status === "APPROVED") { o.log(`Plantilla ${root}: APPROVED`); return { status: "APPROVED", name: root }; }
   if (o.statusOnly) {
     const s = prev?.status ?? "NOT_FOUND";
     o.log(`Plantilla ${root}: ${s}`);
     return { status: s, name: root };
   }
-  if (prev && prev.status === "PENDING") return { status: await poll(prev.id, root), name: root };
+  if (prev && prev.status === "PENDING") return { status: await poll(prev.id ?? "", root), name: root };
 
   // Meta no deja reutilizar el nombre de una rechazada: cada reenvío usa sufijo nuevo.
   let name = prev ? `${root}_v${Date.now().toString(36)}` : root;
@@ -68,5 +70,5 @@ if (process.argv[1]?.replace(/\\/g, "/").endsWith("whatsapp-template.ts")) {
   if (!token || !wabaId) { console.error("Faltan WHATSAPP_ACCESS_TOKEN o WHATSAPP_BUSINESS_ACCOUNT_ID"); process.exit(1); }
   ensureTemplate({ fetch, wabaId, token, log: console.log, statusOnly: process.argv.includes("--status") })
     .then((r) => { console.log(`Resultado: ${r.name} ${r.status}`); process.exit(r.status === "APPROVED" ? 0 : 2); })
-    .catch((e) => { console.error(String(e.message ?? e).replace(token, "***")); process.exit(1); });
+    .catch((e: unknown) => { console.error(String(e instanceof Error ? e.message : e).replace(token, "***")); process.exit(1); });
 }

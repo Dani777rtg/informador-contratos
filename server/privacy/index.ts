@@ -1,5 +1,5 @@
 import { COLUMNS } from "../data/socrata.js";
-export { sanitizeFileName } from "./redact.js";
+export { sanitizeFileName, redactText } from "./redact.js";
 
 export const ALLOWED_COLUMNS: readonly string[] = COLUMNS;
 

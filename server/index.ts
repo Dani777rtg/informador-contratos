@@ -5,8 +5,10 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { randomBytes } from "node:crypto";
 import { Hono } from "hono";
-import { applyTurn, createSessionCodec, emptyContext } from "./session.js";
+import { applyTurn, createSessionCodec, emptyContext, type Ctx as Ctx2 } from "./session.js";
 import { serve } from "@hono/node-server";
+import { getConnInfo } from "@hono/node-server/conninfo";
+import { bodyLimit } from "hono/body-limit";
 import { DATASET, fetchRows, query as socrataQuery, normalize, resolveEntity, toEntity, type Client, type Cond, type Entity, type Row } from "./data/socrata.js";
 import demoAnswers from "./fallback/demo-answers.json" with { type: "json" };
 import { Lru } from "./cache.js";
@@ -20,7 +22,7 @@ import { attachDeepgramMock } from "./mocks/deepgram.js";
 import { createWhatsappMock } from "./mocks/whatsapp.js";
 import { createRateLimiter, clientIp } from "./guards/rate-limit.js";
 import { createDemandGuard } from "./guards/demand.js";
-import { validateClientMessage } from "./guards/validate.js";
+import { posNum, validateClientMessage } from "./guards/validate.js";
 import { createVoice } from "./voice/index.js";
 import { createDeepseekLlm } from "./agent/loop.js";
 import { createTools } from "./agent/tools.js";
@@ -41,12 +43,18 @@ const day = (d: Date) => d.toISOString().slice(0, 10);
 function loadEntities(env: Env, mock: boolean): Entity[] {
   if (mock) return MOCK_ENTITIES;
   const f = resolve("data/entities.json");
-  const raw = existsSync(f) ? (JSON.parse(readFileSync(f, "utf8")) as { nit: string; name: string }[]) : [];
-  return raw.map((e) => toEntity(e.nit, e.name));
+  if (!existsSync(f)) return [];
+  try {
+    const raw = JSON.parse(readFileSync(f, "utf8")) as { nit: string; name: string }[];
+    return raw.map((e) => toEntity(e.nit, e.name));
+  } catch {
+    throw new Error("data/entities.json no es un JSON válido con la forma [{nit, name}]; regenéralo con el script de entidades.");
+  }
 }
 
 export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void } {
   const mock = env.MOCK_EXTERNALS === "1";
+  if (mock && env.NODE_ENV === "production") throw new Error("MOCK_EXTERNALS=1 no se permite con NODE_ENV=production.");
   const app = new Hono();
   const entities = loadEntities(env, mock);
   let attach: ((s: Server) => void) | undefined;
@@ -65,11 +73,14 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
     await next();
     for (const [k, v] of Object.entries(securityHeaders(createNonce()))) c.res.headers.set(k, v);
   });
-  // Con sustitutos locales (MOCK_EXTERNALS=1, nunca en producciÃ³n) el lÃ­mite por defecto sube para no frenar las pruebas.
-  const limiter = createRateLimiter({ limit: Number(env.RATE_LIMIT_PER_MIN ?? (mock ? 10_000 : 20)) });
+  // Con sustitutos locales (MOCK_EXTERNALS=1, nunca en producción) el límite por defecto sube para no frenar las pruebas.
+  const limiter = createRateLimiter({ limit: posNum(env.RATE_LIMIT_PER_MIN, mock ? 10_000 : 20) });
   const demand = createDemandGuard({});
+  app.onError((_e, c) => c.json({ text: "No pude procesar tu solicitud en este momento. Intenta de nuevo.", cards: [] }, 500));
+  app.use("/api/*", bodyLimit({ maxSize: 8 * 1024, onError: (c) => c.json({ text: "La solicitud es demasiado grande.", cards: [] }, 413) }));
+  const socketIp = (c: Parameters<typeof getConnInfo>[0]) => { try { return getConnInfo(c).remote.address; } catch { return undefined; } };
   app.use("/api/*", async (c, next) => {
-    const r = limiter.check(clientIp(c.req.header("x-forwarded-for")));
+    const r = limiter.check(clientIp(c.req.header("x-forwarded-for"), socketIp(c) ?? "unknown"));
     if (!r.allowed) return c.json({ text: r.message, cards: [] }, 429, { "retry-after": String(r.retryAfterSec) });
     const d = demand.admit("text");
     if (!d.allowed) return c.json({ text: d.message, cards: [] }, 503);
@@ -116,12 +127,15 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void }
   });
 
   app.post("/api/chat", async (c) => {
-    const body = (await c.req.json().catch(() => ({}))) as { message?: unknown; state?: unknown };
-    const v = validateClientMessage({ type: "message", text: body.message }, { turnCount: 0 });
+    const raw: unknown = await c.req.json().catch(() => null);
+    const body = (raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}) as { message?: unknown; state?: unknown };
+    // Estado firmado inválido, viejo, caducado o desmesurado -> conversación nueva, sin error.
+    const state = typeof body.state === "string" && body.state.length <= 4096 ? body.state : undefined;
+    const verified = codec.verify(state) ?? emptyContext();
+    const v = validateClientMessage({ type: "message", text: body.message }, { turnCount: verified.turns ?? 0 });
     if (!v.ok) return c.json({ text: v.error, cards: [] }, 400);
     const message = body.message as string;
-    // Estado firmado invÃ¡lido, viejo o caducado -> conversaciÃ³n nueva, sin error.
-    const prev = codec.verify(body.state) ?? emptyContext();
+    const prev: Ctx2 = { ...verified, turns: (verified.turns ?? 0) + 1 };
     let cur = prev;
     const now = new Date();
     const from = new Date(now); from.setFullYear(from.getFullYear() - 1);

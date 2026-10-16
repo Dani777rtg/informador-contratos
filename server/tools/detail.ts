@@ -2,11 +2,14 @@ import { query, type Row } from "../data/socrata.js";
 import { withCache } from "../cache.js";
 import { money, num } from "../soql.js";
 import { key, type Ctx } from "./search.js";
+import { redactText } from "../privacy/index.js";
 
 // ponytail: columnas de adiciones (cb9c-h8sn) y modificaciones (u8cx-r425) por verificar contra datos reales.
+// Los textos libres pasan por la depuración de PII (números de 6+ dígitos y nombres de persona natural).
+const TEXT = ["tipo_modificacion", "descripcion_modificacion"];
 const pick = (r: Record<string, unknown>) =>
   Object.fromEntries(["tipo_modificacion", "valor_adicion", "dias_adicionados", "fecha_modificacion", "descripcion_modificacion"]
-    .filter((k) => r[k] != null).map((k) => [k, r[k]]));
+    .filter((k) => r[k] != null).map((k) => [k, typeof r[k] === "string" && TEXT.includes(k) ? redactText(r[k] as string) : r[k]]));
 
 export const contractDetail = async (ctx: Ctx, id: string) => {
   const where = [{ col: "id_contrato" as const, op: "=" as const, value: id }];

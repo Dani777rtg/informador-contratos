@@ -3,6 +3,7 @@ import type { IncomingMessage, Server } from "node:http";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
 import { emptyContext, type Ctx, type createSessionCodec } from "../session.js";
 import type { createAsker } from "../agent/ask.js";
+import { posNum } from "../guards/validate.js";
 import { issueSessionToken, verifyUpgrade } from "../guards/ws-auth.js";
 
 type Env = Record<string, string | undefined>;
@@ -15,8 +16,8 @@ const NO_VOICE = "La voz no está disponible por ahora; seguimos por texto.";
 export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec: ReturnType<typeof createSessionCodec>) {
   const secret = env.SESSION_SECRET ?? randomBytes(32).toString("hex");
   const origins = (env.ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  const sessionMax = Number(env.VOICE_SESSION_MAX_SECONDS ?? 600) * 1000;
-  const dailyMax = Number(env.VOICE_DAILY_MAX_MINUTES ?? 120) * 60_000;
+  const sessionMax = posNum(env.VOICE_SESSION_MAX_SECONDS, 600) * 1000;
+  const dailyMax = (env.VOICE_DAILY_MAX_MINUTES === "0" ? 0 : posNum(env.VOICE_DAILY_MAX_MINUTES, 120)) * 60_000;
   // ponytail: tope diario en memoria y global (se pierde al reiniciar); persistirlo si hay varias instancias.
   const daily = { day: "", ms: 0 };
   const used = () => {
@@ -160,8 +161,9 @@ export function createVoice(env: Env, ask: ReturnType<typeof createAsker>, codec
     originAllowed: (o?: string) => !!o && origins.includes(o),
     attach(server: Server) {
       server.on("upgrade", (req: IncomingMessage, socket, head) => {
-        const u = new URL(req.url ?? "/", "http://x");
-        if (u.pathname !== "/voice") return;
+        let u: URL;
+        try { u = new URL(req.url ?? "/", "http://x"); } catch { socket.destroy(); return; }
+        if (u.pathname !== "/voice") { if (!u.pathname.startsWith("/__mock/")) socket.destroy(); return; }
         const v = verifyUpgrade({ origin: req.headers.origin, token: u.searchParams.get("token") ?? undefined }, { allowedOrigins: origins, secret });
         if (!v.ok) { socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n"); socket.destroy(); return; }
         wss.handleUpgrade(req, socket, head, (ws) => session(ws));

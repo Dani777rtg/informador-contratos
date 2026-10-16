@@ -17,7 +17,7 @@ describe("cliente Socrata", () => {
     const rows = await query({ base: "http://x", token: "t", fetchFn: ok }, { limit: 1 });
     expect(rows[0].nit_entidad).toBe("890399011");
     expect(hdr).toEqual({ "X-App-Token": "t" });
-    const slow = (() => new Promise(() => {})) as unknown as typeof fetch;
+    const slow = ((_u: string, i: RequestInit) => new Promise((_, rej) => i.signal?.addEventListener("abort", () => rej(i.signal?.reason)))) as unknown as typeof fetch;
     await expect(query({ base: "http://x", fetchFn: slow, timeoutMs: 20 }, {})).rejects.toThrow("timeout");
   });
 });

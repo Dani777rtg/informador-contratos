@@ -25,6 +25,14 @@ export function allowedNumbers(...sources: unknown[]): number[] {
   return sources.flatMap((s) => extractNumbers(typeof s === "string" ? s : JSON.stringify(s) ?? "")).map((n) => n.value);
 }
 
+/** Años (19xx/20xx) y partes de fechas ISO: lo único que se acepta del mensaje del usuario o del contexto. */
+export function yearNumbers(...sources: unknown[]): number[] {
+  const t = sources.map((s) => (typeof s === "string" ? s : JSON.stringify(s) ?? "")).join(" ");
+  const out = [...t.matchAll(/\b(?:19|20)\d{2}\b/g)].map((m) => Number(m[0]));
+  for (const m of t.matchAll(/\b\d{4}-(\d{2})-(\d{2})\b/g)) out.push(Number(m[1]), Number(m[2]));
+  return out;
+}
+
 const supported = (n: Num, allowed: number[]) =>
   allowed.some((a) => (n.scaled ? a !== 0 && Math.abs(a - n.value) / Math.abs(a) <= 0.05 : a === n.value));
 

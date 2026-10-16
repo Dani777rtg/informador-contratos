@@ -26,7 +26,7 @@ Invoke-Gcloud artifacts repositories create app --repository-format=docker --loc
 $vals = @{}
 Get-Content $EnvFile | ForEach-Object { if ($_ -match '^\s*([A-Z0-9_]+)\s*=\s*(.*)$') { $vals[$Matches[1]] = $Matches[2].Trim('"', "'") } }
 # HMAC_SECRET no vive en .env: se genera aleatorio si falta.
-if (-not $vals["HMAC_SECRET"]) { $vals["HMAC_SECRET"] = [Convert]::ToBase64String((1..48 | ForEach-Object { [byte](Get-Random -Max 256) })) }
+if (-not $vals["HMAC_SECRET"]) { $vals["HMAC_SECRET"] = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48)) }
 foreach ($n in $SecretNames) {
   if (-not $vals[$n]) { Write-Host "Sin valor para $n en ${EnvFile}: omitido"; continue }
   Invoke-Gcloud secrets create $n --replication-policy=automatic --project=$Project

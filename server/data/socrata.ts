@@ -47,13 +47,13 @@ export async function fetchRows(c: Client, params: URLSearchParams, dataset = DA
   const url = `${c.base}/resource/${dataset}.json?${params}`;
   const f = c.fetchFn ?? fetch;
   const headers: Record<string, string> = c.token ? { "X-App-Token": c.token } : {};
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, rej) => { timer = setTimeout(() => rej(new Error("timeout")), c.timeoutMs ?? 3000); });
-  try {
-    const res = await Promise.race([f(url, { headers }), timeout]);
-    if (!res.ok) throw new Error(`socrata ${res.status}`);
-    return (await res.json()) as Row[];
-  } finally { clearTimeout(timer); }
+  // La señal cubre también la lectura del cuerpo.
+  const res = await f(url, { headers, signal: AbortSignal.timeout(c.timeoutMs ?? 3000) });
+  if (!res.ok) throw new Error(`socrata ${res.status}`);
+  const rows = (await res.json()) as Row[];
+  // Contratos sin agregación: solo columnas de la lista permitida (misma regla que privacy.sanitizeRow; no se importa por ciclo).
+  if (dataset !== DATASET || params.has("$group") || !Array.isArray(rows)) return rows;
+  return rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => (COLUMNS as readonly string[]).includes(k)))) as Row[];
 }
 
 // ---- Índice de entidades y desambiguación ----
