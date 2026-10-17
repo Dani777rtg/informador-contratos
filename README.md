@@ -22,6 +22,7 @@ En PowerShell: `$env:MOCK_EXTERNALS="1"; npx tsx server/index.ts`.
 ## Pruebas
 - `npm test`: unitarias y de aceptación (vitest).
 - `npm run eval -- --mock`: evaluación del agente con sustitutos.
+- `npm run eval:battery -- --model <deepseek-flash|deepseek-v4-pro> [--target <url>] [--env-file=<ruta>]`: 218 preguntas (`eval/battery.json`) juzgadas por DeepSeek (`eval/judge.ts`; calibración con `npm run eval:judge`); escribe `eval/battery-results-<modelo>.json` con acierto, p50/p95 y costo por pregunta. Comparación en `docs/MODELO.md`.
 - `npm run eval:real -- --env-file=<ruta al .env>`: ~27 preguntas ciudadanas contra datos.gov.co y DeepSeek **reales** (`eval/real-questions.json`); comprueba que las tarjetas correspondan a la entidad, municipio, departamento y tema pedidos, sin marcado DSML y con fuente. Imprime ok/falla, ms y tokens por pregunta, p50/p95, y escribe `eval/real-results.json`. Cuesta centavos; sale con 1 si hay menos de 90 % ok.
 - `npm run probe:prod -- --target <url> [--env-file=<ruta>]`: puerta de producción (AC-13.11): 16 preguntas reales por texto y por voz con audio sintetizado por Deepgram TTS enviado a `/voice`; revisa que responda lo pedido, sin "no hay datos" cuando hay datos, montos en pesos, sin muletilla y detalle de contrato. Escribe `eval/prod-probe-results.json`; sale con 1 si hay menos de 90 % ok. El servidor debe tener `ALLOWED_ORIGINS` = la URL objetivo.
 - `npm run loadtest:local`: carga contra el servidor con sustitutos. **Solo local, nunca contra la nube.**

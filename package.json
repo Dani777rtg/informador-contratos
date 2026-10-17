@@ -14,6 +14,8 @@
     "test:a11y": "vitest run tests/acceptance/us-04.ui.test.ts",
     "eval": "tsx eval/run.ts",
     "eval:real": "tsx eval/real.ts",
+    "eval:battery": "tsx eval/battery.ts",
+    "eval:judge": "tsx eval/judge.ts",
     "probe:prod": "tsx scripts/prod-probe.ts",
     "scan:secrets": "tsx scripts/scan-secrets.ts",
     "loadtest:local": "tsx loadtest/run.ts",
