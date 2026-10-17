@@ -63,7 +63,7 @@ describe("herramientas del agente", () => {
 
   it("top_contratistas agrupa por proveedor con ciudad en $where y nombre completo", async () => {
     calls.length = 0;
-    const r = await tools.top_contratistas.run({ municipio: "Manizales" }, {});
+    const r = await tools.consultar.run({ filtros: { municipio: "Manizales" }, operacion: "sumar", agrupar: "contratista" }, {});
     expect(calls[0].get("$group")).toBe("proveedor_adjudicado");
     expect(calls[0].get("$select")).not.toContain("documento");
     expect(calls[0].get("$where")).toContain("ciudad = 'Manizales'");
@@ -72,22 +72,24 @@ describe("herramientas del agente", () => {
   });
   it("municipio o entidad desconocidos: error explícito, sin consultar otra cosa", async () => {
     calls.length = 0;
-    expect((await tools.buscar_contratos.run({ municipio: "Atlantis" }, { entity: { nit: "1", name: "X" } })).data).toMatchObject({ error: "lugar_desconocido" });
-    expect((await tools.buscar_contratos.run({ entidad: "Ministerio de Salud" }, {})).data).toHaveProperty("error");
+    expect((await tools.consultar.run({ filtros: { municipio: "Atlantis" }, operacion: "listar" }, { entity: { nit: "1", name: "X" } })).data).toMatchObject({ error: "lugar_desconocido" });
     expect(calls).toHaveLength(0);
+    // Entidad fuera del índice: se busca por nombre y, sin resultados, se devuelven sugerencias en vez de datos de otra entidad.
+    const empty = createTools({ client: { base: "http://x", fetchFn: (async () => Response.json([])) as unknown as typeof fetch }, cache: new Lru<Row[]>() }, [toEntity("899999001", "MINISTERIO DE EDUCACION NACIONAL (MEN)")], async () => places);
+    expect((await empty.consultar.run({ filtros: { entidad: "Superintendencia Qwzxv" }, operacion: "listar" }, {})).data).toMatchObject({ error: "sin_resultados", sugerencias: expect.any(Array) });
   });
   it("sin coincidencias lo dice", async () => {
     const empty = createTools({ client: { base: "http://x", fetchFn: (async () => Response.json([])) as unknown as typeof fetch }, cache: new Lru<Row[]>() }, [], async () => places);
-    expect((await empty.buscar_contratos.run({ municipio: "Pasto", tema: "vías" }, {})).data).toHaveProperty("sinResultados");
+    expect((await empty.consultar.run({ filtros: { municipio: "Pasto", tema: "vías" }, operacion: "listar" }, {})).data).toHaveProperty("sinResultados");
   });
   it("un seguimiento con ciudad nueva no hereda la entidad del contexto", async () => {
     calls.length = 0;
-    await tools.gasto_por_categoria.run({ municipio: "Pasto" }, { entity: { nit: "899999001", name: "MEN" } });
+    await tools.consultar.run({ filtros: { municipio: "Pasto" }, operacion: "sumar", agrupar: "categoria" }, { entity: { nit: "899999001", name: "MEN" } });
     expect(calls[0].get("$where")).not.toContain("nit_entidad");
   });
 });
 
-describe("atajos solo con intención inequívoca", () => {
+describe("sin atajos: las preguntas de datos van al agente", () => {
   const { app } = createApp({ MOCK_EXTERNALS: "1" });
   const ask = async (message: string) => (await app.request("/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message }) })).json() as Promise<{ filters?: unknown; cards: { kind: string }[] }>;
   it.each([
@@ -95,10 +97,10 @@ describe("atajos solo con intención inequívoca", () => {
     "¿Qué empresa tiene más contratos de vías en Antioquia este año?",
     "¿Cuánto se ha gastado en salud en Cartagena?",
     "¿Quién es el contratista que más recibe de la Alcaldía de Cali?",
+    "¿Cuáles son los contratos más grandes de la Alcaldía de Cali?",
   ])("va al agente: %s", async (q) => { expect(await ask(q)).toHaveProperty("filters"); });
-  it("entidad clara + intención clara sigue siendo atajo (0 tokens)", async () => {
+  it("entidad clara + intención clara: el agente devuelve el ranking de contratos", async () => {
     const r = await ask("¿Cuáles son los contratos más grandes de la Alcaldía de Cali?");
-    expect(r).not.toHaveProperty("filters");
     expect(r.cards.some((c) => c.kind === "top")).toBe(true);
   });
 });

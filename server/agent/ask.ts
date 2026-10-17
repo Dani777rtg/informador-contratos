@@ -23,7 +23,7 @@ export function createAsker(d: AskDeps) {
     const k = cacheKey(q, context);
     const r = await jobs.get(k)!();
     full.set(k, r);
-    return { text: r.text, tokens: r.tokens, cache: !r.degraded };
+    return { text: r.text, tokens: r.tokens, cache: !r.degraded && !r.toolCalls.length } // con datos de herramientas cambian: solo se guardan las respuestas sin consulta;
   });
   return async function ask(message: string, prev: Ctx, channel: "texto" | "voz", onToken?: (t: string) => void): Promise<Asked> {
     const context = d.topicGuard ? d.topicGuard(message, prev) : prev; // el mensaje manda sobre el contexto

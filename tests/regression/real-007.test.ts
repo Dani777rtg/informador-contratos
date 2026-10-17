@@ -10,10 +10,10 @@ const num = (s: unknown) => Number(String(s).replace(/\D/g, ""));
 describe.skipIf(!real)("T025 con datos reales", () => {
   it("educación en Yopal: el mayor de la lista no supera el total y con/sin tilde coinciden", async () => {
     const c = ctx();
-    const a: any = await runTool("gasto_total", { municipio: "Yopal", tema: "educación", anio: 2025 }, c);
-    const b: any = await runTool("gasto_total", { municipio: "Yopal", tema: "educacion", anio: 2025 }, c);
+    const a: any = await runTool("consultar", { filtros: { municipio: "Yopal", tema: "educación", desde: "2025", hasta: "2025" }, operacion: "sumar" }, c);
+    const b: any = await runTool("consultar", { filtros: { municipio: "Yopal", tema: "educacion", desde: "2025", hasta: "2025" }, operacion: "sumar" }, c);
     expect(JSON.stringify(a.cards)).toBe(JSON.stringify(b.cards));
-    const l: any = await runTool("buscar_contratos", { municipio: "Yopal", tema: "educación", anio: 2025, limite: 5 }, c);
+    const l: any = await runTool("consultar", { filtros: { municipio: "Yopal", tema: "educación", desde: "2025", hasta: "2025" }, operacion: "listar", orden: "desc", limite: 5 }, c);
     const total = num(a.cards[0].total);
     const vals = l.cards.map((x: any) => num(x.value));
     expect(vals).toEqual([...vals].sort((x, y) => y - x));
@@ -23,13 +23,13 @@ describe.skipIf(!real)("T025 con datos reales", () => {
 
   it("Bogotá: el contratista con más valor no es el atípico y el mayor contrato lo deja aparte", async () => {
     const c = ctx();
-    const r: any = await runTool("contratos_mayores", { municipio: "Bogotá", desde: "2026-01-01" }, c);
+    const r: any = await runTool("consultar", { filtros: { municipio: "Bogotá", desde: "2026-01-01" }, operacion: "listar", orden: "desc" }, c);
     expect(r.cards.filter((x: any) => !x.atipico).every((x: any) => num(x.value) <= 1e13)).toBe(true);
   }, 30_000);
 
   it("detalle completo de ≥ 5 contratos mostrados", async () => {
     const c = ctx();
-    const l: any = await runTool("contratos_mayores", { municipio: "Yopal", anio: 2025, limite: 5 }, c);
+    const l: any = await runTool("consultar", { filtros: { municipio: "Yopal", desde: "2025", hasta: "2025" }, operacion: "listar", orden: "desc", limite: 5 }, c);
     expect(l.data.ids.length).toBeGreaterThanOrEqual(5);
     for (const id of l.data.ids.slice(0, 5)) {
       const d: any = await runTool("detalle_contrato", { id_contrato: id }, c);

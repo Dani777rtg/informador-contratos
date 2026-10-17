@@ -52,7 +52,7 @@ describe("voz: Voice Agent de Deepgram", () => {
     expect(s.agent.think.endpoint.url).toMatch(/\/chat\/completions$/);
     expect(s.agent.think.endpoint.headers.authorization).toBe(`Bearer ${KEY}`);
     expect(s.agent.think.prompt).toBe(MISSION_PROMPT);
-    expect(s.agent.think.functions.length).toBeGreaterThanOrEqual(7);
+    expect(s.agent.think.functions.length).toBeGreaterThanOrEqual(4);
     expect(s.agent.speak.provider.model).toBe("aura-2-celeste-es");
     expect(s.agent.greeting).toBeUndefined();
     expect((buildSettings({ DEEPSEEK_API_KEY: "otra" }) as any).agent.think.endpoint.headers.authorization).toBe("Bearer otra");
@@ -117,11 +117,11 @@ describe("voz: Voice Agent de Deepgram", () => {
     const { ws, got } = await connect(dg.url, {}, { run });
     await sleep(200);
     dg.seen.sock!.send(JSON.stringify({ type: "FunctionCallRequest", functions: [
-      { id: "f1", name: "gasto_total", arguments: JSON.stringify({ municipio: "Manizales" }), client_side: true },
+      { id: "f1", name: "consultar", arguments: JSON.stringify({ filtros: { municipio: "Manizales" }, operacion: "sumar" }), client_side: true },
       { id: "f2", name: "ejecutar_shell", arguments: "{}", client_side: true },
     ] }));
     await sleep(300);
-    expect(calls).toEqual([["gasto_total", { municipio: "Manizales" }]]);
+    expect(calls).toEqual([["consultar", { filtros: { municipio: "Manizales" }, operacion: "sumar" }]]);
     expect(got.text).toContainEqual({ type: "ToolResult", cards: [{ kind: "spend", total: "$2.700.000.000 COP" }] });
     const r = dg.seen.json.filter((m) => m.type === "FunctionCallResponse");
     expect(r.map((m) => m.id)).toEqual(["f1", "f2"]);

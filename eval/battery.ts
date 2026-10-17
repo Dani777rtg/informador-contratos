@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { judge } from "./judge";
 
 interface Q { id: string; question: string; after?: string; expect: unknown }
-interface Reply { text?: string; cards?: unknown[]; state?: string; tokens?: number; filters?: unknown; toolCalls?: { name: string; args: unknown }[]; error?: string }
+interface Reply { period?: unknown; text?: string; cards?: unknown[]; state?: string; tokens?: number; filters?: unknown; toolCalls?: { name: string; args: unknown }[]; error?: string }
 interface Result { id: string; question: string; ok: boolean; motivo: string; ms: number; tokens: number; text: string }
 
 const arg = (n: string): string | undefined => { const i = process.argv.indexOf(`--${n}`); return i >= 0 ? process.argv[i + 1] : process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3); };
@@ -47,7 +47,7 @@ async function runOne(q: Q, publish: (s: string | undefined) => void): Promise<R
   const ms = Date.now() - t0;
   publish(r.state);
   const text = r.text ?? "";
-  const v = failure ? { ok: false, motivo: failure } : await judge({ question: q.question, expect: q.expect, toolCalls: r.toolCalls ?? [], data: { cards: r.cards ?? [], filters: r.filters }, answer: text });
+  const v = failure ? { ok: false, motivo: failure } : await judge({ question: q.question, expect: q.expect, toolCalls: r.toolCalls ?? [], data: { cards: r.cards ?? [], filters: r.filters, period: r.period }, answer: text });
   return { id: q.id, question: q.question, ok: v.ok, motivo: v.motivo, ms, tokens: r.tokens ?? 0, text };
 }
 

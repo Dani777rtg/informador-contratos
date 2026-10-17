@@ -29,16 +29,21 @@ function rows(entity: string, nit: string, n: number, object = "Prestación de s
   }));
 }
 
-/** Agrega como lo haria SoQL: $group + sum(col) as alias + count(*) as n. */
+/** Agrega como lo haria SoQL: $group + sum(col[::number]) as alias + count(*) as n + avg(...) as a; `g` agrupa por mes o año de la firma. */
 function aggregate(rs: Row[], select: string, group: string | null): Record<string, string>[] {
-  const sums = [...select.matchAll(/sum\((\w+)\) as (\w+)/g)];
+  const sums = [...select.matchAll(/sum\((\w+)(?:::number)?\) as (\w+)/g)];
+  const trunc = /date_trunc_(ym|y)\(/.exec(select)?.[1];
+  const keyOf = (r: Row) => !group ? "" : group === "g" ? String(r.fecha_de_firma ?? "").slice(0, trunc === "y" ? 4 : 7) : String(r[group as keyof Row]);
   const groups = new Map<string, Row[]>();
-  for (const r of rs) { const k = group ? String(r[group as keyof Row]) : ""; groups.set(k, [...(groups.get(k) ?? []), r]); }
-  return [...groups].map(([k, g]) => ({
-    ...(group ? { [group]: k } : {}),
-    ...Object.fromEntries(sums.map(([, c, a]) => [a, String(g.reduce((t, r) => t + Number(r[c as keyof Row] ?? 0), 0))])),
-    n: String(g.length),
-  }));
+  for (const r of rs) { const k = keyOf(r); groups.set(k, [...(groups.get(k) ?? []), r]); }
+  return [...groups].map(([k, g]) => {
+    const tot = sums.map(([, c, al]) => [al, g.reduce((t, r) => t + Number(r[c as keyof Row] ?? 0), 0)] as const);
+    return {
+      ...(group ? { [group]: k } : {}),
+      ...Object.fromEntries(tot.map(([al, v]) => [al, String(v)])),
+      n: String(g.length), a: String((tot[0]?.[1] ?? 0) / g.length),
+    };
+  });
 }
 
 /** Sustituto de datos.gov.co con modos de fallo y registro de peticiones. */

@@ -10,18 +10,17 @@ describe("respaldo precalculado del demo", () => {
     for (const e of Object.values(demo) as { updatedAt: string; queriedAt: string }[]) expect(Date.parse(e.updatedAt)).toBeGreaterThan(0);
   });
 
-  it("si datos.gov.co vence el timeout, responde la copia por clave con su fecha", async () => {
-    const { app } = createApp({ SOCRATA_BASE: "http://127.0.0.1:9", ALLOWED_ORIGINS: "" });
+  it("si datos.gov.co falla, el agente responde sin lanzar y sin inventar tarjetas", async () => {
+    const { app } = createApp({ MOCK_EXTERNALS: "1", ALLOWED_ORIGINS: "" });
+    await app.request("/__mock/socrata", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "fail" }) });
     const res = await app.request("/api/chat", {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ message: "¿Qué contratos tiene el NIT 890399011?" }),
     });
-    const j = (await res.json()) as { text: string; cached: boolean; cards: unknown[]; source: { dataUpdatedAt: string } };
-    const e = (demo as Record<string, { updatedAt: string }>)["nit:890399011|contracts|12m"];
-    expect(j.cached).toBe(true);
-    expect(j.cards.length).toBeGreaterThan(0);
-    expect(j.source.dataUpdatedAt).toBe(e.updatedAt);
-    expect(j.text).toContain(e.updatedAt.slice(0, 10));
+    const j = (await res.json()) as { text: string; cards: unknown[] };
+    expect(res.status).toBe(200);
+    expect(j.text.length).toBeGreaterThan(0);
+    expect(j.cards).toHaveLength(0);
   });
 
   it("NIT 890399011 se presenta como Alcaldía de Santiago de Cali y 'Alcaldía de Cali' lo resuelve", () => {

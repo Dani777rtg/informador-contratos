@@ -182,7 +182,7 @@ export function createApp(env: Env): { app: Hono; attach?: (s: Server) => void; 
     try {
       const a = await ask(message, prev, channel);
       cur = { ...a.context, turns: prev.turns }; // el tope de turnos vive en el estado firmado
-      return reply({ text: a.text || (a.cards.length ? "Estos son los resultados de tu consulta, con datos oficiales de SECOP." : "No pude armar una respuesta con datos oficiales. Intenta con el nombre de la entidad."), cards: a.cards, period: cur.period ?? period, cached: a.cached, tokens: a.tokens, filters: { ...cur.filtros, entity: cur.entity?.name } });
+      return reply({ text: a.text || (a.cards.length ? "Estos son los resultados de tu consulta, con datos oficiales de SECOP." : "No pude armar una respuesta con datos oficiales. Intenta con el nombre de la entidad."), cards: a.cards, period: { ...(cur.period ?? period), ...(a.toolCalls.some((t) => /"(desde|hasta)"/.test(JSON.stringify(t.args))) || year ? { defaulted: undefined } : { defaulted: true }) }, cached: a.cached, tokens: a.tokens, toolCalls: a.toolCalls, ...(a.hasMore ? { hasMore: true } : {}), ...(a.options ? { options: a.options } : {}), filters: { ...cur.filtros, entity: cur.entity?.name } });
     } catch { return reply({ text: "No pude consultar datos.gov.co en este momento y no tengo una copia guardada. Intenta de nuevo en unos minutos." }); }
   }
   // Front (web/dist) en el mismo servicio; va al final: solo atiende lo que ninguna ruta anterior resolvió.

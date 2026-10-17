@@ -17,7 +17,7 @@ export type Row = Partial<Record<Column, string>>;
 /** Columnas solo para filtrar (nunca se seleccionan ni se devuelven): documento del proveedor. */
 export type FilterCol = Column | "documento_proveedor";
 /** "ulike": upper(col) contiene alguno de los términos separados por "|". */
-export interface Cond { col: FilterCol; op: "=" | ">=" | "<=" | "like" | "ulike" | "q"; value: string | number }
+export interface Cond { col: FilterCol; op: "=" | ">=" | "<=" | "like" | "ulike" | "alike" | "q"; value: string | number }
 export interface Query {
   select?: Column[]; where?: Cond[]; order?: { col: Column; desc?: boolean }; limit?: number; offset?: number;
 }
@@ -52,11 +52,18 @@ export function buildParams(q: Query): URLSearchParams {
         const terms = String(c.value).split("|").map((t) => t.replace(/[%_]/g, "").toUpperCase()).filter(Boolean);
         return `(${terms.map((t) => `upper(${filterCol(c.col)}) like ${lit(`%${t}%`)}`).join(" OR ")})`;
       }
+      // "alike": cualquiera de las variantes de mayúsculas/tildes (separadas por "|") tal cual, sin pasar por upper().
+      if (c.op === "alike") {
+        const terms = String(c.value).split("|").map((t) => t.replace(/[%_]/g, "")).filter(Boolean);
+        // El primer término es el texto tal cual: igualdad exacta (valor canónico del dataset) además de «contiene».
+        return `(${[`${filterCol(c.col)} = ${lit(terms[0] ?? "")}`, ...terms.map((t) => `${filterCol(c.col)} like ${lit(`%${t}%`)}`)].join(" OR ")})`;
+      }
       const v = c.op === "like" ? `%${String(c.value).replace(/[%_]/g, "")}%` : c.value;
       return `${filterCol(c.col)} ${c.op} ${lit(v)}`;
     }).join(" AND "));
   }
-  if (q.order) p.set("$order", `${numeric(col(q.order.col))}${q.order.desc ? " DESC" : ""}`);
+  // Ascendente por valor: el segundo criterio (texto) solo desempata; el primero es el orden numérico real.
+  if (q.order) p.set("$order", q.order.desc ? `${numeric(col(q.order.col))} DESC` : `${numeric(col(q.order.col))} ASC${q.order.col === "valor_del_contrato" ? ", valor_del_contrato ASC" : ""}`);
   p.set("$limit", String(Math.max(1, Math.min(MAX_LIMIT, Math.floor(q.limit ?? 10)))));
   if (q.offset) p.set("$offset", String(Math.max(0, Math.floor(q.offset))));
   return p;

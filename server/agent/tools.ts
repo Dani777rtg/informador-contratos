@@ -1,150 +1,32 @@
-import { fetchRows, query as socrataQuery, type Entity, type Row } from "../data/socrata.js";
-import { createPlaces, matchEntity, matchPlace, type Place } from "../data/places.js";
+import { fetchRows, query as socrataQuery, type Entity } from "../data/socrata.js";
+import type { Place } from "../data/places.js";
 import { withBudget } from "../data/budget.js";
 import { SLOW_NOTICE, SocrataUnavailable } from "../data/retry.js";
-import { Lru } from "../cache.js";
-import { byValue, contractCard, MAX_VISIBLE, searchContracts, type Ctx as DataCtx } from "../tools/search.js";
-import { spendByCategory, topContractors, topContracts, topEntities, totalSpend } from "../tools/spend.js";
-import { buildWhere, matching, type Filters } from "../tools/filters.js";
+import type { Ctx as DataCtx } from "../tools/search.js";
 import { contractDetail } from "../tools/detail.js";
 import { listDocuments } from "../tools/documents.js";
-import { fromSnapshot, loadSnapshot, snapshotPlaces, topicLabel, type Scope } from "../fallback/snapshot.js";
-import { isOutlier, OUTLIER_NOTE } from "../data/outliers.js";
-import { roundedPesos } from "../speech/spoken.js";
+import { OUTLIER_NOTE } from "../data/outliers.js";
+import { buscarEntidad } from "../data/entity-aliases.js";
+import { configureTools, currentDeps, QUERY_DEF, runQuery, say, type Deps } from "./query.js";
 import type { Ctx, Tool, ToolRegistry, ToolResult } from "./loop.js";
 
-const day = (d: Date) => d.toISOString().slice(0, 10);
+export { configureTools };
 const ID = /^[\w.-]{1,60}$/;
-const str = (v: unknown, max = 80): string => (typeof v === "string" ? v.trim().slice(0, max) : "");
-const MAX_LIMIT = 10, DEFAULT_LIMIT = 5;
-
-const FILTER_PROPS = {
-  municipio: { type: "string" }, departamento: { type: "string" }, entidad: { type: "string" }, tema: { type: "string" },
-  proveedor: { type: "string" }, anio: { type: "integer" }, limite: { type: "integer" },
-};const def = (name: string, description: string, extra: Record<string, unknown> = {}) =>
-  ({ name, description, parameters: { type: "object", properties: { ...FILTER_PROPS, ...extra }, required: [] as string[] } });
 
 /** Definiciones para el LLM (texto) y para el Voice Agent: parámetros cerrados, nunca SoQL. */
 export const TOOL_DEFS = [
-  def("gasto_total", "Total contratado."),
-  def("gasto_por_categoria", "Gasto por tipo de contrato."),
-  def("top_entidades", "Ranking de entidades compradoras."),
-  def("top_contratistas", "Ranking de contratistas.", { orden: { type: "string", enum: ["valor", "cantidad"] } }),
-  def("contratos_mayores", "Contratos de mayor valor."),
-  def("buscar_contratos", "Contratos recientes con los filtros."),
+  QUERY_DEF,
+  {
+    name: "buscar_entidad",
+    description: "Busca una entidad por sigla o nombre común (MinTIC, ICBF, INVIAS, DIAN, Alcaldía de Cali) y devuelve candidatos con NIT. Úsala si dudas; con dudas, pregunta al usuario con las opciones.",
+    parameters: { type: "object", properties: { texto: { type: "string" } }, required: ["texto"] },
+  },
   {
     name: "detalle_contrato",
     description: "Detalle de un contrato mostrado.",
     parameters: { type: "object", properties: { id_contrato: { type: "string" }, documentos: { type: "boolean" } }, required: ["id_contrato"] },
   },
 ];
-
-interface Deps { base: DataCtx; entities: Entity[]; places?: () => Promise<Place[]> }
-let deps: Deps = {
-  base: { client: { base: process.env.SOCRATA_BASE ?? "https://www.datos.gov.co", token: process.env.DATOSGOV_APP_TOKEN }, cache: new Lru<Row[]>() },
-  entities: [],
-};
-/** Conecta las herramientas con el cliente, el índice de entidades y la lista de municipios (los mismos para texto y voz). */
-export const configureTools = (d: Deps): void => { deps = d; };
-
-/** Montos en lenguaje llano para el modelo («$2.700 millones de pesos»); el valor exacto con COP queda en las tarjetas. */
-function say<T>(v: T): T {
-  if (typeof v === "string") {
-    const m = /^\$([\d.]+) COP$/.exec(v);
-    if (!m) return v;
-    const n = Number(m[1].replace(/\./g, ""));
-    return (n >= 1e6 ? roundedPesos(n) : `${roundedPesos(n)} pesos`) as T;
-  }
-  if (Array.isArray(v)) return v.map(say) as T;
-  if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, say(x)])) as T;
-  return v;
-}
-
-const year = (v: unknown): string | undefined => { const s = str(v, 10); return /^\d{4}$/.test(s) ? s : undefined; };
-const date = (v: unknown, end: boolean): string | undefined => {
-  const s = str(v, 10), y = year(s);
-  return y ? `${y}-${end ? "12-31" : "01-01"}` : /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined;
-};
-
-type Resolved = { f: Filters; label: string; scope: Scope; textual: boolean; explicitPeriod: boolean } | { out: ToolResult };
-const fail = (data: unknown): { out: ToolResult } => ({ out: { data } });
-
-/** Interpreta y valida los filtros; nunca ignora en silencio un filtro que no pudo resolver. */
-async function resolveFilters(args: Record<string, unknown>, ctx: Ctx, d: Deps, client: DataCtx["client"]): Promise<Resolved> {
-  const f: Filters = { period: { from: "", to: "" } };
-  const label: string[] = [];
-  const entidad = str(args.entidad);
-  const nit = entidad.replace(/[.\s]/g, "");
-  if (/^\d{5,12}$/.test(nit)) { f.nit = nit; label.push(`entidad NIT ${nit}`); }
-  else if (entidad) {
-    const m = matchEntity(entidad, d.entities);
-    if ("sugerencias" in m) return fail({ error: "sin_resultados", sugerencias: m.sugerencias, nota: `No identifiqué la entidad "${entidad.slice(0, 40)}". Ofrece las sugerencias o pide el NIT.` });
-    f.nit = m.entity.nit; label.push(m.entity.name);
-  }
-  const municipio = str(args.municipio) || str(args.ciudad), dep = str(args.departamento);
-  if (municipio || dep) {
-    // createPlaces responde al instante con la lista del respaldo mientras la viva carga en segundo plano.
-    const known = await (d.places ?? placesFor(client))();
-    const places = known.length ? known : snapshotPlaces();
-    const m = matchPlace(municipio || dep, places, municipio ? dep : undefined, !municipio);
-    if ("sugerencias" in m) return fail({ error: "lugar_desconocido", sugerencias: m.sugerencias, ...(m.confirmar ? { confirmar: m.confirmar } : {}), nota: `Pregunta al usuario${m.confirmar ? ` «${m.confirmar}»` : " por el lugar y ofrece las sugerencias"}; no digas que no hay datos.` });
-    f.departamento = m.departamento;
-    if (m.alcance === "municipio") { f.ciudad = m.municipio; label.push(`entidades con sede en ${m.municipio}, ${m.departamento}`); } else label.push(`entidades de ${m.departamento}`);
-  }
-  f.tema = str(args.tema, 60) || undefined;
-  if (f.tema && /[;'"\\]|--/.test(f.tema)) return fail({ error: "sin_resultados", nota: "tema inválido" });
-  if (f.tema) label.push(`tema: ${f.tema}`);
-  f.proveedor = str(args.proveedor) || undefined;
-  if (f.proveedor) label.push(`contratista: ${f.proveedor}`);
-  // Seguimiento ("¿y en 2024?"): sin ningún filtro nuevo se reutiliza la entidad del contexto.
-  if (!f.nit && !f.ciudad && !f.departamento && !f.tema && !f.proveedor && ctx.entity) { f.nit = ctx.entity.nit; label.push(ctx.entity.name); }
-  const anio = Number(args.anio), now = new Date(), from = new Date(now);
-  from.setFullYear(from.getFullYear() - 1);
-  const desde = date(args.desde, false), hasta = date(args.hasta, true);
-  const explicitPeriod = Number.isInteger(anio) && anio >= 2000 && anio <= 2100 || Boolean(desde || hasta);
-  f.period = Number.isInteger(anio) && anio >= 2000 && anio <= 2100 ? { from: `${anio}-01-01`, to: `${anio}-12-31` }
-    : desde || hasta ? { from: desde ?? "2000-01-01", to: hasta ?? day(now) }
-    : ctx.period ?? { from: day(from), to: day(now) };
-  const y1 = Number(f.period.from.slice(0, 4)), y2 = Number(f.period.to.slice(0, 4));
-  const scope: Scope = { departamento: f.departamento, municipio: f.ciudad, tema: topicLabel(f.tema), recent: !explicitPeriod, ...(y1 === y2 ? { anio: y1 } : { desde: y1, hasta: y2 }) };
-  return { f, label: label.join("; ") || "todo el país", scope, textual: Boolean(f.nit || f.proveedor || (f.tema && !topicLabel(f.tema))), explicitPeriod };
-}
-
-const placeLists = new Map<string, () => Promise<Place[]>>();
-const placesFor = (c: DataCtx["client"]) => { let p = placeLists.get(c.base); if (!p) placeLists.set(c.base, p = createPlaces(c)); return p; };
-
-
-type Atip = { kind: string; atipico: boolean; note: string } & Record<string, unknown>;
-interface Live { cards: { kind: string }[]; ids?: string[]; hayMas?: boolean; at?: Date; cached?: boolean; atipicos?: Atip[] }
-
-const valueOf = (c: Record<string, unknown>) => Number(String(c.value ?? "").replace(/\D/g, ""));
-
-async function live(name: string, f: Filters, args: Record<string, unknown>, limit: number, dctx: DataCtx): Promise<Live> {
-  const where = buildWhere(f);
-  const cut = <T extends { cards: unknown[] }>(r: T) => ({ ...r, cards: r.cards.slice(0, limit) });
-  // Los atípicos nunca entran en totales ni rankings (además del filtro del servidor, se descartan aquí) y salen aparte.
-  const split = <T extends { cards: { kind: string }[]; atipicos?: unknown[] }>(r: T): T => {
-    const atip = (r.atipicos ?? []).filter((c) => isOutlier(valueOf(c as Record<string, unknown>))) as Atip[];
-    return { ...r, atipicos: atip, cards: r.cards.filter((c) => !isOutlier(valueOf(c as Record<string, unknown>))) };
-  };
-  switch (name) {
-    case "gasto_total": return split(await totalSpend(dctx, where));
-    case "gasto_por_categoria": {
-      // «Otro» / «No definido» no dicen en qué se gasta: van al final para que la categoría principal tenga nombre.
-      const r = await spendByCategory(dctx, where), vague = (c: unknown) => /^(otro|no definido|no aplica)/i.test(String((c as { category?: unknown }).category ?? ""));
-      return split(cut({ ...r, cards: [...r.cards.filter((c) => !vague(c)), ...r.cards.filter(vague)] }));
-    }
-    case "top_entidades": return split(cut(await topEntities(dctx, where)));
-    case "top_contratistas": return split(cut(await topContractors(dctx, where, str(args.orden, 10) === "cantidad" ? "count" : "sum")));
-    case "contratos_mayores": { const t = split(await topContracts(dctx, where)); return { ...cut(t), ids: t.ids.slice(0, limit) }; }
-    default: {
-      const r = await searchContracts(dctx, where);
-      const found = matching(r.value, f).filter((x) => !isOutlier(Number(x.valor_del_contrato ?? 0)));
-      const shown = byValue(found.slice(0, Math.min(limit, MAX_VISIBLE)));
-      return split({ cards: shown.map(contractCard), atipicos: r.atipicos, ids: shown.map((x) => x.id_contrato).filter((i): i is string => Boolean(i)), hayMas: found.length > shown.length, at: r.at, cached: r.cached });
-    }
-  }
-}
 
 async function detail(args: Record<string, unknown>, dctx: DataCtx): Promise<ToolResult> {
   const id = String(args.id_contrato ?? "");
@@ -174,70 +56,17 @@ async function detail(args: Record<string, unknown>, dctx: DataCtx): Promise<Too
   return { data, cards, context: { contract: id } };
 }
 
-const limitOf = (args: Record<string, unknown>): number => { const n = Number(args.limite); return Number.isInteger(n) && n >= 1 ? Math.min(n, MAX_LIMIT) : DEFAULT_LIMIT; };
-const MEMO_MS = 30_000;
-const memo = new WeakMap<object, Map<string, { at: number; res: ToolResult }>>();
-const remember = (cache: object, key: string, res: ToolResult): ToolResult => { const m = memo.get(cache) ?? new Map(); m.set(key, { at: Date.now(), res }); memo.set(cache, m); return res; };
 const unavailable = (): ToolResult => ({ data: { error: "servicio_no_disponible", nota: SLOW_NOTICE.instruccion.slice(0, 135) } });
 
-/** Ejecuta una herramienta con presupuesto de 6,5 s (1 reintento), ampliación al departamento y respaldo comprimido. Nunca lanza por fallas de datos.gov.co. */
-export async function runTool(name: string, args: Record<string, unknown>, data: DataCtx = deps.base, ctx: Ctx = {}, d: Deps = { ...deps, base: data }): Promise<ToolResult> {
-  if (!TOOL_DEFS.some((t) => t.name === name)) return { data: { error: "sin_resultados", nota: "herramienta desconocida" } };
+/** Ejecuta una herramienta. Nunca lanza por fallas de datos.gov.co. */
+export async function runTool(name: string, args: Record<string, unknown>, data: DataCtx = currentDeps().base, ctx: Ctx = {}, d: Deps = { ...currentDeps(), base: data }): Promise<ToolResult> {
+  if (name === "consultar") return runQuery(args, data, ctx, d);
+  if (name === "buscar_entidad") return { data: buscarEntidad(String(args.texto ?? "").slice(0, 80), d.entities) };
   if (name === "detalle_contrato") {
     const dctx: DataCtx = { ...d.base, client: withBudget(d.base.client) };
     try { return await detail(args, dctx); } catch (e) { if (e instanceof SocrataUnavailable) return unavailable(); throw e; }
   }
-  const r = await resolveFilters(args, ctx, d, d.base.client);
-  if ("out" in r) return r.out;
-  const dctx: DataCtx = { ...d.base, client: withBudget(d.base.client) }; // el reloj de 6,5 s corre solo desde aquí
-  let { f, label } = r;
-  const memoKey = JSON.stringify([name, f, args.orden, limitOf(args)]), hit = memo.get(d.base.cache)?.get(memoKey);
-  if (hit && Date.now() - hit.at < MEMO_MS) return hit.res; // misma consulta repetida en segundos: sin volver a datos.gov.co
-  const limit = limitOf(args);
-  const ctxOut = (g: Filters, ids?: string[]) => ({
-    entity: g.nit ? { nit: g.nit, name: d.entities.find((e) => e.nit === g.nit)?.name ?? ctx.entity?.name ?? `NIT ${g.nit}` } : undefined,
-    period: { from: g.period.from, to: g.period.to },
-    filtros: { ciudad: g.ciudad, departamento: g.departamento, tema: g.tema, proveedor: g.proveedor, tipo: name === "contratos_mayores" ? "mayores" : name === "buscar_contratos" ? "lista" : name },
-    ...(ids ? { results: ids } : {}),
-  });
-  let note: string | undefined;
-  // Respuesta del respaldo precalculado (mismas tarjetas que en vivo). Solo dice lo que puede decir con verdad.
-  const backup = (): ToolResult | null => {
-    const snap = loadSnapshot();
-    const fb = snap && !r.textual ? fromSnapshot(snap, name, r.explicitPeriod || name.startsWith("gasto") ? r.scope : { ...r.scope, anio: undefined, desde: undefined, hasta: undefined }, limit) : null;
-    if (!snap || !fb) return null;
-    const nota = `Datos de respaldo al ${snap.generatedAt.slice(0, 10)}, no en vivo. Dilo con esa fecha.${fb.widened ? ` No hay respaldo de ${f.ciudad}: son del departamento ${f.departamento}; dilo.` : ""}`;
-    return { data: { resultado: say(fb.cards), filtros: label, respaldo: snap.generatedAt.slice(0, 10), nota }, cards: fb.cards as ToolResult["cards"], context: ctxOut(f), note: nota };
-  };
-  // Un tema frecuente sin territorio (LIKE sobre todo el país: 15 s en datos.gov.co, más que el presupuesto de 6,5 s) sale directo del respaldo.
-  if (!r.explicitPeriod && r.scope.tema && !f.ciudad && !f.departamento && !f.nit && !f.proveedor && ["gasto_total", "contratos_mayores", "buscar_contratos"].includes(name)) {
-    const b = backup();
-    if (b) return b;
-  }
-  try {
-    let res = await live(name, f, args, limit, dctx);
-    if (!res.cards.length && f.ciudad) {
-      // Sin datos en el municipio: se amplía al departamento y se dice.
-      const wide = { ...f, ciudad: undefined };
-      const alt = await live(name, wide, args, limit, dctx);
-      if (alt.cards.length) {
-        note = `No hay contratos de ${f.ciudad}; se amplió al departamento ${f.departamento}. Dilo.`;
-        label = label.replace(/entidades con sede en [^;]+/, `entidades de ${f.departamento}`);
-        res = alt; f = wide;
-      }
-    }
-    if (!res.cards.length) {
-      return { data: { sinResultados: `No hay contratos de ${label} entre ${f.period.from} y ${f.period.to}. Dilo así; no muestres datos de otra entidad o territorio.`, periodo: f.period, error: "sin_resultados" }, context: ctxOut(f) };
-    }
-    // `ids` va en el mismo orden que `resultado`: con ellos el modelo (voz incluida) abre el detalle de «ese contrato».
-    const atipicos = res.atipicos ?? [];
-    if (atipicos.length) note = `${note ? `${note} ` : ""}Hay ${atipicos.length === 1 ? "un contrato" : `${atipicos.length} contratos`} fuera de los totales y rankings; di de forma neutral que ${OUTLIER_NOTE}.`;
-    const data = { resultado: say(res.cards), ...(res.ids?.length ? { ids: res.ids } : {}), filtros: label, periodo: f.period, ...(res.hayMas ? { hayMas: true } : {}), ...(f.ciudad ? { alcance: "Son contratos de entidades con sede en ese municipio (pueden incluir la gobernación o entidades nacionales); dilo así, sin decir que todos son del municipio." } : {}), ...(atipicos.length ? { atipicos: say(atipicos) } : {}), ...(note ? { nota: note } : {}) };
-    return remember(d.base.cache, memoKey, { data, cards: [...res.cards, ...atipicos] as ToolResult["cards"], context: ctxOut(f, res.ids), note });
-  } catch (e) {
-    if (!(e instanceof SocrataUnavailable)) throw e;
-    return backup() ?? unavailable();
-  }
+  return { data: { error: "sin_resultados", nota: "herramienta desconocida" } };
 }
 
 /** Registro para el agente de texto: mismas definiciones y mismo ejecutor que la voz. */

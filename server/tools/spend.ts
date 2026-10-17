@@ -8,7 +8,7 @@ type Raw = Record<string, string | undefined>;
 
 const canon = (s: string) => normalize(s).replace(/\b(s a s|sas|ltda|s a|s en c|e s p)\b/g, "").replace(/[^a-z0-9]+/g, "");
 /** El mismo nombre escrito de dos formas («X S.A.S.» / «X SAS») suma una sola fila; ordena por valor o por número de contratos. */
-function mergeNames(rows: Raw[], col: "proveedor_adjudicado" | "nombre_entidad", by: "sum" | "count"): Raw[] {
+export function mergeNames(rows: Raw[], col: "proveedor_adjudicado" | "nombre_entidad", by: "sum" | "count"): Raw[] {
   const merged = new Map<string, Raw>();
   for (const r of rows) {
     const name = r[col];
@@ -50,17 +50,17 @@ export const fundingBreakdown = async (ctx: Ctx, where: Cond[]) => {
   return { cards, atipicos, at: r.at, cached: r.cached };
 };
 
-export const topContracts = async (ctx: Ctx, where: Cond[]) => {
+export const topContracts = async (ctx: Ctx, where: Cond[], desc = true) => {
   // valor_del_contrato es texto en Socrata: el servidor ordena por valor_del_contrato::number sobre todo el filtro.
-  const r = await withCache(ctx.cache, key("top", where), () => query(ctx.client, { where, order: { col: "valor_del_contrato", desc: true }, limit: 10 })); // ≤ 10: un límite mayor activa la consulta liviana de reintento (retry.ts)
+  const r = await withCache(ctx.cache, key(desc ? "top" : "bottom", where), () => query(ctx.client, { where, order: { col: "valor_del_contrato", desc }, limit: 10 })); // ≤ 10: un límite mayor activa la consulta liviana de reintento (retry.ts)
   const atipicos = r.value.filter((x) => isOutlier(num(x.valor_del_contrato))).map(atipicoCard);
-  const rows = r.value.filter((x) => !isOutlier(num(x.valor_del_contrato))).slice(0, 10).sort((a, b) => num(b.valor_del_contrato) - num(a.valor_del_contrato));
+  const rows = r.value.filter((x) => !isOutlier(num(x.valor_del_contrato))).slice(0, 10).sort((a, b) => (desc ? 1 : -1) * (num(b.valor_del_contrato) - num(a.valor_del_contrato)));
   const cards = rows.map((x, i) => ({
     kind: "top", rank: i + 1, name: x.objeto_del_contrato, value: money(num(x.valor_del_contrato)),
     entity: x.nombre_entidad, city: x.ciudad, department: x.departamento, contractor: x.proveedor_adjudicado, signedAt: (x.fecha_de_firma ?? "").slice(0, 10), url: contractCard(x).url,
   }));
   // ids en el mismo orden (valor desc): base de «el más grande», «el primero»…
-  return { cards, atipicos, ids: rows.map((x) => x.id_contrato).filter((i): i is string => Boolean(i)), at: r.at, cached: r.cached };
+  return { cards, rows, atipicos, ids: rows.map((x) => x.id_contrato).filter((i): i is string => Boolean(i)), at: r.at, cached: r.cached };
 };
 
 /** Ranking de contratistas por valor total adjudicado (nombre completo; el documento nunca se selecciona). */
